@@ -1,3 +1,5 @@
+"use client";
+
 import { Check, ArrowRight } from "lucide-react";
 import type { OnboardingData } from "../onboarding-types";
 
