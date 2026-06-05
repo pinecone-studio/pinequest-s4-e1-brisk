@@ -8,6 +8,11 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787";
 const nextConfig: NextConfig = {
   turbopack: {
     root: clientRoot,
+    resolveAlias: {
+      tailwindcss: path.join(clientRoot, "node_modules/tailwindcss"),
+      "tw-animate-css": path.join(clientRoot, "node_modules/tw-animate-css"),
+      shadcn: path.join(clientRoot, "node_modules/shadcn"),
+    },
   },
   async rewrites() {
     return [
