@@ -1,7 +1,8 @@
 "use client";
 
 import { createMockTask } from "@/components/tasks/task-factory";
-import { EmptyTasks, TaskListSkeleton } from "@/components/tasks/task-list-states";
+import { TaskDetailPanel } from "@/components/tasks/task-detail-panel";
+import { TaskListSkeleton } from "@/components/tasks/task-list-states";
 import { readStoredTasks, saveStoredTasks } from "@/components/tasks/task-storage";
 import { mockTasks, sourceLabels, taskSources } from "@/components/tasks/mock-tasks";
 import { TaskBoard } from "@/components/tasks/task-board";
@@ -10,18 +11,20 @@ import {
   getTaskTeam,
   type TaskListItem,
   type TaskSource,
+  type TaskStatus,
   type TaskUpdate,
 } from "@/components/tasks/task-types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { ListTodo, Plus, RefreshCw } from "lucide-react";
+import { ListTodo, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export function TaskList() {
   const [tasks, setTasks] = useState<TaskListItem[]>([]);
   const [activeSource, setActiveSource] = useState<TaskSource>("github");
   const [activeTeam, setActiveTeam] = useState<string | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const sourceTasks = useMemo(
@@ -34,6 +37,10 @@ export function TaskList() {
         ? sourceTasks.filter((task) => getTaskTeam(task) === activeTeam)
         : sourceTasks,
     [activeTeam, sourceTasks]
+  );
+  const selectedTask = useMemo(
+    () => tasks.find((task) => task.id === selectedTaskId) ?? null,
+    [selectedTaskId, tasks]
   );
 
   const loadMockTasks = useCallback(() => {
@@ -55,8 +62,13 @@ export function TaskList() {
     }
   }, [isLoading, tasks]);
 
+  useEffect(() => {
+    if (selectedTaskId && !tasks.some((task) => task.id === selectedTaskId)) {
+      setSelectedTaskId(null);
+    }
+  }, [selectedTaskId, tasks]);
+
   const updateTask = useCallback((taskId: string, update: TaskUpdate) => {
-    // Swap this mock update for PATCH /issues/:id when the API is ready.
     setTasks((current) => {
       const next = current.map((task) =>
         task.id === taskId ? { ...task, ...update } : task,
@@ -66,17 +78,19 @@ export function TaskList() {
     });
   }, []);
 
-  const addTask = useCallback(() => {
-    setTasks((current) => {
+  const addTaskToColumn = useCallback(
+    (status: TaskStatus) => {
       const team = activeTeam ?? sourceTasks[0]?.team ?? "General Team";
-      const next = [
-        createMockTask(activeSource, current.length + 1, team),
-        ...current,
-      ];
-      saveStoredTasks(next);
-      return next;
-    });
-  }, [activeSource, activeTeam, sourceTasks]);
+      const newTask = createMockTask(activeSource, tasks.length + 1, team, status);
+
+      setTasks((current) => {
+        const next = [newTask, ...current];
+        saveStoredTasks(next);
+        return next;
+      });
+    },
+    [activeSource, activeTeam, sourceTasks, tasks.length]
+  );
 
   const deleteTask = useCallback((taskId: string) => {
     setTasks((current) => {
@@ -84,37 +98,28 @@ export function TaskList() {
       saveStoredTasks(next);
       return next;
     });
+    setSelectedTaskId((current) => (current === taskId ? null : current));
   }, []);
 
   return (
-    <Card className="rounded-lg border border-border/60 bg-[#16171b] shadow-none">
+    <>
+      <Card className="rounded-lg border border-border/60 bg-[#16171b] shadow-none">
       <CardHeader className="border-b border-border/60">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <CardTitle className="flex items-center gap-2 text-lg">
             <ListTodo className="size-5 text-violet-400" />
             Task list
           </CardTitle>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              className="rounded-lg"
-              disabled={isLoading}
-              onClick={addTask}
-            >
-              <Plus className="size-4" />
-              Add new task
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="rounded-lg"
-              disabled={isLoading}
-              onClick={loadMockTasks}
-            >
-              <RefreshCw className={cn("size-4", isLoading && "animate-spin")} />
-              Refresh
-            </Button>
-          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="rounded-lg"
+            disabled={isLoading}
+            onClick={loadMockTasks}
+          >
+            <RefreshCw className={cn("size-4", isLoading && "animate-spin")} />
+            Refresh
+          </Button>
         </div>
       </CardHeader>
 
@@ -133,6 +138,7 @@ export function TaskList() {
               onClick={() => {
                 setActiveSource(source);
                 setActiveTeam(null);
+                setSelectedTaskId(null);
               }}
             >
               {sourceLabels[source]}
@@ -147,16 +153,36 @@ export function TaskList() {
 
         {isLoading ? (
           <TaskListSkeleton />
-        ) : visibleTasks.length === 0 ? (
-          <EmptyTasks />
         ) : (
-          <TaskBoard
-            tasks={visibleTasks}
-            onUpdate={updateTask}
-            onDelete={deleteTask}
-          />
+          <div className="min-h-[28rem] overflow-x-auto rounded-lg border border-border/60 p-3">
+            <TaskBoard
+              tasks={visibleTasks}
+              selectedTaskId={selectedTaskId}
+              onSelectTask={setSelectedTaskId}
+              onAddTask={addTaskToColumn}
+              onUpdateTask={updateTask}
+            />
+          </div>
         )}
       </CardContent>
     </Card>
+
+      {selectedTask ? (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 z-40 bg-black/20"
+            aria-label="Close task details"
+            onClick={() => setSelectedTaskId(null)}
+          />
+          <TaskDetailPanel
+            task={selectedTask}
+            onUpdate={updateTask}
+            onDelete={deleteTask}
+            onClose={() => setSelectedTaskId(null)}
+          />
+        </>
+      ) : null}
+    </>
   );
 }

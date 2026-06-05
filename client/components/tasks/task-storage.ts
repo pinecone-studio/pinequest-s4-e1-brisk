@@ -17,6 +17,7 @@ export function readStoredTasks() {
       ...task,
       team: task.team ?? task.title,
       status: normalizeTaskStatus(task.status),
+      description: task.description ?? "",
     }));
   } catch {
     return null;

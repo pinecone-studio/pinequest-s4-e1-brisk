@@ -1,9 +1,10 @@
-import type { TaskListItem, TaskSource } from "@/components/tasks/task-types";
+import type { TaskListItem, TaskSource, TaskStatus } from "@/components/tasks/task-types";
 
 export function createMockTask(
   source: TaskSource,
   index: number,
   team = "General Team",
+  status: TaskStatus = "backlog",
 ): TaskListItem {
   return {
     id: `${source}-new-${Date.now()}`,
@@ -11,7 +12,7 @@ export function createMockTask(
     team,
     title: `New Task ${index}`,
     tool: "Manual",
-    status: "backlog",
+    status,
     priority: "normal",
     blocked: false,
     dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
@@ -20,5 +21,6 @@ export function createMockTask(
     doneCount: 0,
     blockedCount: 0,
     members: ["ME"],
+    description: "",
   };
 }
