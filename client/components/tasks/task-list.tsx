@@ -1,8 +1,8 @@
 "use client";
 
 import { TaskDetailPanel } from "@/components/tasks/task-detail-panel";
-import { TaskListSkeleton } from "@/components/tasks/task-list-states";
-import { sourceLabels, taskSources } from "@/components/tasks/mock-tasks";
+import { EmptyTasks, TaskListSkeleton } from "@/components/tasks/task-list-states";
+import { sourceLabels, taskSources } from "@/components/tasks/task-sources";
 import { TaskBoard } from "@/components/tasks/task-board";
 import { TaskTeamFilter } from "@/components/tasks/task-team-filter";
 import { useTaskList } from "@/components/tasks/use-task-list";
@@ -18,7 +18,7 @@ export function TaskList() {
     addTaskToColumn,
     deleteTask,
     isLoading,
-    loadMockTasks,
+    loadTasks,
     selectedTask,
     selectedTaskId,
     selectSource,
@@ -78,6 +78,8 @@ export function TaskList() {
 
           {isLoading ? (
             <TaskListSkeleton />
+          ) : visibleTasks.length === 0 ? (
+            <EmptyTasks source={sourceLabels[activeSource]} />
           ) : (
             <div className="min-h-[28rem] overflow-x-auto rounded-lg border border-border/60 p-3">
               <TaskBoard

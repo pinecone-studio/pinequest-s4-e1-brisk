@@ -1,6 +1,6 @@
 import type { TaskListItem, TaskSource, TaskStatus } from "@/components/tasks/task-types";
 
-export function createMockTask(
+export function createTask(
   source: TaskSource,
   index: number,
   team = "General Team",
@@ -20,7 +20,7 @@ export function createMockTask(
     timeLeft: "1 Week Left",
     doneCount: 0,
     blockedCount: 0,
-    members: ["ME"],
+    members: [{ initials: "ME" }],
     description: "",
   };
 }

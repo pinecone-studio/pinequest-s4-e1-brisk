@@ -45,7 +45,8 @@ export function TaskCard({
   const [isEditing, setIsEditing] = useState(false);
   const [draftTitle, setDraftTitle] = useState(task.title);
   const inputRef = useRef<HTMLInputElement>(null);
-  const members = normalizeMemberInitials((task.members ?? []) as unknown[]);
+
+  \const members = normalizeMemberInitials((task.members ?? []) as unknown[]);
   const primaryMember = members[0];
 
   useEffect(() => {
@@ -134,12 +135,12 @@ export function TaskCard({
                   className={cn(
                     "grid size-8 place-items-center rounded-full text-[11px] font-semibold text-white",
                     memberColors[
-                      primaryMember.charCodeAt(0) % memberColors.length
+                      primaryMember.initials.charCodeAt(0) % memberColors.length
                     ],
                   )}
                   title={members.join(", ")}
                 >
-                  {primaryMember}
+                  {primaryMember.initials}
                 </span>
               </div>
             ) : null}
