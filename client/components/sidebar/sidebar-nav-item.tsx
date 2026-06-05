@@ -6,6 +6,7 @@ import type { sidebarNavItems } from "@/lib/dashboard/data";
 import { cn } from "@/lib/utils";
 import {
   Activity,
+  BarChart3,
   CalendarDays,
   Inbox,
   LayoutDashboard,
@@ -19,6 +20,7 @@ type NavItem = (typeof sidebarNavItems)[number];
 const navIcons = {
   Dashboard: LayoutDashboard,
   Tasks: ListTodo,
+  Analytics: BarChart3,
   "Project Board": LayoutGrid,
   Schedule: CalendarDays,
   Activities: Activity,
