@@ -1,5 +1,8 @@
 import type { TaskListItem, TaskSource } from "@/components/tasks/task-row";
 
+const taskMembers = (...initials: string[]) =>
+  initials.map((initial) => ({ initials: initial }));
+
 export const taskSources: TaskSource[] = ["github", "asana", "internal"];
 
 export const sourceLabels: Record<TaskSource, string> = {
@@ -22,7 +25,7 @@ export const mockTasks: TaskListItem[] = [
     timeLeft: "1 Week Left",
     doneCount: 12,
     blockedCount: 7,
-    members: ["MG", "SC", "IP", "LF"],
+    members: taskMembers("MG", "SC", "IP", "LF"),
   },
   {
     id: "github-2",
@@ -37,7 +40,7 @@ export const mockTasks: TaskListItem[] = [
     timeLeft: "2 Weeks Left",
     doneCount: 8,
     blockedCount: 6,
-    members: ["NH", "EM", "KB"],
+    members: taskMembers("NH", "EM", "KB"),
   },
   {
     id: "asana-1",
@@ -52,7 +55,7 @@ export const mockTasks: TaskListItem[] = [
     timeLeft: "5 Days Left",
     doneCount: 14,
     blockedCount: 4,
-    members: ["RS", "MI", "JP"],
+    members: taskMembers("RS", "MI", "JP"),
   },
   {
     id: "asana-2",
@@ -67,7 +70,7 @@ export const mockTasks: TaskListItem[] = [
     timeLeft: "1 Week Left",
     doneCount: 19,
     blockedCount: 10,
-    members: ["UF", "TR"],
+    members: taskMembers("UF", "TR"),
   },
   {
     id: "internal-1",
@@ -82,7 +85,7 @@ export const mockTasks: TaskListItem[] = [
     timeLeft: "3 Days Left",
     doneCount: 5,
     blockedCount: 9,
-    members: ["BA", "OD", "TU"],
+    members: taskMembers("BA", "OD", "TU"),
   },
   {
     id: "internal-2",
@@ -97,6 +100,6 @@ export const mockTasks: TaskListItem[] = [
     timeLeft: "10 Days Left",
     doneCount: 11,
     blockedCount: 3,
-    members: ["QA", "ER", "PM"],
+    members: taskMembers("QA", "ER", "PM"),
   },
 ];

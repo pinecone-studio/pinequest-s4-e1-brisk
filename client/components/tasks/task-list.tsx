@@ -2,6 +2,7 @@
 
 import { clientApi } from "@/app/lib/client-api";
 import { sourceLabels, taskSources } from "@/components/tasks/mock-tasks";
+import { getGithubRepo, syncGithubIssues } from "@/lib/integrations/github";
 import { TaskRow, type TaskListItem, type TaskSource } from "@/components/tasks/task-row";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -65,6 +66,14 @@ export function TaskList() {
     setIsLoading(true);
 
     try {
+      if (activeSource === "github" && getGithubRepo()) {
+        try {
+          await syncGithubIssues();
+        } catch {
+          // Sync can fail; still load whatever is in the DB.
+        }
+      }
+
       const { data } = await clientApi.get<TasksResponse>("/tasks", {
         params: { source: activeSource },
       });

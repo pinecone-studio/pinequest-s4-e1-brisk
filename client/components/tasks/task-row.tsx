@@ -1,8 +1,14 @@
+import { Avatar, AvatarFallback, AvatarGroup, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { CalendarDays, CheckCircle2, Clock, MoreHorizontal, Plus } from "lucide-react";
 
 export type TaskSource = "github" | "asana" | "internal";
+
+export type TaskMember = {
+  initials: string;
+  avatarUrl?: string;
+};
 
 export type TaskListItem = {
   id: string;
@@ -17,7 +23,7 @@ export type TaskListItem = {
   timeLeft: string;
   doneCount: number;
   blockedCount: number;
-  members: string[];
+  members: TaskMember[];
 };
 
 type TaskRowProps = {
@@ -87,22 +93,30 @@ export function TaskRow({ task, active = false }: TaskRowProps) {
       </div>
 
       <div className="mt-5 flex items-center">
-        {task.members.map((member, index) => (
-          <span
-            key={`${task.id}-${member}`}
-            className={cn(
-              "grid size-9 place-items-center rounded-full border-2 border-card text-xs font-semibold text-white dark:border-[#18191d]",
-              index > 0 && "-ml-2",
-              memberColors[index % memberColors.length]
-            )}
-          >
-            {member}
-          </span>
-        ))}
+        <AvatarGroup>
+          {task.members.map((member, index) => (
+            <Avatar
+              key={`${task.id}-${member.initials}-${index}`}
+              className="size-9 border-2 border-card dark:border-[#18191d]"
+            >
+              {member.avatarUrl ? (
+                <AvatarImage src={member.avatarUrl} alt={member.initials} />
+              ) : null}
+              <AvatarFallback
+                className={cn(
+                  "text-xs font-semibold text-white",
+                  memberColors[index % memberColors.length]
+                )}
+              >
+                {member.initials}
+              </AvatarFallback>
+            </Avatar>
+          ))}
+        </AvatarGroup>
         <button
           type="button"
           aria-label="Add member"
-          className="-ml-1 grid size-9 place-items-center rounded-full border border-dashed border-muted-foreground/40 text-muted-foreground"
+          className="ml-1 grid size-9 place-items-center rounded-full border border-dashed border-muted-foreground/40 text-muted-foreground"
         >
           <Plus className="size-4" />
         </button>
