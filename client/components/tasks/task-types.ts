@@ -65,11 +65,15 @@ export type TaskListItem = {
   timeLeft: string;
   doneCount: number;
   blockedCount: number;
-  members: TaskMember[];
+  members: string[];
+  description?: string;
 };
 
 export type TaskUpdate = Partial<
-  Pick<TaskListItem, "title" | "tool" | "status" | "priority" | "blocked" | "dueDate">
+  Pick<
+    TaskListItem,
+    "title" | "tool" | "status" | "priority" | "blocked" | "dueDate" | "description"
+  >
 >;
 
 export function getTaskTeam(task: Pick<TaskListItem, "team" | "title">) {

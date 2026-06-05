@@ -7,14 +7,23 @@ import {
   type TaskUpdate,
 } from "@/components/tasks/task-types";
 import { cn } from "@/lib/utils";
+import { Plus } from "lucide-react";
 
 type TaskBoardProps = {
   tasks: TaskListItem[];
-  onUpdate: (taskId: string, update: TaskUpdate) => void;
-  onDelete: (taskId: string) => void;
+  selectedTaskId: string | null;
+  onSelectTask: (taskId: string) => void;
+  onAddTask: (status: TaskStatus) => void;
+  onUpdateTask: (taskId: string, update: TaskUpdate) => void;
 };
 
-export function TaskBoard({ tasks, onUpdate, onDelete }: TaskBoardProps) {
+export function TaskBoard({
+  tasks,
+  selectedTaskId,
+  onSelectTask,
+  onAddTask,
+  onUpdateTask,
+}: TaskBoardProps) {
   const tasksByStatus = taskStatuses.reduce(
     (groups, status) => {
       groups[status] = tasks.filter((task) => task.status === status);
@@ -41,16 +50,28 @@ export function TaskBoard({ tasks, onUpdate, onDelete }: TaskBoardProps) {
               )}
             >
               {column.label}
+              <span className="ml-1 text-xs font-normal opacity-70">
+                ({columnTasks.length})
+              </span>
             </header>
             <div className="flex flex-1 flex-col gap-3 p-3">
               {columnTasks.map((task) => (
                 <TaskCard
                   key={task.id}
                   task={task}
-                  onUpdate={onUpdate}
-                  onDelete={onDelete}
+                  selected={selectedTaskId === task.id}
+                  onSelect={onSelectTask}
+                  onUpdate={onUpdateTask}
                 />
               ))}
+              <button
+                type="button"
+                onClick={() => onAddTask(status)}
+                className="mt-auto flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/20 hover:text-foreground"
+              >
+                <Plus className="size-4" />
+                Add task
+              </button>
             </div>
           </section>
         );
