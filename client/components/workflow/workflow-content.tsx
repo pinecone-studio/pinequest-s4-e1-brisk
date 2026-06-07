@@ -37,7 +37,6 @@ import {
   type GithubRepoOption,
   type GithubReview,
   type PrFilter,
-  redirectToGithubConnect,
   connectGithubPAT,
 } from "@/lib/integrations/github";
 import { cn } from "@/lib/utils";
@@ -65,7 +64,6 @@ export function WorkflowContent() {
   const { userId, isLoaded } = useGithubUserId();
 
   const [connected, setConnected] = useState(false);
-  const [authMode, setAuthMode] = useState<"oauth" | "test-token">();
   const [githubLogin, setGithubLogin] = useState<string>();
   const [loading, setLoading] = useState(true);
   const [patValue, setPatValue] = useState("");
@@ -229,10 +227,9 @@ export function WorkflowContent() {
     try {
       const { githubLogin: login } = await connectGithubPAT(patValue.trim());
       setConnected(true);
-      setAuthMode("oauth");
       setGithubLogin(login);
     } catch {
-      setPatError("Invalid token — make sure it has repo and project scopes.");
+      setPatError("Invalid token — make sure it's a classic PAT with the full repo scope.");
     } finally {
       setPatLoading(false);
     }
@@ -243,9 +240,6 @@ export function WorkflowContent() {
 
     setGithubUserId(userId);
     let cancelled = false;
-
-    const oauthError = new URLSearchParams(window.location.search).get("error");
-    if (oauthError) setError(oauthError);
 
     async function init() {
       setLoading(true);
@@ -258,7 +252,6 @@ export function WorkflowContent() {
         if (cancelled) return;
 
         setConnected(status.connected);
-        setAuthMode(status.mode);
         setGithubLogin(status.githubLogin);
 
         if (!status.connected) return;
@@ -296,15 +289,22 @@ export function WorkflowContent() {
     };
   }, [isLoaded, userId, loadRepoData]);
 
-  useEffect(() => {
-    if (!repoParts || !selectedPull) return;
-    void loadPullDetail(repoParts.owner, repoParts.repo, selectedPull.number);
-  }, [selectedPull, repoParts, loadPullDetail]);
+  // Key these effects on the issue/PR *number*, not the object reference.
+  // loadPullDetail/loadIssueDetail overwrite selectedPull/selectedIssue with a
+  // fresh detail object (same number); depending on the object would re-fire the
+  // effect on every load and refetch in a loop.
+  const selectedPullNumber = selectedPull?.number;
+  const selectedIssueNumber = selectedIssue?.number;
 
   useEffect(() => {
-    if (!repoParts || !selectedIssue) return;
-    void loadIssueDetail(repoParts.owner, repoParts.repo, selectedIssue.number);
-  }, [selectedIssue, repoParts, loadIssueDetail]);
+    if (!repoParts || !selectedPullNumber) return;
+    void loadPullDetail(repoParts.owner, repoParts.repo, selectedPullNumber);
+  }, [selectedPullNumber, repoParts, loadPullDetail]);
+
+  useEffect(() => {
+    if (!repoParts || !selectedIssueNumber) return;
+    void loadIssueDetail(repoParts.owner, repoParts.repo, selectedIssueNumber);
+  }, [selectedIssueNumber, repoParts, loadIssueDetail]);
 
   async function handleRepoChange(fullName: string) {
     setSelectedRepo(fullName);
@@ -515,21 +515,10 @@ export function WorkflowContent() {
         <div>
           <h2 className="text-xl font-semibold text-foreground">Connect GitHub</h2>
           <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-            {error ?? "Link your GitHub account to create issues and pull requests directly from this workflow."}
+            {error ?? "Paste a personal access token to create issues and pull requests directly from this workflow."}
           </p>
         </div>
-        <Button
-          className="bg-violet-600 hover:bg-violet-700"
-          onClick={() => redirectToGithubConnect(userId)}
-        >
-          Connect GitHub via OAuth
-        </Button>
         <div className="flex w-full max-w-sm flex-col gap-2">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <div className="h-px flex-1 bg-border" />
-            <span>or use a Personal Access Token</span>
-            <div className="h-px flex-1 bg-border" />
-          </div>
           <input
             type="password"
             placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
@@ -539,15 +528,15 @@ export function WorkflowContent() {
           />
           {patError && <p className="text-xs text-destructive">{patError}</p>}
           <Button
-            variant="outline"
+            className="bg-violet-600 hover:bg-violet-700"
             disabled={!patValue.trim() || patLoading}
             onClick={() => void handlePATConnect()}
           >
             {patLoading ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
-            Connect with PAT
+            Connect with token
           </Button>
           <p className="text-xs text-muted-foreground">
-            Generate a token at github.com/settings/tokens with <code className="text-xs">repo</code> and <code className="text-xs">project</code> scopes.
+            Generate a <strong>classic</strong> token at github.com/settings/tokens with the full <code className="text-xs">repo</code> scope (add <code className="text-xs">project</code> for Projects).
           </p>
         </div>
       </div>
@@ -578,11 +567,6 @@ export function WorkflowContent() {
               <span className="font-medium text-emerald-700 dark:text-emerald-400">
                 GitHub Connected
               </span>
-              {authMode === "test-token" ? (
-                <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
-                  Test token
-                </span>
-              ) : null}
               {githubLogin ? (
                 <span className="text-muted-foreground">@{githubLogin}</span>
               ) : null}

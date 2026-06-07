@@ -1,8 +1,6 @@
 import { Hono } from "hono";
 import {
   getGithubBranches,
-  getGithubCallback,
-  getGithubConnect,
   getGithubIssueComments,
   getGithubIssueDetail,
   getGithubIssues,
@@ -36,8 +34,6 @@ import { Bindings } from "../../lib/common/types";
 
 const githubRoutes = new Hono<{ Bindings: Bindings }>();
 
-githubRoutes.get("/connect", getGithubConnect);
-githubRoutes.get("/callback", getGithubCallback);
 githubRoutes.get("/status", getGithubStatus);
 githubRoutes.get("/repos", getGithubRepos);
 githubRoutes.get("/branches", getGithubBranches);

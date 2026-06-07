@@ -16,7 +16,6 @@ export type GithubStatus = {
   githubLogin?: string;
   repoOwner?: string;
   repoName?: string;
-  mode?: "oauth" | "test-token";
 };
 
 export type GithubRepoOption = {
@@ -109,11 +108,6 @@ export function getGithubRepo(): { owner: string; repo: string } | null {
   if (!value?.includes("/")) return null;
   const [owner, repo] = value.split("/");
   return owner && repo ? { owner, repo } : null;
-}
-
-export function redirectToGithubConnect(userId?: string) {
-  const id = userId ?? uid();
-  window.location.href = `/integrations/github/connect?userId=${encodeURIComponent(id)}`;
 }
 
 export async function connectGithubPAT(token: string): Promise<{ githubLogin: string }> {

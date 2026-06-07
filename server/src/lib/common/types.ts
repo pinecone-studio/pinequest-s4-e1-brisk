@@ -7,9 +7,6 @@ export interface Bindings {
   CLERK_WEBHOOK_SECRET: string;
   CHIMEGE_API_KEY: string;
   CHIMEGE_BASE_URL?: string;
-  GITHUB_CLIENT_ID?: string;
-  GITHUB_CLIENT_SECRET?: string;
-  GITHUB_OAUTH_REDIRECT_URI?: string;
   GITHUB_TEST_TOKEN?: string;
   GITHUB_WEBHOOK_SECRET: string;
   LIVEKIT_URL: string;

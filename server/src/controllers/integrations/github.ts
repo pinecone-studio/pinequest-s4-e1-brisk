@@ -13,7 +13,6 @@ import {
   type ProjectFieldValue,
 } from "../../lib/github/projects";
 import {
-  buildGithubAuthorizeUrl,
   createGithubIssue,
   createGithubPull,
   createIssueComment,
@@ -29,8 +28,6 @@ import {
   fetchRepoLabels,
   generatePrMessageFromDiff,
   mergeGithubPull,
-  decodeOAuthState,
-  exchangeGithubCode,
   fetchGithubLogin,
   fetchGithubRepos,
   fetchRepoBranches,
@@ -44,70 +41,12 @@ import { mapGithubIssueToTask } from "../../lib/github/map-github-issue";
 import { DEFAULT_WORKSPACE_ID } from "../../lib/tasks/task-defaults";
 import { githubIntegrations, tasks } from "../../schema/schema";
 
-const appUrl = (env: Bindings) => env.CLIENT_APP_URL ?? "http://localhost:3000";
-
-export const getGithubConnect = async (c: Context<{ Bindings: Bindings }>) => {
-  const userId = c.req.query("userId");
-  if (!userId) return c.json({ error: "userId is required" }, 400);
-
-  try {
-    return c.redirect(buildGithubAuthorizeUrl(c.env, userId));
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "OAuth setup failed";
-    const params = new URLSearchParams({ error: message });
-    return c.redirect(`${appUrl(c.env)}/workflow?${params}`);
-  }
-};
-
-export const getGithubCallback = async (c: Context<{ Bindings: Bindings }>) => {
-  const code = c.req.query("code");
-  const stateParam = c.req.query("state");
-
-  if (c.req.query("error") || !code || !stateParam) {
-    return c.redirect(`${appUrl(c.env)}/workflow`);
-  }
-
-  const state = decodeOAuthState(stateParam);
-  if (!state) return c.json({ error: "Invalid OAuth state" }, 400);
-
-  try {
-    const accessToken = await exchangeGithubCode(c.env, code);
-    const githubLogin = await fetchGithubLogin(accessToken);
-    const db = useDB(c);
-
-    const [existing] = await db
-      .select({ id: githubIntegrations.id })
-      .from(githubIntegrations)
-      .where(eq(githubIntegrations.userId, state.userId))
-      .limit(1);
-
-    if (existing) {
-      await db
-        .update(githubIntegrations)
-        .set({ accessToken, githubLogin })
-        .where(eq(githubIntegrations.id, existing.id));
-    } else {
-      await db.insert(githubIntegrations).values({
-        id: `gh-int-${nanoid(10)}`,
-        userId: state.userId,
-        accessToken,
-        githubLogin,
-      });
-    }
-
-    return c.redirect(`${appUrl(c.env)}/workflow`);
-  } catch {
-    return c.redirect(`${appUrl(c.env)}/workflow`);
-  }
-};
-
 type GithubAuthContext = {
   accessToken: string;
   githubLogin?: string | null;
   repoOwner?: string | null;
   repoName?: string | null;
   integrationId?: string;
-  isTestToken: boolean;
 };
 
 export async function resolveGithubAuth(
@@ -129,7 +68,6 @@ export async function resolveGithubAuth(
         repoOwner: integration.repoOwner,
         repoName: integration.repoName,
         integrationId: integration.id,
-        isTestToken: false,
       };
     }
   } catch {
@@ -144,7 +82,6 @@ export async function resolveGithubAuth(
     return {
       accessToken: testToken,
       githubLogin,
-      isTestToken: true,
     };
   } catch {
     return null;
@@ -165,7 +102,6 @@ export const getGithubStatus = async (c: Context<{ Bindings: Bindings }>) => {
     githubLogin: auth.githubLogin,
     repoOwner: auth.repoOwner,
     repoName: auth.repoName,
-    mode: auth.isTestToken ? "test-token" : "oauth",
   });
 };
 
