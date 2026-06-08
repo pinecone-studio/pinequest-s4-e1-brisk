@@ -1,4 +1,5 @@
 import { END, START, StateGraph } from "@langchain/langgraph";
+import { issueGeneratorWorkerNode } from "./nodes/issueGenerator";
 import { metricsWorkerNode } from "./nodes/metrics";
 import { onboardingWorkerNode } from "./nodes/onboarding";
 import { prGeneratorWorkerNode } from "./nodes/prGenerator";
@@ -11,6 +12,7 @@ export const ONBOARDING_WORKER_NODE = "onboarding_worker";
 export const METRICS_WORKER_NODE = "metrics_worker";
 export const RISK_WORKER_NODE = "risk_worker";
 export const PR_GENERATOR_WORKER_NODE = "pr_generator_worker";
+export const ISSUE_GENERATOR_WORKER_NODE = "issue_generator_worker";
 export const FINALIZE_ROUTE = "FINALIZE";
 
 async function supervisorNode(_state: typeof SupervisorGraphState.State) {
@@ -22,7 +24,8 @@ function allMilestonesComplete(context: SupervisorContext): boolean {
     context.onboardingComplete &&
     context.metricsAnalyzed &&
     context.risksIdentified &&
-    context.prGenerated
+    context.prGenerated &&
+    context.issueGenerated
   );
 }
 
@@ -52,6 +55,8 @@ function routeFromSupervisor(state: typeof SupervisorGraphState.State) {
       return RISK_WORKER_NODE;
     case PR_GENERATOR_WORKER_NODE:
       return PR_GENERATOR_WORKER_NODE;
+    case ISSUE_GENERATOR_WORKER_NODE:
+      return ISSUE_GENERATOR_WORKER_NODE;
     default:
       if (!state.context.onboardingComplete) {
         return ONBOARDING_WORKER_NODE;
@@ -65,6 +70,9 @@ function routeFromSupervisor(state: typeof SupervisorGraphState.State) {
       if (!state.context.prGenerated) {
         return PR_GENERATOR_WORKER_NODE;
       }
+      if (!state.context.issueGenerated) {
+        return ISSUE_GENERATOR_WORKER_NODE;
+      }
       return FINALIZE_ROUTE;
   }
 }
@@ -76,6 +84,7 @@ export function buildSupervisorGraph() {
     .addNode(METRICS_WORKER_NODE, metricsWorkerNode)
     .addNode(RISK_WORKER_NODE, riskWorkerNode)
     .addNode(PR_GENERATOR_WORKER_NODE, prGeneratorWorkerNode)
+    .addNode(ISSUE_GENERATOR_WORKER_NODE, issueGeneratorWorkerNode)
     .addEdge(START, SUPERVISOR_NODE);
 
   workflow.addConditionalEdges(SUPERVISOR_NODE, routeFromSupervisor, {
@@ -83,6 +92,7 @@ export function buildSupervisorGraph() {
     [METRICS_WORKER_NODE]: METRICS_WORKER_NODE,
     [RISK_WORKER_NODE]: RISK_WORKER_NODE,
     [PR_GENERATOR_WORKER_NODE]: PR_GENERATOR_WORKER_NODE,
+    [ISSUE_GENERATOR_WORKER_NODE]: ISSUE_GENERATOR_WORKER_NODE,
     [FINALIZE_ROUTE]: END,
   });
 
@@ -90,6 +100,7 @@ export function buildSupervisorGraph() {
   workflow.addEdge(METRICS_WORKER_NODE, SUPERVISOR_NODE);
   workflow.addEdge(RISK_WORKER_NODE, SUPERVISOR_NODE);
   workflow.addEdge(PR_GENERATOR_WORKER_NODE, SUPERVISOR_NODE);
+  workflow.addEdge(ISSUE_GENERATOR_WORKER_NODE, SUPERVISOR_NODE);
 
   return workflow;
 }
