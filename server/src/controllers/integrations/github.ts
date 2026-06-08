@@ -26,6 +26,9 @@ import {
   fetchPullFiles,
   fetchPullReviews,
   fetchRepoLabels,
+  fetchRepoMilestones,
+  createRepoMilestone,
+  fetchRepoAssignees,
   generatePrMessageFromDiff,
   mergeGithubPull,
   fetchGithubLogin,
@@ -649,6 +652,7 @@ export const patchGithubIssue = async (c: Context<{ Bindings: Bindings }>) => {
     state?: "open" | "closed";
     labels?: string[];
     assignees?: string[];
+    milestone?: number | null;
   } | null;
 
   if (!body?.userId || !body.owner || !body.repo || !body.number) {
@@ -665,6 +669,7 @@ export const patchGithubIssue = async (c: Context<{ Bindings: Bindings }>) => {
       state: body.state,
       labels: body.labels,
       assignees: body.assignees,
+      milestone: body.milestone,
     });
     return c.json({ issue });
   } catch (error) {
@@ -688,6 +693,74 @@ export const getGithubLabels = async (c: Context<{ Bindings: Bindings }>) => {
     return c.json({ labels });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to fetch labels";
+    return c.json({ error: message }, 502);
+  }
+};
+
+export const getGithubMilestones = async (c: Context<{ Bindings: Bindings }>) => {
+  const userId = c.req.query("userId");
+  const owner = c.req.query("owner");
+  const repo = c.req.query("repo");
+  const err = requireParams(c, { userId, owner, repo });
+  if (err) return err;
+
+  const auth = await resolveGithubAuth(c, userId!);
+  if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
+
+  try {
+    const milestones = await fetchRepoMilestones(auth.accessToken, owner!, repo!);
+    return c.json({ milestones });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to fetch milestones";
+    return c.json({ error: message }, 502);
+  }
+};
+
+export const postGithubMilestone = async (c: Context<{ Bindings: Bindings }>) => {
+  const body = (await c.req.json().catch(() => null)) as {
+    userId?: string;
+    owner?: string;
+    repo?: string;
+    title?: string;
+    description?: string;
+    dueOn?: string;
+  } | null;
+
+  if (!body?.userId || !body.owner || !body.repo || !body.title?.trim()) {
+    return c.json({ error: "userId, owner, repo, and title are required" }, 400);
+  }
+
+  const auth = await resolveGithubAuth(c, body.userId);
+  if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
+
+  try {
+    const milestone = await createRepoMilestone(auth.accessToken, body.owner, body.repo, {
+      title: body.title.trim(),
+      description: body.description,
+      dueOn: body.dueOn,
+    });
+    return c.json({ milestone });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to create milestone";
+    return c.json({ error: message }, 502);
+  }
+};
+
+export const getGithubAssignees = async (c: Context<{ Bindings: Bindings }>) => {
+  const userId = c.req.query("userId");
+  const owner = c.req.query("owner");
+  const repo = c.req.query("repo");
+  const err = requireParams(c, { userId, owner, repo });
+  if (err) return err;
+
+  const auth = await resolveGithubAuth(c, userId!);
+  if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
+
+  try {
+    const assignees = await fetchRepoAssignees(auth.accessToken, owner!, repo!);
+    return c.json({ assignees });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to fetch assignees";
     return c.json({ error: message }, 502);
   }
 };
@@ -802,8 +875,10 @@ export const postGithubPAT = async (c: Context<{ Bindings: Bindings }>) => {
     }
 
     return c.json({ githubLogin });
-  } catch {
-    return c.json({ error: "Invalid token or GitHub API error" }, 400);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Invalid token or GitHub API error";
+    return c.json({ error: message }, 400);
   }
 };
 

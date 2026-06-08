@@ -52,10 +52,23 @@ export type GithubIssueItem = {
   html_url?: string;
   labels: { name: string; color?: string }[];
   assignees: { login: string; avatar_url: string }[];
+  milestone?: { number: number; title: string } | null;
   user?: { login: string; avatar_url: string };
   created_at?: string;
   updated_at?: string;
 };
+
+export type GithubMilestone = {
+  number: number;
+  title: string;
+  description: string | null;
+  state: "open" | "closed";
+  due_on: string | null;
+  open_issues: number;
+  closed_issues: number;
+};
+
+export type GithubAssignee = { login: string; avatar_url: string };
 
 export type GithubPullFile = {
   filename: string;
@@ -322,6 +335,7 @@ export async function patchIssue(
     state?: "open" | "closed";
     labels?: string[];
     assignees?: string[];
+    milestone?: number | null;
   },
 ) {
   const { data } = await clientApi.patch<{ issue: GithubIssueItem }>(
@@ -337,6 +351,32 @@ export async function fetchRepoLabels(owner: string, repo: string) {
     { params: { userId: uid(), owner, repo } },
   );
   return data.labels;
+}
+
+export async function fetchRepoMilestones(owner: string, repo: string) {
+  const { data } = await clientApi.get<{ milestones: GithubMilestone[] }>(
+    "/integrations/github/milestones",
+    { params: { userId: uid(), owner, repo } },
+  );
+  return data.milestones;
+}
+
+export async function createMilestone(
+  params: RepoParams & { title: string; description?: string; dueOn?: string },
+) {
+  const { data } = await clientApi.post<{ milestone: GithubMilestone }>(
+    "/integrations/github/milestones",
+    { userId: uid(), ...params },
+  );
+  return data.milestone;
+}
+
+export async function fetchRepoAssignees(owner: string, repo: string) {
+  const { data } = await clientApi.get<{ assignees: GithubAssignee[] }>(
+    "/integrations/github/assignees",
+    { params: { userId: uid(), owner, repo } },
+  );
+  return data.assignees;
 }
 
 export async function syncGithubIssues() {

@@ -3,11 +3,14 @@
 import { Button } from "@/components/ui/button";
 import { useGithubUserId } from "@/hooks/use-github-user-id";
 import {
+  addGithubProjectItem,
   createGithubIssue,
   createGithubPull,
   extractApiError,
   fetchGithubBranches,
   fetchGithubIssues,
+  fetchGithubProjectDetail,
+  fetchGithubProjects,
   fetchGithubPulls,
   fetchGithubRepos,
   fetchGithubStatus,
@@ -18,7 +21,10 @@ import {
   fetchPullCommits,
   fetchPullDetail,
   fetchPullFiles,
+  fetchRepoAssignees,
   fetchRepoLabels,
+  fetchRepoMilestones,
+  createMilestone,
   generatePrMessage,
   getGithubRepo,
   mergeGithubPull,
@@ -28,10 +34,16 @@ import {
   postPullComment,
   postPullReview,
   setGithubUserId,
+  updateGithubProjectItemField,
+  type GithubAssignee,
   type GithubCheckRun,
   type GithubComment,
   type GithubIssueItem,
   type GithubLabel,
+  type GithubMilestone,
+  type GithubProject,
+  type GithubProjectField,
+  type GithubProjectItem,
   type GithubPullFile,
   type GithubPullItem,
   type GithubRepoOption,
@@ -46,10 +58,13 @@ import { CreatePrForm } from "./create-pr-form";
 import { IssueDetail } from "./issue-detail";
 import { PrDetail } from "./pr-detail";
 import { PrFeed } from "./pr-feed";
+import { ProjectBoard } from "./project-board";
+import { findStatusField } from "./workflow-utils";
 
 type WorkflowMode = "issue" | "pull";
 type FeedTab = "pulls" | "issues";
 type ViewMode = "detail" | "create";
+type ActiveView = "work" | "board";
 
 type AppliedItem = {
   kind: WorkflowMode;
@@ -110,7 +125,21 @@ export function WorkflowContent() {
 
   const [issueComments, setIssueComments] = useState<GithubComment[]>([]);
   const [repoLabels, setRepoLabels] = useState<GithubLabel[]>([]);
+  const [repoMilestones, setRepoMilestones] = useState<GithubMilestone[]>([]);
+  const [repoAssignees, setRepoAssignees] = useState<GithubAssignee[]>([]);
   const [issueSaving, setIssueSaving] = useState(false);
+
+  // Planning Hub (Projects v2 board)
+  const [activeView, setActiveView] = useState<ActiveView>("work");
+  const [projects, setProjects] = useState<GithubProject[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [projectFields, setProjectFields] = useState<GithubProjectField[]>([]);
+  const [projectItems, setProjectItems] = useState<GithubProjectItem[]>([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
+  const [boardLoading, setBoardLoading] = useState(false);
+  const [boardError, setBoardError] = useState<string>();
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const boardRequestRef = useRef(0);
 
   const repoParts = useMemo(() => {
     if (!selectedRepo.includes("/")) return null;
@@ -186,15 +215,19 @@ export function WorkflowContent() {
     setDetailLoading(true);
     setIssueComments([]);
     try {
-      const [detail, comments, labels] = await Promise.all([
+      const [detail, comments, labels, milestones, assignees] = await Promise.all([
         fetchIssueDetail(owner, repo, number),
         fetchIssueComments(owner, repo, number),
         fetchRepoLabels(owner, repo).catch(() => []),
+        fetchRepoMilestones(owner, repo).catch(() => []),
+        fetchRepoAssignees(owner, repo).catch(() => []),
       ]);
       if (detailRequestRef.current !== requestId) return;
       setSelectedIssue(detail);
       setIssueComments(comments);
       setRepoLabels(labels);
+      setRepoMilestones(milestones);
+      setRepoAssignees(assignees);
     } catch (err) {
       if (detailRequestRef.current === requestId) {
         setError(extractApiError(err, "Failed to load issue"));
@@ -220,6 +253,151 @@ export function WorkflowContent() {
     [loadPulls, loadIssues],
   );
 
+  // Fetch repos + pick an initial one + load its data. Shared by the initial
+  // status effect and the in-page PAT connect (which has no page reload to
+  // re-run the effect).
+  const loadConnectedData = useCallback(
+    async (saved?: { repoOwner?: string | null; repoName?: string | null }) => {
+      const repoList = await fetchGithubRepos();
+      setRepos(repoList);
+
+      const envRepo = getGithubRepo();
+      const savedRepo =
+        saved?.repoOwner && saved.repoName
+          ? `${saved.repoOwner}/${saved.repoName}`
+          : null;
+      const initial =
+        savedRepo ??
+        (envRepo ? `${envRepo.owner}/${envRepo.repo}` : null) ??
+        repoList[0]?.fullName ??
+        "";
+
+      if (initial) {
+        setSelectedRepo(initial);
+        const match = repoList.find((r) => r.fullName === initial);
+        await loadRepoData(initial, match?.defaultBranch ?? "main", "open");
+      }
+    },
+    [loadRepoData],
+  );
+
+  const loadProjects = useCallback(async () => {
+    setProjectsLoading(true);
+    setBoardError(undefined);
+    try {
+      const list = await fetchGithubProjects();
+      setProjects(list);
+      setSelectedProjectId(
+        (prev) => prev || list.find((p) => !p.closed)?.id || list[0]?.id || "",
+      );
+    } catch (err) {
+      setBoardError(extractApiError(err, "Failed to load projects"));
+    } finally {
+      setProjectsLoading(false);
+    }
+  }, []);
+
+  const loadProjectDetail = useCallback(async (projectId: string) => {
+    if (!projectId) return;
+    const requestId = ++boardRequestRef.current;
+    setBoardLoading(true);
+    try {
+      const { fields, items } = await fetchGithubProjectDetail(projectId);
+      if (boardRequestRef.current !== requestId) return;
+      setProjectFields(fields);
+      setProjectItems(items);
+    } catch (err) {
+      if (boardRequestRef.current === requestId) {
+        setProjectFields([]);
+        setProjectItems([]);
+        setBoardError(extractApiError(err, "Failed to load project"));
+      }
+    } finally {
+      if (boardRequestRef.current === requestId) setBoardLoading(false);
+    }
+  }, []);
+
+  function handleSelectView(view: ActiveView) {
+    setActiveView(view);
+    if (view === "board" && projects.length === 0 && !projectsLoading) {
+      void loadProjects();
+    }
+  }
+
+  const handleMoveItem = useCallback(
+    async (itemId: string, newOptionId: string) => {
+      const statusField = findStatusField(projectFields);
+      if (!statusField) return;
+      const statusFieldId = statusField.id;
+      const item = projectItems.find((it) => it.id === itemId);
+      if (!item) return;
+      const currentOptionId =
+        item.fieldValues.find((v) => v.fieldId === statusFieldId)?.optionId ?? null;
+      if (currentOptionId === newOptionId) return;
+      const newOptionName =
+        statusField.options?.find((o) => o.id === newOptionId)?.name ?? "";
+
+      const snapshot = projectItems;
+      setProjectItems((prev) =>
+        prev.map((it) =>
+          it.id === itemId
+            ? {
+                ...it,
+                fieldValues: [
+                  ...it.fieldValues.filter((v) => v.fieldId !== statusFieldId),
+                  {
+                    fieldId: statusFieldId,
+                    fieldName: statusField.name,
+                    value: newOptionName,
+                    optionId: newOptionId,
+                  },
+                ],
+              }
+            : it,
+        ),
+      );
+
+      try {
+        await updateGithubProjectItemField({
+          projectId: selectedProjectId,
+          itemId,
+          fieldId: statusFieldId,
+          value: { singleSelectOptionId: newOptionId },
+        });
+      } catch (err) {
+        setProjectItems(snapshot);
+        setBoardError(extractApiError(err, "Failed to move card"));
+      }
+    },
+    [projectFields, projectItems, selectedProjectId],
+  );
+
+  const handleAddCard = useCallback(
+    async (optionId: string, cardTitle: string) => {
+      if (!selectedProjectId || !cardTitle.trim()) return;
+      setBoardError(undefined);
+      try {
+        const itemId = await addGithubProjectItem({
+          projectId: selectedProjectId,
+          title: cardTitle.trim(),
+        });
+        const statusField = findStatusField(projectFields);
+        if (statusField && optionId) {
+          await updateGithubProjectItemField({
+            projectId: selectedProjectId,
+            itemId,
+            fieldId: statusField.id,
+            value: { singleSelectOptionId: optionId },
+          });
+        }
+        await loadProjectDetail(selectedProjectId);
+      } catch (err) {
+        setBoardError(extractApiError(err, "Failed to add card"));
+      }
+    },
+    [selectedProjectId, projectFields, loadProjectDetail],
+  );
+
   async function handlePATConnect() {
     if (!patValue.trim()) return;
     setPatLoading(true);
@@ -230,8 +408,18 @@ export function WorkflowContent() {
       setGithubLogin(login);
     } catch {
       setPatError("Invalid token — make sure it's a classic PAT with the full repo scope.");
-    } finally {
       setPatLoading(false);
+      return;
+    }
+    // Connected in-page (no reload), so load repos/branches/pulls/issues now.
+    setPatLoading(false);
+    setLoading(true);
+    try {
+      await loadConnectedData();
+    } catch (err) {
+      setError(extractApiError(err, "Connected, but failed to load repositories"));
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -256,26 +444,7 @@ export function WorkflowContent() {
 
         if (!status.connected) return;
 
-        const repoList = await fetchGithubRepos();
-        if (cancelled) return;
-        setRepos(repoList);
-
-        const envRepo = getGithubRepo();
-        const savedRepo =
-          status.repoOwner && status.repoName
-            ? `${status.repoOwner}/${status.repoName}`
-            : null;
-        const initial =
-          savedRepo ??
-          (envRepo ? `${envRepo.owner}/${envRepo.repo}` : null) ??
-          repoList[0]?.fullName ??
-          "";
-
-        if (initial) {
-          setSelectedRepo(initial);
-          const match = repoList.find((r) => r.fullName === initial);
-          await loadRepoData(initial, match?.defaultBranch ?? "main", "open");
-        }
+        await loadConnectedData(status);
       } catch (err) {
         if (!cancelled) setError(extractApiError(err, "Failed to load GitHub data"));
       } finally {
@@ -287,7 +456,7 @@ export function WorkflowContent() {
     return () => {
       cancelled = true;
     };
-  }, [isLoaded, userId, loadRepoData]);
+  }, [isLoaded, userId, loadConnectedData]);
 
   // Key these effects on the issue/PR *number*, not the object reference.
   // loadPullDetail/loadIssueDetail overwrite selectedPull/selectedIssue with a
@@ -305,6 +474,11 @@ export function WorkflowContent() {
     if (!repoParts || !selectedIssueNumber) return;
     void loadIssueDetail(repoParts.owner, repoParts.repo, selectedIssueNumber);
   }, [selectedIssueNumber, repoParts, loadIssueDetail]);
+
+  useEffect(() => {
+    if (activeView !== "board" || !selectedProjectId) return;
+    void loadProjectDetail(selectedProjectId);
+  }, [activeView, selectedProjectId, loadProjectDetail]);
 
   async function handleRepoChange(fullName: string) {
     setSelectedRepo(fullName);
@@ -557,6 +731,23 @@ export function WorkflowContent() {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <div className="flex gap-1 rounded-lg border border-border/60 p-0.5">
+              {(["work", "board"] as const).map((view) => (
+                <button
+                  key={view}
+                  type="button"
+                  onClick={() => handleSelectView(view)}
+                  className={cn(
+                    "rounded-md px-3 py-1 text-xs font-semibold capitalize transition-colors",
+                    activeView === view
+                      ? "bg-violet-600 text-white"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {view}
+                </button>
+              ))}
+            </div>
             <div
               className={cn(
                 "flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm",
@@ -571,24 +762,52 @@ export function WorkflowContent() {
                 <span className="text-muted-foreground">@{githubLogin}</span>
               ) : null}
             </div>
-            <select
-              value={selectedRepo}
-              onChange={(e) => void handleRepoChange(e.target.value)}
-              className="h-9 rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
-            >
-              {repos.map((r) => (
-                <option key={r.fullName} value={r.fullName}>
-                  {r.fullName}
-                </option>
-              ))}
-            </select>
-            <Button variant="outline" size="sm" onClick={() => resetForm("pull")}>
-              New PR
-            </Button>
+            {activeView === "work" ? (
+              <>
+                <select
+                  value={selectedRepo}
+                  onChange={(e) => void handleRepoChange(e.target.value)}
+                  className="h-9 rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
+                >
+                  {repos.map((r) => (
+                    <option key={r.fullName} value={r.fullName}>
+                      {r.fullName}
+                    </option>
+                  ))}
+                </select>
+                <Button variant="outline" size="sm" onClick={() => resetForm("pull")}>
+                  New PR
+                </Button>
+              </>
+            ) : null}
           </div>
         </div>
       </header>
 
+      {activeView === "board" ? (
+        <div className="flex flex-1 flex-col gap-4 p-6">
+          {boardError ? (
+            <div className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              {boardError}
+            </div>
+          ) : null}
+          <ProjectBoard
+            projects={projects}
+            selectedProjectId={selectedProjectId}
+            fields={projectFields}
+            items={projectItems}
+            projectsLoading={projectsLoading}
+            boardLoading={boardLoading}
+            draggingId={draggingId}
+            onSelectProject={setSelectedProjectId}
+            onMoveItem={handleMoveItem}
+            onAddCard={handleAddCard}
+            onDragStart={setDraggingId}
+            onDragEnd={() => setDraggingId(null)}
+          />
+        </div>
+      ) : (
+        <>
       {error ? (
         <div className="mx-6 mt-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
@@ -663,6 +882,8 @@ export function WorkflowContent() {
             issue={selectedIssue}
             comments={issueComments}
             labels={repoLabels}
+            milestones={repoMilestones}
+            assignableUsers={repoAssignees}
             loading={detailLoading}
             saving={issueSaving}
             onComment={async (text) => {
@@ -674,6 +895,15 @@ export function WorkflowContent() {
                 body: text,
               });
               await loadIssueDetail(repoParts.owner, repoParts.repo, selectedIssue.number);
+            }}
+            onCreateMilestone={async (milestoneTitle) => {
+              if (!repoParts) return;
+              const created = await createMilestone({
+                owner: repoParts.owner,
+                repo: repoParts.repo,
+                title: milestoneTitle,
+              });
+              setRepoMilestones((prev) => [created, ...prev]);
             }}
             onUpdate={async (fields) => {
               if (!repoParts) return;
@@ -762,6 +992,8 @@ export function WorkflowContent() {
           </div>
         </div>
       ) : null}
+        </>
+      )}
     </div>
   );
 }

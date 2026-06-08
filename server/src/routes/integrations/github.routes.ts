@@ -5,6 +5,9 @@ import {
   getGithubIssueDetail,
   getGithubIssues,
   getGithubLabels,
+  getGithubMilestones,
+  postGithubMilestone,
+  getGithubAssignees,
   getGithubPullChecks,
   getGithubPullComments,
   getGithubPullCommits,
@@ -38,6 +41,9 @@ githubRoutes.get("/status", getGithubStatus);
 githubRoutes.get("/repos", getGithubRepos);
 githubRoutes.get("/branches", getGithubBranches);
 githubRoutes.get("/labels", getGithubLabels);
+githubRoutes.get("/milestones", getGithubMilestones);
+githubRoutes.post("/milestones", postGithubMilestone);
+githubRoutes.get("/assignees", getGithubAssignees);
 githubRoutes.get("/pulls", getGithubPulls);
 githubRoutes.get("/pulls/detail", getGithubPullDetail);
 githubRoutes.get("/pulls/files", getGithubPullFiles);

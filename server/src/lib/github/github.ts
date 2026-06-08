@@ -380,6 +380,7 @@ export type GithubUpdateIssueInput = {
   state?: "open" | "closed";
   labels?: string[];
   assignees?: string[];
+  milestone?: number | null;
 };
 
 export async function updateGithubIssue(
@@ -409,6 +410,59 @@ export async function fetchIssueDetail(
   return githubJson<GithubIssue>(
     accessToken,
     `/repos/${owner}/${repo}/issues/${number}`,
+  );
+}
+
+export type GithubMilestone = {
+  number: number;
+  title: string;
+  description: string | null;
+  state: "open" | "closed";
+  due_on: string | null;
+  open_issues: number;
+  closed_issues: number;
+};
+
+export async function fetchRepoMilestones(
+  accessToken: string,
+  owner: string,
+  repo: string,
+): Promise<GithubMilestone[]> {
+  return githubJson<GithubMilestone[]>(
+    accessToken,
+    `/repos/${owner}/${repo}/milestones?state=all&per_page=100`,
+  );
+}
+
+export async function createRepoMilestone(
+  accessToken: string,
+  owner: string,
+  repo: string,
+  input: { title: string; description?: string; dueOn?: string },
+): Promise<GithubMilestone> {
+  return githubJson<GithubMilestone>(
+    accessToken,
+    `/repos/${owner}/${repo}/milestones`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: input.title,
+        description: input.description,
+        due_on: input.dueOn,
+      }),
+    },
+  );
+}
+
+export async function fetchRepoAssignees(
+  accessToken: string,
+  owner: string,
+  repo: string,
+): Promise<GithubUser[]> {
+  return githubJson<GithubUser[]>(
+    accessToken,
+    `/repos/${owner}/${repo}/assignees?per_page=100`,
   );
 }
 
