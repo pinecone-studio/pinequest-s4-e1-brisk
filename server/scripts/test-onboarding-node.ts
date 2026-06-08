@@ -14,6 +14,7 @@ async function runTest() {
       metricsAnalyzed: false,
       risksIdentified: false,
       prGenerated: false,
+      issueGenerated: false,
     },
   };
 
