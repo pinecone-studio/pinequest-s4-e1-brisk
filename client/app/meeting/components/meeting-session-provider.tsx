@@ -31,7 +31,9 @@ type ActiveMeetingSession = {
 export type MeetingSessionParticipant = {
   displayName: string;
   identity: string;
+  isCameraEnabled: boolean;
   isLocal: boolean;
+  isMicrophoneEnabled: boolean;
   isScreenSharing: boolean;
   isSpeaking: boolean;
 };
@@ -75,6 +77,7 @@ export function MeetingSessionProvider({
     error,
     leaveRoom,
     localParticipant,
+    participantMediaVersion,
     remoteParticipants,
     room,
     speakingParticipantIdentities,
@@ -98,8 +101,10 @@ export function MeetingSessionProvider({
     return `/meeting?${params.toString()}`;
   }, [activeSession, roomName]);
   const participants = useMemo<MeetingSessionParticipant[]>(
-    () =>
-      activeSession
+    () => {
+      void participantMediaVersion;
+
+      return activeSession
         ? [
             ...(localParticipant ? [localParticipant] : []),
             ...remoteParticipants,
@@ -108,16 +113,20 @@ export function MeetingSessionProvider({
               ? "You"
               : getParticipantDisplayName(participant),
             identity: participant.identity,
+            isCameraEnabled: participant.isCameraEnabled,
             isLocal: participant.isLocal,
+            isMicrophoneEnabled: participant.isMicrophoneEnabled,
             isScreenSharing: participant.isScreenShareEnabled,
             isSpeaking: speakingParticipantIdentities.includes(
               participant.identity,
             ),
           }))
-        : [],
+        : [];
+    },
     [
       activeSession,
       localParticipant,
+      participantMediaVersion,
       remoteParticipants,
       speakingParticipantIdentities,
     ],
