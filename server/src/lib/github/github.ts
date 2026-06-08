@@ -1,5 +1,3 @@
-import type { Bindings } from "../common/types";
-
 export type GithubUser = {
   login: string;
   avatar_url: string;
@@ -26,60 +24,6 @@ const GITHUB_HEADERS = {
 
 function githubAuth(token: string) {
   return { ...GITHUB_HEADERS, Authorization: `Bearer ${token}` };
-}
-
-export function buildGithubAuthorizeUrl(bindings: Bindings, userId: string): string {
-  const { GITHUB_CLIENT_ID: clientId, GITHUB_OAUTH_REDIRECT_URI: redirectUri } = bindings;
-  if (!clientId || !redirectUri) throw new Error("GitHub OAuth is not configured");
-
-  const state = btoa(JSON.stringify({ userId, nonce: crypto.randomUUID() }));
-  const params = new URLSearchParams({
-    client_id: clientId,
-    redirect_uri: redirectUri,
-    scope: "repo read:user project",
-    state,
-  });
-
-  return `https://github.com/login/oauth/authorize?${params}`;
-}
-
-export function decodeOAuthState(value: string): { userId: string } | null {
-  try {
-    const parsed = JSON.parse(atob(value)) as { userId?: string };
-    return parsed.userId ? { userId: parsed.userId } : null;
-  } catch {
-    return null;
-  }
-}
-
-export async function exchangeGithubCode(bindings: Bindings, code: string): Promise<string> {
-  const { GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GITHUB_OAUTH_REDIRECT_URI } = bindings;
-  if (!GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET || !GITHUB_OAUTH_REDIRECT_URI) {
-    throw new Error("GitHub OAuth is not configured");
-  }
-
-  const response = await fetch("https://github.com/login/oauth/access_token", {
-    method: "POST",
-    headers: { Accept: "application/json", "Content-Type": "application/json" },
-    body: JSON.stringify({
-      client_id: GITHUB_CLIENT_ID,
-      client_secret: GITHUB_CLIENT_SECRET,
-      code,
-      redirect_uri: GITHUB_OAUTH_REDIRECT_URI,
-    }),
-  });
-
-  const data = (await response.json()) as {
-    access_token?: string;
-    error?: string;
-    error_description?: string;
-  };
-
-  if (!response.ok || !data.access_token) {
-    throw new Error(data.error_description ?? data.error ?? "Token exchange failed");
-  }
-
-  return data.access_token;
 }
 
 export async function fetchGithubLogin(accessToken: string): Promise<string> {
@@ -436,6 +380,7 @@ export type GithubUpdateIssueInput = {
   state?: "open" | "closed";
   labels?: string[];
   assignees?: string[];
+  milestone?: number | null;
 };
 
 export async function updateGithubIssue(
@@ -465,6 +410,59 @@ export async function fetchIssueDetail(
   return githubJson<GithubIssue>(
     accessToken,
     `/repos/${owner}/${repo}/issues/${number}`,
+  );
+}
+
+export type GithubMilestone = {
+  number: number;
+  title: string;
+  description: string | null;
+  state: "open" | "closed";
+  due_on: string | null;
+  open_issues: number;
+  closed_issues: number;
+};
+
+export async function fetchRepoMilestones(
+  accessToken: string,
+  owner: string,
+  repo: string,
+): Promise<GithubMilestone[]> {
+  return githubJson<GithubMilestone[]>(
+    accessToken,
+    `/repos/${owner}/${repo}/milestones?state=all&per_page=100`,
+  );
+}
+
+export async function createRepoMilestone(
+  accessToken: string,
+  owner: string,
+  repo: string,
+  input: { title: string; description?: string; dueOn?: string },
+): Promise<GithubMilestone> {
+  return githubJson<GithubMilestone>(
+    accessToken,
+    `/repos/${owner}/${repo}/milestones`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: input.title,
+        description: input.description,
+        due_on: input.dueOn,
+      }),
+    },
+  );
+}
+
+export async function fetchRepoAssignees(
+  accessToken: string,
+  owner: string,
+  repo: string,
+): Promise<GithubUser[]> {
+  return githubJson<GithubUser[]>(
+    accessToken,
+    `/repos/${owner}/${repo}/assignees?per_page=100`,
   );
 }
 

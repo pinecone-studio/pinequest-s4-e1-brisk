@@ -13,7 +13,6 @@ import {
   type ProjectFieldValue,
 } from "../../lib/github/projects";
 import {
-  buildGithubAuthorizeUrl,
   createGithubIssue,
   createGithubPull,
   createIssueComment,
@@ -27,10 +26,11 @@ import {
   fetchPullFiles,
   fetchPullReviews,
   fetchRepoLabels,
+  fetchRepoMilestones,
+  createRepoMilestone,
+  fetchRepoAssignees,
   generatePrMessageFromDiff,
   mergeGithubPull,
-  decodeOAuthState,
-  exchangeGithubCode,
   fetchGithubLogin,
   fetchGithubRepos,
   fetchRepoBranches,
@@ -44,70 +44,12 @@ import { mapGithubIssueToTask } from "../../lib/github/map-github-issue";
 import { DEFAULT_WORKSPACE_ID } from "../../lib/tasks/task-defaults";
 import { githubIntegrations, tasks } from "../../schema/schema";
 
-const appUrl = (env: Bindings) => env.CLIENT_APP_URL ?? "http://localhost:3000";
-
-export const getGithubConnect = async (c: Context<{ Bindings: Bindings }>) => {
-  const userId = c.req.query("userId");
-  if (!userId) return c.json({ error: "userId is required" }, 400);
-
-  try {
-    return c.redirect(buildGithubAuthorizeUrl(c.env, userId));
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "OAuth setup failed";
-    const params = new URLSearchParams({ error: message });
-    return c.redirect(`${appUrl(c.env)}/workflow?${params}`);
-  }
-};
-
-export const getGithubCallback = async (c: Context<{ Bindings: Bindings }>) => {
-  const code = c.req.query("code");
-  const stateParam = c.req.query("state");
-
-  if (c.req.query("error") || !code || !stateParam) {
-    return c.redirect(`${appUrl(c.env)}/workflow`);
-  }
-
-  const state = decodeOAuthState(stateParam);
-  if (!state) return c.json({ error: "Invalid OAuth state" }, 400);
-
-  try {
-    const accessToken = await exchangeGithubCode(c.env, code);
-    const githubLogin = await fetchGithubLogin(accessToken);
-    const db = useDB(c);
-
-    const [existing] = await db
-      .select({ id: githubIntegrations.id })
-      .from(githubIntegrations)
-      .where(eq(githubIntegrations.userId, state.userId))
-      .limit(1);
-
-    if (existing) {
-      await db
-        .update(githubIntegrations)
-        .set({ accessToken, githubLogin })
-        .where(eq(githubIntegrations.id, existing.id));
-    } else {
-      await db.insert(githubIntegrations).values({
-        id: `gh-int-${nanoid(10)}`,
-        userId: state.userId,
-        accessToken,
-        githubLogin,
-      });
-    }
-
-    return c.redirect(`${appUrl(c.env)}/workflow`);
-  } catch {
-    return c.redirect(`${appUrl(c.env)}/workflow`);
-  }
-};
-
 type GithubAuthContext = {
   accessToken: string;
   githubLogin?: string | null;
   repoOwner?: string | null;
   repoName?: string | null;
   integrationId?: string;
-  isTestToken: boolean;
 };
 
 export async function resolveGithubAuth(
@@ -129,7 +71,6 @@ export async function resolveGithubAuth(
         repoOwner: integration.repoOwner,
         repoName: integration.repoName,
         integrationId: integration.id,
-        isTestToken: false,
       };
     }
   } catch {
@@ -144,7 +85,6 @@ export async function resolveGithubAuth(
     return {
       accessToken: testToken,
       githubLogin,
-      isTestToken: true,
     };
   } catch {
     return null;
@@ -165,7 +105,6 @@ export const getGithubStatus = async (c: Context<{ Bindings: Bindings }>) => {
     githubLogin: auth.githubLogin,
     repoOwner: auth.repoOwner,
     repoName: auth.repoName,
-    mode: auth.isTestToken ? "test-token" : "oauth",
   });
 };
 
@@ -713,6 +652,7 @@ export const patchGithubIssue = async (c: Context<{ Bindings: Bindings }>) => {
     state?: "open" | "closed";
     labels?: string[];
     assignees?: string[];
+    milestone?: number | null;
   } | null;
 
   if (!body?.userId || !body.owner || !body.repo || !body.number) {
@@ -729,6 +669,7 @@ export const patchGithubIssue = async (c: Context<{ Bindings: Bindings }>) => {
       state: body.state,
       labels: body.labels,
       assignees: body.assignees,
+      milestone: body.milestone,
     });
     return c.json({ issue });
   } catch (error) {
@@ -752,6 +693,74 @@ export const getGithubLabels = async (c: Context<{ Bindings: Bindings }>) => {
     return c.json({ labels });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to fetch labels";
+    return c.json({ error: message }, 502);
+  }
+};
+
+export const getGithubMilestones = async (c: Context<{ Bindings: Bindings }>) => {
+  const userId = c.req.query("userId");
+  const owner = c.req.query("owner");
+  const repo = c.req.query("repo");
+  const err = requireParams(c, { userId, owner, repo });
+  if (err) return err;
+
+  const auth = await resolveGithubAuth(c, userId!);
+  if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
+
+  try {
+    const milestones = await fetchRepoMilestones(auth.accessToken, owner!, repo!);
+    return c.json({ milestones });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to fetch milestones";
+    return c.json({ error: message }, 502);
+  }
+};
+
+export const postGithubMilestone = async (c: Context<{ Bindings: Bindings }>) => {
+  const body = (await c.req.json().catch(() => null)) as {
+    userId?: string;
+    owner?: string;
+    repo?: string;
+    title?: string;
+    description?: string;
+    dueOn?: string;
+  } | null;
+
+  if (!body?.userId || !body.owner || !body.repo || !body.title?.trim()) {
+    return c.json({ error: "userId, owner, repo, and title are required" }, 400);
+  }
+
+  const auth = await resolveGithubAuth(c, body.userId);
+  if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
+
+  try {
+    const milestone = await createRepoMilestone(auth.accessToken, body.owner, body.repo, {
+      title: body.title.trim(),
+      description: body.description,
+      dueOn: body.dueOn,
+    });
+    return c.json({ milestone });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to create milestone";
+    return c.json({ error: message }, 502);
+  }
+};
+
+export const getGithubAssignees = async (c: Context<{ Bindings: Bindings }>) => {
+  const userId = c.req.query("userId");
+  const owner = c.req.query("owner");
+  const repo = c.req.query("repo");
+  const err = requireParams(c, { userId, owner, repo });
+  if (err) return err;
+
+  const auth = await resolveGithubAuth(c, userId!);
+  if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
+
+  try {
+    const assignees = await fetchRepoAssignees(auth.accessToken, owner!, repo!);
+    return c.json({ assignees });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to fetch assignees";
     return c.json({ error: message }, 502);
   }
 };
@@ -866,8 +875,24 @@ export const postGithubPAT = async (c: Context<{ Bindings: Bindings }>) => {
     }
 
     return c.json({ githubLogin });
-  } catch {
-    return c.json({ error: "Invalid token or GitHub API error" }, 400);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Invalid token or GitHub API error";
+    return c.json({ error: message }, 400);
+  }
+};
+
+export const postGithubDisconnect = async (c: Context<{ Bindings: Bindings }>) => {
+  const body = (await c.req.json().catch(() => null)) as { userId?: string } | null;
+  if (!body?.userId) return c.json({ error: "userId is required" }, 400);
+
+  try {
+    const db = useDB(c);
+    await db.delete(githubIntegrations).where(eq(githubIntegrations.userId, body.userId));
+    return c.json({ disconnected: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to disconnect";
+    return c.json({ error: message }, 500);
   }
 };
 

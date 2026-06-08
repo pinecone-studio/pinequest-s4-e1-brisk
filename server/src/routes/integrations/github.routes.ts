@@ -1,12 +1,13 @@
 import { Hono } from "hono";
 import {
   getGithubBranches,
-  getGithubCallback,
-  getGithubConnect,
   getGithubIssueComments,
   getGithubIssueDetail,
   getGithubIssues,
   getGithubLabels,
+  getGithubMilestones,
+  postGithubMilestone,
+  getGithubAssignees,
   getGithubPullChecks,
   getGithubPullComments,
   getGithubPullCommits,
@@ -31,17 +32,19 @@ import {
   postGithubProjectItem,
   patchGithubProjectItem,
   postGithubPAT,
+  postGithubDisconnect,
 } from "../../controllers/integrations/github";
 import { Bindings } from "../../lib/common/types";
 
 const githubRoutes = new Hono<{ Bindings: Bindings }>();
 
-githubRoutes.get("/connect", getGithubConnect);
-githubRoutes.get("/callback", getGithubCallback);
 githubRoutes.get("/status", getGithubStatus);
 githubRoutes.get("/repos", getGithubRepos);
 githubRoutes.get("/branches", getGithubBranches);
 githubRoutes.get("/labels", getGithubLabels);
+githubRoutes.get("/milestones", getGithubMilestones);
+githubRoutes.post("/milestones", postGithubMilestone);
+githubRoutes.get("/assignees", getGithubAssignees);
 githubRoutes.get("/pulls", getGithubPulls);
 githubRoutes.get("/pulls/detail", getGithubPullDetail);
 githubRoutes.get("/pulls/files", getGithubPullFiles);
@@ -64,6 +67,7 @@ githubRoutes.patch("/pulls", patchGithubPull);
 githubRoutes.post("/sync", postGithubSync);
 
 githubRoutes.post("/pat", postGithubPAT);
+githubRoutes.post("/disconnect", postGithubDisconnect);
 githubRoutes.get("/projects", getGithubProjects);
 githubRoutes.get("/projects/detail", getGithubProjectDetail);
 githubRoutes.post("/projects/items", postGithubProjectItem);

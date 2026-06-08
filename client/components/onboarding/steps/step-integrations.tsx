@@ -1,8 +1,6 @@
 "use client";
 
 import { Check, ArrowRight } from "lucide-react";
-import { redirectToGithubConnect } from "@/lib/integrations/github";
-import { useAuth } from "@clerk/nextjs";
 import type { OnboardingData } from "../onboarding-types";
 
 function GithubMark() {
@@ -83,8 +81,6 @@ interface StepIntegrationsProps {
 }
 
 export function StepIntegrations({ data, onChange, onNext, onSkip }: StepIntegrationsProps) {
-  const { userId } = useAuth();
-
   return (
     <>
       <div className="mb-6">
@@ -102,7 +98,9 @@ export function StepIntegrations({ data, onChange, onNext, onSkip }: StepIntegra
           desc="Sync commits, PRs & issues"
           logo={<GithubMark />}
           connected={data.githubConnected}
-          onToggle={() => redirectToGithubConnect(userId ?? undefined)}
+          onToggle={() => {
+            window.location.href = "/workflow";
+          }}
         />
         <IntegrationCard
           name="Asana"

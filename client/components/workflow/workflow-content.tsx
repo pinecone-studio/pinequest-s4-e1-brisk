@@ -3,11 +3,14 @@
 import { Button } from "@/components/ui/button";
 import { useGithubUserId } from "@/hooks/use-github-user-id";
 import {
+  addGithubProjectItem,
   createGithubIssue,
   createGithubPull,
   extractApiError,
   fetchGithubBranches,
   fetchGithubIssues,
+  fetchGithubProjectDetail,
+  fetchGithubProjects,
   fetchGithubPulls,
   fetchGithubRepos,
   fetchGithubStatus,
@@ -18,7 +21,10 @@ import {
   fetchPullCommits,
   fetchPullDetail,
   fetchPullFiles,
+  fetchRepoAssignees,
   fetchRepoLabels,
+  fetchRepoMilestones,
+  createMilestone,
   generatePrMessage,
   getGithubRepo,
   mergeGithubPull,
@@ -28,29 +34,46 @@ import {
   postPullComment,
   postPullReview,
   setGithubUserId,
+  updateGithubProjectItemField,
+  type GithubAssignee,
   type GithubCheckRun,
   type GithubComment,
   type GithubIssueItem,
   type GithubLabel,
+  type GithubMilestone,
+  type GithubProject,
+  type GithubProjectField,
+  type GithubProjectItem,
   type GithubPullFile,
   type GithubPullItem,
   type GithubRepoOption,
   type GithubReview,
   type PrFilter,
-  redirectToGithubConnect,
   connectGithubPAT,
+  disconnectGithub,
+  GITHUB_TOKEN_URL,
 } from "@/lib/integrations/github";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, ExternalLink, GitPullRequest, Loader2, Sparkles } from "lucide-react";
+import {
+  CheckCircle2,
+  ExternalLink,
+  GitPullRequest,
+  Loader2,
+  LogOut,
+  Sparkles,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CreatePrForm } from "./create-pr-form";
 import { IssueDetail } from "./issue-detail";
 import { PrDetail } from "./pr-detail";
 import { PrFeed } from "./pr-feed";
+import { ProjectBoard } from "./project-board";
+import { findStatusField } from "./workflow-utils";
 
 type WorkflowMode = "issue" | "pull";
 type FeedTab = "pulls" | "issues";
 type ViewMode = "detail" | "create";
+type ActiveView = "work" | "board";
 
 type AppliedItem = {
   kind: WorkflowMode;
@@ -65,12 +88,12 @@ export function WorkflowContent() {
   const { userId, isLoaded } = useGithubUserId();
 
   const [connected, setConnected] = useState(false);
-  const [authMode, setAuthMode] = useState<"oauth" | "test-token">();
   const [githubLogin, setGithubLogin] = useState<string>();
   const [loading, setLoading] = useState(true);
   const [patValue, setPatValue] = useState("");
   const [patLoading, setPatLoading] = useState(false);
   const [patError, setPatError] = useState<string>();
+  const [disconnecting, setDisconnecting] = useState(false);
   const [repos, setRepos] = useState<GithubRepoOption[]>([]);
   const [selectedRepo, setSelectedRepo] = useState("");
   const [branches, setBranches] = useState<string[]>([]);
@@ -112,7 +135,21 @@ export function WorkflowContent() {
 
   const [issueComments, setIssueComments] = useState<GithubComment[]>([]);
   const [repoLabels, setRepoLabels] = useState<GithubLabel[]>([]);
+  const [repoMilestones, setRepoMilestones] = useState<GithubMilestone[]>([]);
+  const [repoAssignees, setRepoAssignees] = useState<GithubAssignee[]>([]);
   const [issueSaving, setIssueSaving] = useState(false);
+
+  // Planning Hub (Projects v2 board)
+  const [activeView, setActiveView] = useState<ActiveView>("work");
+  const [projects, setProjects] = useState<GithubProject[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [projectFields, setProjectFields] = useState<GithubProjectField[]>([]);
+  const [projectItems, setProjectItems] = useState<GithubProjectItem[]>([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
+  const [boardLoading, setBoardLoading] = useState(false);
+  const [boardError, setBoardError] = useState<string>();
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const boardRequestRef = useRef(0);
 
   const repoParts = useMemo(() => {
     if (!selectedRepo.includes("/")) return null;
@@ -188,15 +225,19 @@ export function WorkflowContent() {
     setDetailLoading(true);
     setIssueComments([]);
     try {
-      const [detail, comments, labels] = await Promise.all([
+      const [detail, comments, labels, milestones, assignees] = await Promise.all([
         fetchIssueDetail(owner, repo, number),
         fetchIssueComments(owner, repo, number),
         fetchRepoLabels(owner, repo).catch(() => []),
+        fetchRepoMilestones(owner, repo).catch(() => []),
+        fetchRepoAssignees(owner, repo).catch(() => []),
       ]);
       if (detailRequestRef.current !== requestId) return;
       setSelectedIssue(detail);
       setIssueComments(comments);
       setRepoLabels(labels);
+      setRepoMilestones(milestones);
+      setRepoAssignees(assignees);
     } catch (err) {
       if (detailRequestRef.current === requestId) {
         setError(extractApiError(err, "Failed to load issue"));
@@ -222,6 +263,151 @@ export function WorkflowContent() {
     [loadPulls, loadIssues],
   );
 
+  // Fetch repos + pick an initial one + load its data. Shared by the initial
+  // status effect and the in-page PAT connect (which has no page reload to
+  // re-run the effect).
+  const loadConnectedData = useCallback(
+    async (saved?: { repoOwner?: string | null; repoName?: string | null }) => {
+      const repoList = await fetchGithubRepos();
+      setRepos(repoList);
+
+      const envRepo = getGithubRepo();
+      const savedRepo =
+        saved?.repoOwner && saved.repoName
+          ? `${saved.repoOwner}/${saved.repoName}`
+          : null;
+      const initial =
+        savedRepo ??
+        (envRepo ? `${envRepo.owner}/${envRepo.repo}` : null) ??
+        repoList[0]?.fullName ??
+        "";
+
+      if (initial) {
+        setSelectedRepo(initial);
+        const match = repoList.find((r) => r.fullName === initial);
+        await loadRepoData(initial, match?.defaultBranch ?? "main", "open");
+      }
+    },
+    [loadRepoData],
+  );
+
+  const loadProjects = useCallback(async () => {
+    setProjectsLoading(true);
+    setBoardError(undefined);
+    try {
+      const list = await fetchGithubProjects();
+      setProjects(list);
+      setSelectedProjectId(
+        (prev) => prev || list.find((p) => !p.closed)?.id || list[0]?.id || "",
+      );
+    } catch (err) {
+      setBoardError(extractApiError(err, "Failed to load projects"));
+    } finally {
+      setProjectsLoading(false);
+    }
+  }, []);
+
+  const loadProjectDetail = useCallback(async (projectId: string) => {
+    if (!projectId) return;
+    const requestId = ++boardRequestRef.current;
+    setBoardLoading(true);
+    try {
+      const { fields, items } = await fetchGithubProjectDetail(projectId);
+      if (boardRequestRef.current !== requestId) return;
+      setProjectFields(fields);
+      setProjectItems(items);
+    } catch (err) {
+      if (boardRequestRef.current === requestId) {
+        setProjectFields([]);
+        setProjectItems([]);
+        setBoardError(extractApiError(err, "Failed to load project"));
+      }
+    } finally {
+      if (boardRequestRef.current === requestId) setBoardLoading(false);
+    }
+  }, []);
+
+  function handleSelectView(view: ActiveView) {
+    setActiveView(view);
+    if (view === "board" && projects.length === 0 && !projectsLoading) {
+      void loadProjects();
+    }
+  }
+
+  const handleMoveItem = useCallback(
+    async (itemId: string, newOptionId: string) => {
+      const statusField = findStatusField(projectFields);
+      if (!statusField) return;
+      const statusFieldId = statusField.id;
+      const item = projectItems.find((it) => it.id === itemId);
+      if (!item) return;
+      const currentOptionId =
+        item.fieldValues.find((v) => v.fieldId === statusFieldId)?.optionId ?? null;
+      if (currentOptionId === newOptionId) return;
+      const newOptionName =
+        statusField.options?.find((o) => o.id === newOptionId)?.name ?? "";
+
+      const snapshot = projectItems;
+      setProjectItems((prev) =>
+        prev.map((it) =>
+          it.id === itemId
+            ? {
+                ...it,
+                fieldValues: [
+                  ...it.fieldValues.filter((v) => v.fieldId !== statusFieldId),
+                  {
+                    fieldId: statusFieldId,
+                    fieldName: statusField.name,
+                    value: newOptionName,
+                    optionId: newOptionId,
+                  },
+                ],
+              }
+            : it,
+        ),
+      );
+
+      try {
+        await updateGithubProjectItemField({
+          projectId: selectedProjectId,
+          itemId,
+          fieldId: statusFieldId,
+          value: { singleSelectOptionId: newOptionId },
+        });
+      } catch (err) {
+        setProjectItems(snapshot);
+        setBoardError(extractApiError(err, "Failed to move card"));
+      }
+    },
+    [projectFields, projectItems, selectedProjectId],
+  );
+
+  const handleAddCard = useCallback(
+    async (optionId: string, cardTitle: string) => {
+      if (!selectedProjectId || !cardTitle.trim()) return;
+      setBoardError(undefined);
+      try {
+        const itemId = await addGithubProjectItem({
+          projectId: selectedProjectId,
+          title: cardTitle.trim(),
+        });
+        const statusField = findStatusField(projectFields);
+        if (statusField && optionId) {
+          await updateGithubProjectItemField({
+            projectId: selectedProjectId,
+            itemId,
+            fieldId: statusField.id,
+            value: { singleSelectOptionId: optionId },
+          });
+        }
+        await loadProjectDetail(selectedProjectId);
+      } catch (err) {
+        setBoardError(extractApiError(err, "Failed to add card"));
+      }
+    },
+    [selectedProjectId, projectFields, loadProjectDetail],
+  );
+
   async function handlePATConnect() {
     if (!patValue.trim()) return;
     setPatLoading(true);
@@ -229,13 +415,48 @@ export function WorkflowContent() {
     try {
       const { githubLogin: login } = await connectGithubPAT(patValue.trim());
       setConnected(true);
-      setAuthMode("oauth");
       setGithubLogin(login);
     } catch {
-      setPatError("Invalid token — make sure it has repo and project scopes.");
-    } finally {
+      setPatError("Invalid token — make sure it's a classic PAT with the full repo scope.");
       setPatLoading(false);
+      return;
     }
+    // Connected in-page (no reload), so load repos/branches/pulls/issues now.
+    setPatLoading(false);
+    setLoading(true);
+    try {
+      await loadConnectedData();
+    } catch (err) {
+      setError(extractApiError(err, "Connected, but failed to load repositories"));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDisconnect() {
+    setDisconnecting(true);
+    try {
+      await disconnectGithub();
+    } catch (err) {
+      setError(extractApiError(err, "Failed to disconnect"));
+    } finally {
+      setDisconnecting(false);
+    }
+    // Reset back to the connect screen regardless of network outcome.
+    setConnected(false);
+    setGithubLogin(undefined);
+    setPatValue("");
+    setRepos([]);
+    setSelectedRepo("");
+    setPulls([]);
+    setIssues([]);
+    setSelectedPull(null);
+    setSelectedIssue(null);
+    setProjects([]);
+    setSelectedProjectId("");
+    setProjectItems([]);
+    setProjectFields([]);
+    setActiveView("work");
   }
 
   useEffect(() => {
@@ -243,9 +464,6 @@ export function WorkflowContent() {
 
     setGithubUserId(userId);
     let cancelled = false;
-
-    const oauthError = new URLSearchParams(window.location.search).get("error");
-    if (oauthError) setError(oauthError);
 
     async function init() {
       setLoading(true);
@@ -258,31 +476,11 @@ export function WorkflowContent() {
         if (cancelled) return;
 
         setConnected(status.connected);
-        setAuthMode(status.mode);
         setGithubLogin(status.githubLogin);
 
         if (!status.connected) return;
 
-        const repoList = await fetchGithubRepos();
-        if (cancelled) return;
-        setRepos(repoList);
-
-        const envRepo = getGithubRepo();
-        const savedRepo =
-          status.repoOwner && status.repoName
-            ? `${status.repoOwner}/${status.repoName}`
-            : null;
-        const initial =
-          savedRepo ??
-          (envRepo ? `${envRepo.owner}/${envRepo.repo}` : null) ??
-          repoList[0]?.fullName ??
-          "";
-
-        if (initial) {
-          setSelectedRepo(initial);
-          const match = repoList.find((r) => r.fullName === initial);
-          await loadRepoData(initial, match?.defaultBranch ?? "main", "open");
-        }
+        await loadConnectedData(status);
       } catch (err) {
         if (!cancelled) setError(extractApiError(err, "Failed to load GitHub data"));
       } finally {
@@ -294,17 +492,29 @@ export function WorkflowContent() {
     return () => {
       cancelled = true;
     };
-  }, [isLoaded, userId, loadRepoData]);
+  }, [isLoaded, userId, loadConnectedData]);
+
+  // Key these effects on the issue/PR *number*, not the object reference.
+  // loadPullDetail/loadIssueDetail overwrite selectedPull/selectedIssue with a
+  // fresh detail object (same number); depending on the object would re-fire the
+  // effect on every load and refetch in a loop.
+  const selectedPullNumber = selectedPull?.number;
+  const selectedIssueNumber = selectedIssue?.number;
 
   useEffect(() => {
-    if (!repoParts || !selectedPull) return;
-    void loadPullDetail(repoParts.owner, repoParts.repo, selectedPull.number);
-  }, [selectedPull, repoParts, loadPullDetail]);
+    if (!repoParts || !selectedPullNumber) return;
+    void loadPullDetail(repoParts.owner, repoParts.repo, selectedPullNumber);
+  }, [selectedPullNumber, repoParts, loadPullDetail]);
 
   useEffect(() => {
-    if (!repoParts || !selectedIssue) return;
-    void loadIssueDetail(repoParts.owner, repoParts.repo, selectedIssue.number);
-  }, [selectedIssue, repoParts, loadIssueDetail]);
+    if (!repoParts || !selectedIssueNumber) return;
+    void loadIssueDetail(repoParts.owner, repoParts.repo, selectedIssueNumber);
+  }, [selectedIssueNumber, repoParts, loadIssueDetail]);
+
+  useEffect(() => {
+    if (activeView !== "board" || !selectedProjectId) return;
+    void loadProjectDetail(selectedProjectId);
+  }, [activeView, selectedProjectId, loadProjectDetail]);
 
   async function handleRepoChange(fullName: string) {
     setSelectedRepo(fullName);
@@ -515,19 +725,22 @@ export function WorkflowContent() {
         <div>
           <h2 className="text-xl font-semibold text-foreground">Connect GitHub</h2>
           <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-            {error ?? "Link your GitHub account to create issues and pull requests directly from this workflow."}
+            {error ?? "Paste a personal access token to create issues and pull requests directly from this workflow."}
           </p>
         </div>
-        <Button
-          className="bg-violet-600 hover:bg-violet-700"
-          onClick={() => redirectToGithubConnect(userId)}
-        >
-          Connect GitHub via OAuth
-        </Button>
         <div className="flex w-full max-w-sm flex-col gap-2">
+          <a
+            href={GITHUB_TOKEN_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-violet-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-700"
+          >
+            Connect GitHub
+            <ExternalLink className="size-4" />
+          </a>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <div className="h-px flex-1 bg-border" />
-            <span>or use a Personal Access Token</span>
+            <span>then paste the generated token</span>
             <div className="h-px flex-1 bg-border" />
           </div>
           <input
@@ -539,15 +752,15 @@ export function WorkflowContent() {
           />
           {patError && <p className="text-xs text-destructive">{patError}</p>}
           <Button
-            variant="outline"
+            className="bg-violet-600 hover:bg-violet-700"
             disabled={!patValue.trim() || patLoading}
             onClick={() => void handlePATConnect()}
           >
             {patLoading ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
-            Connect with PAT
+            Connect with token
           </Button>
           <p className="text-xs text-muted-foreground">
-            Generate a token at github.com/settings/tokens with <code className="text-xs">repo</code> and <code className="text-xs">project</code> scopes.
+            Generate a <strong>classic</strong> token at github.com/settings/tokens with the full <code className="text-xs">repo</code> scope (add <code className="text-xs">project</code> for Projects).
           </p>
         </div>
       </div>
@@ -568,6 +781,23 @@ export function WorkflowContent() {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <div className="flex gap-1 rounded-lg border border-border/60 p-0.5">
+              {(["work", "board"] as const).map((view) => (
+                <button
+                  key={view}
+                  type="button"
+                  onClick={() => handleSelectView(view)}
+                  className={cn(
+                    "rounded-md px-3 py-1 text-xs font-semibold capitalize transition-colors",
+                    activeView === view
+                      ? "bg-violet-600 text-white"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {view}
+                </button>
+              ))}
+            </div>
             <div
               className={cn(
                 "flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm",
@@ -578,33 +808,70 @@ export function WorkflowContent() {
               <span className="font-medium text-emerald-700 dark:text-emerald-400">
                 GitHub Connected
               </span>
-              {authMode === "test-token" ? (
-                <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
-                  Test token
-                </span>
-              ) : null}
               {githubLogin ? (
                 <span className="text-muted-foreground">@{githubLogin}</span>
               ) : null}
             </div>
-            <select
-              value={selectedRepo}
-              onChange={(e) => void handleRepoChange(e.target.value)}
-              className="h-9 rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={disconnecting}
+              onClick={() => void handleDisconnect()}
+              title="Disconnect GitHub"
             >
-              {repos.map((r) => (
-                <option key={r.fullName} value={r.fullName}>
-                  {r.fullName}
-                </option>
-              ))}
-            </select>
-            <Button variant="outline" size="sm" onClick={() => resetForm("pull")}>
-              New PR
+              {disconnecting ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <LogOut className="size-4" />
+              )}
+              Disconnect
             </Button>
+            {activeView === "work" ? (
+              <>
+                <select
+                  value={selectedRepo}
+                  onChange={(e) => void handleRepoChange(e.target.value)}
+                  className="h-9 rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
+                >
+                  {repos.map((r) => (
+                    <option key={r.fullName} value={r.fullName}>
+                      {r.fullName}
+                    </option>
+                  ))}
+                </select>
+                <Button variant="outline" size="sm" onClick={() => resetForm("pull")}>
+                  New PR
+                </Button>
+              </>
+            ) : null}
           </div>
         </div>
       </header>
 
+      {activeView === "board" ? (
+        <div className="flex flex-1 flex-col gap-4 p-6">
+          {boardError ? (
+            <div className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              {boardError}
+            </div>
+          ) : null}
+          <ProjectBoard
+            projects={projects}
+            selectedProjectId={selectedProjectId}
+            fields={projectFields}
+            items={projectItems}
+            projectsLoading={projectsLoading}
+            boardLoading={boardLoading}
+            draggingId={draggingId}
+            onSelectProject={setSelectedProjectId}
+            onMoveItem={handleMoveItem}
+            onAddCard={handleAddCard}
+            onDragStart={setDraggingId}
+            onDragEnd={() => setDraggingId(null)}
+          />
+        </div>
+      ) : (
+        <>
       {error ? (
         <div className="mx-6 mt-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
@@ -679,6 +946,8 @@ export function WorkflowContent() {
             issue={selectedIssue}
             comments={issueComments}
             labels={repoLabels}
+            milestones={repoMilestones}
+            assignableUsers={repoAssignees}
             loading={detailLoading}
             saving={issueSaving}
             onComment={async (text) => {
@@ -690,6 +959,15 @@ export function WorkflowContent() {
                 body: text,
               });
               await loadIssueDetail(repoParts.owner, repoParts.repo, selectedIssue.number);
+            }}
+            onCreateMilestone={async (milestoneTitle) => {
+              if (!repoParts) return;
+              const created = await createMilestone({
+                owner: repoParts.owner,
+                repo: repoParts.repo,
+                title: milestoneTitle,
+              });
+              setRepoMilestones((prev) => [created, ...prev]);
             }}
             onUpdate={async (fields) => {
               if (!repoParts) return;
@@ -778,6 +1056,8 @@ export function WorkflowContent() {
           </div>
         </div>
       ) : null}
+        </>
+      )}
     </div>
   );
 }

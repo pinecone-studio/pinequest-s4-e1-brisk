@@ -2,9 +2,15 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import type { GithubComment, GithubIssueItem, GithubLabel } from "@/lib/integrations/github";
+import type {
+  GithubAssignee,
+  GithubComment,
+  GithubIssueItem,
+  GithubLabel,
+  GithubMilestone,
+} from "@/lib/integrations/github";
 import { cn } from "@/lib/utils";
-import { ExternalLink, Loader2, Pencil } from "lucide-react";
+import { ExternalLink, Loader2, Milestone, Pencil, Plus } from "lucide-react";
 import { useState } from "react";
 import { formatRelativeTime } from "./workflow-utils";
 
@@ -12,15 +18,19 @@ type IssueDetailProps = {
   issue: GithubIssueItem;
   comments: GithubComment[];
   labels: GithubLabel[];
+  milestones: GithubMilestone[];
+  assignableUsers: GithubAssignee[];
   loading: boolean;
   saving: boolean;
   onComment: (body: string) => Promise<void>;
+  onCreateMilestone: (title: string) => Promise<void>;
   onUpdate: (fields: {
     title?: string;
     body?: string;
     state?: "open" | "closed";
     labels?: string[];
     assignees?: string[];
+    milestone?: number | null;
   }) => Promise<void>;
 };
 
@@ -28,9 +38,12 @@ export function IssueDetail({
   issue,
   comments,
   labels,
+  milestones,
+  assignableUsers,
   loading,
   saving,
   onComment,
+  onCreateMilestone,
   onUpdate,
 }: IssueDetailProps) {
   const [text, setText] = useState("");
@@ -39,6 +52,14 @@ export function IssueDetail({
   const [editTitle, setEditTitle] = useState(issue.title);
   const [editBody, setEditBody] = useState(issue.body ?? "");
   const [selectedLabels, setSelectedLabels] = useState(issue.labels.map((l) => l.name));
+  const [selectedMilestone, setSelectedMilestone] = useState<number | null>(
+    issue.milestone?.number ?? null,
+  );
+  const [selectedAssignees, setSelectedAssignees] = useState(
+    issue.assignees.map((a) => a.login),
+  );
+  const [newMilestone, setNewMilestone] = useState("");
+  const [creatingMilestone, setCreatingMilestone] = useState(false);
 
   async function submitComment() {
     if (!text.trim()) return;
@@ -51,11 +72,24 @@ export function IssueDetail({
     }
   }
 
+  async function createMilestone() {
+    if (!newMilestone.trim()) return;
+    setCreatingMilestone(true);
+    try {
+      await onCreateMilestone(newMilestone.trim());
+      setNewMilestone("");
+    } finally {
+      setCreatingMilestone(false);
+    }
+  }
+
   async function saveEdit() {
     await onUpdate({
       title: editTitle.trim() || issue.title,
       body: editBody,
       labels: selectedLabels,
+      assignees: selectedAssignees,
+      milestone: selectedMilestone,
     });
     setEditing(false);
   }
@@ -83,29 +117,111 @@ export function IssueDetail({
                   className="w-full resize-y rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
                 />
                 {labels.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {labels.map((l) => (
-                      <button
-                        key={l.name}
-                        type="button"
-                        onClick={() =>
-                          setSelectedLabels((prev) =>
-                            prev.includes(l.name)
-                              ? prev.filter((n) => n !== l.name)
-                              : [...prev, l.name],
-                          )
-                        }
-                        className={cn(
-                          "rounded-full px-2.5 py-1 text-xs font-medium transition-opacity",
-                          selectedLabels.includes(l.name) ? "opacity-100" : "opacity-40",
-                        )}
-                        style={{ backgroundColor: `#${l.color}22`, color: `#${l.color}` }}
-                      >
-                        {l.name}
-                      </button>
-                    ))}
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                      Labels
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {labels.map((l) => (
+                        <button
+                          key={l.name}
+                          type="button"
+                          onClick={() =>
+                            setSelectedLabels((prev) =>
+                              prev.includes(l.name)
+                                ? prev.filter((n) => n !== l.name)
+                                : [...prev, l.name],
+                            )
+                          }
+                          className={cn(
+                            "rounded-full px-2.5 py-1 text-xs font-medium transition-opacity",
+                            selectedLabels.includes(l.name) ? "opacity-100" : "opacity-40",
+                          )}
+                          style={{ backgroundColor: `#${l.color}22`, color: `#${l.color}` }}
+                        >
+                          {l.name}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 ) : null}
+
+                {assignableUsers.length > 0 ? (
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                      Assignees
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {assignableUsers.map((u) => (
+                        <button
+                          key={u.login}
+                          type="button"
+                          onClick={() =>
+                            setSelectedAssignees((prev) =>
+                              prev.includes(u.login)
+                                ? prev.filter((n) => n !== u.login)
+                                : [...prev, u.login],
+                            )
+                          }
+                          className={cn(
+                            "flex items-center gap-1.5 rounded-full border px-2 py-1 text-xs transition-colors",
+                            selectedAssignees.includes(u.login)
+                              ? "border-violet-500/50 bg-violet-500/10 text-violet-600"
+                              : "border-border/60 text-muted-foreground hover:border-border",
+                          )}
+                        >
+                          <Avatar className="size-4">
+                            <AvatarImage src={u.avatar_url} />
+                            <AvatarFallback>{u.login[0]}</AvatarFallback>
+                          </Avatar>
+                          {u.login}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="space-y-1.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    Milestone
+                  </p>
+                  <select
+                    value={selectedMilestone ?? ""}
+                    onChange={(e) =>
+                      setSelectedMilestone(e.target.value ? Number(e.target.value) : null)
+                    }
+                    className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
+                  >
+                    <option value="">No milestone</option>
+                    {milestones.map((m) => (
+                      <option key={m.number} value={m.number}>
+                        {m.title}
+                        {m.state === "closed" ? " (closed)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="flex gap-2">
+                    <input
+                      value={newMilestone}
+                      onChange={(e) => setNewMilestone(e.target.value)}
+                      placeholder="New milestone title…"
+                      className="h-8 flex-1 rounded-md border border-input bg-background px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={!newMilestone.trim() || creatingMilestone}
+                      onClick={() => void createMilestone()}
+                    >
+                      {creatingMilestone ? (
+                        <Loader2 className="size-3.5 animate-spin" />
+                      ) : (
+                        <Plus className="size-3.5" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
                 <div className="flex gap-2">
                   <Button size="sm" disabled={saving} onClick={() => void saveEdit()}>
                     {saving ? <Loader2 className="size-4 animate-spin" /> : "Save"}
@@ -127,6 +243,8 @@ export function IssueDetail({
                       setEditTitle(issue.title);
                       setEditBody(issue.body ?? "");
                       setSelectedLabels(issue.labels.map((l) => l.name));
+                      setSelectedAssignees(issue.assignees.map((a) => a.login));
+                      setSelectedMilestone(issue.milestone?.number ?? null);
                       setEditing(true);
                     }}
                     className="text-muted-foreground hover:text-foreground"
@@ -165,6 +283,12 @@ export function IssueDetail({
                         <AvatarFallback>{a.login[0]}</AvatarFallback>
                       </Avatar>
                     ))}
+                  </div>
+                ) : null}
+                {issue.milestone ? (
+                  <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                    <Milestone className="size-3.5" />
+                    {issue.milestone.title}
                   </div>
                 ) : null}
               </>
