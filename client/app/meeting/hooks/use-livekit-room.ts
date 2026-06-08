@@ -101,15 +101,6 @@ export const useLivekitRoom = ({
 
         if (!isActive || attemptIdRef.current !== attemptId) return;
 
-        try {
-          await activeRoom.localParticipant.enableCameraAndMicrophone();
-        } catch (mediaError) {
-          console.warn("[meeting] LiveKit media publish failed", {
-            error: getLivekitErrorLogPayload(mediaError),
-            rootError: getLivekitRootError(mediaError),
-          });
-        }
-
         setConnectionState(activeRoom.state);
         syncParticipants();
       } catch (caughtError) {
@@ -168,6 +159,7 @@ export const useLivekitRoom = ({
     leaveRoom,
     localParticipant,
     remoteParticipants,
+    room,
     stateTransitions,
     tokenDiagnostics,
     urlDiagnostics,
