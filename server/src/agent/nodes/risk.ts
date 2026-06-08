@@ -2,7 +2,7 @@ import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { AIMessage, type BaseMessage } from "@langchain/core/messages";
 import type { SupervisorGraphState } from "../state";
 
-const SYSTEM_PROMPT = `You are an elite risk management lead. Read the conversation history and current project context, then identify potential project blockers, scope-creep risk factors, and critical dependencies. Focus exclusively on delivery risk, scope control, and dependency exposure. Ignore concerns outside of risk such as onboarding sequencing or delivery metrics.`;
+const SYSTEM_PROMPT = `You are an elite risk management lead. Read the user's stated goals and craft a risk management analysis covering potential project blockers, scope-creep risk factors, and critical dependencies. Focus exclusively on delivery risk, scope control, and dependency exposure. Ignore concerns outside of risk such as onboarding sequencing or delivery metrics.`;
 
 type GeminiRiskResponse = {
   projectBlockers: unknown;
@@ -22,28 +22,14 @@ function extractUserGoals(messages: BaseMessage[]): string {
     .trim();
 }
 
-function buildRiskInput(state: typeof SupervisorGraphState.State): string {
-  return JSON.stringify({
-    context: state.context,
-    userGoals: extractUserGoals(state.messages),
-    conversationSummary: state.messages
-      .map((message) => ({
-        role: message._getType(),
-        content: typeof message.content === "string" ? message.content : "",
-      }))
-      .filter((entry) => entry.content.length > 0),
-  });
-}
-
 function formatRiskMessage(
   projectBlockers: string[],
   scopeCreepRisks: string[],
-  dependencies: string[],
+  dependencies: string,
 ): string {
   const blockerSection = projectBlockers.map((blocker) => `- ${blocker}`).join("\n");
   const scopeSection = scopeCreepRisks.map((risk) => `- ${risk}`).join("\n");
-  const dependencySection = dependencies.map((dependency) => `- ${dependency}`).join("\n");
-  return `Risk management report:\n\nProject blockers:\n${blockerSection}\n\nScope-creep risks:\n${scopeSection}\n\nDependencies:\n${dependencySection}`;
+  return `Risk management report:\n\nProject blockers:\n${blockerSection}\n\nScope-creep risks:\n${scopeSection}\n\nDependencies:\n${dependencies}`;
 }
 
 export async function riskWorkerNode(state: typeof SupervisorGraphState.State) {
@@ -66,8 +52,7 @@ export async function riskWorkerNode(state: typeof SupervisorGraphState.State) {
             items: { type: SchemaType.STRING },
           },
           dependencies: {
-            type: SchemaType.ARRAY,
-            items: { type: SchemaType.STRING },
+            type: SchemaType.STRING,
           },
         },
         required: ["projectBlockers", "scopeCreepRisks", "dependencies"],
@@ -75,16 +60,16 @@ export async function riskWorkerNode(state: typeof SupervisorGraphState.State) {
     },
   });
 
-  const userContent = buildRiskInput(state);
+  const userGoals = extractUserGoals(state.messages);
 
   let messageContent: string;
   try {
-    const result = await model.generateContent(userContent);
+    const result = await model.generateContent(userGoals);
     const parsed: GeminiRiskResponse = JSON.parse(result.response.text());
     if (
       !isStringArray(parsed.projectBlockers) ||
       !isStringArray(parsed.scopeCreepRisks) ||
-      !isStringArray(parsed.dependencies)
+      typeof parsed.dependencies !== "string"
     ) {
       throw new Error("Unexpected risk response shape");
     }
