@@ -76,8 +76,9 @@ export async function riskNode(state: typeof BriskState.State) {
   try {
     const result = await model.generateContent(userContent);
     const parsed: GeminiRiskResponse = JSON.parse(result.response.text());
+    const riskAnalysis: RiskAnalysis = parseRiskAnalysis(parsed);
     return {
-      riskAnalysis: parseRiskAnalysis(parsed),
+      riskAnalysis,
       nextWorker: null,
     };
   } catch {

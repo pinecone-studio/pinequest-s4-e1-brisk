@@ -73,8 +73,9 @@ export async function metricsNode(state: typeof BriskState.State) {
   try {
     const result = await model.generateContent(userContent);
     const parsed: GeminiMetricsResponse = JSON.parse(result.response.text());
+    const metricsReport: MetricsReport = parseMetricsReport(parsed);
     return {
-      metricsReport: parseMetricsReport(parsed),
+      metricsReport,
       nextWorker: null,
     };
   } catch {
