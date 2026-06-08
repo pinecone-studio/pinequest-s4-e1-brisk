@@ -32,6 +32,7 @@ import {
   postGithubProjectItem,
   patchGithubProjectItem,
   postGithubPAT,
+  postGithubDisconnect,
 } from "../../controllers/integrations/github";
 import { Bindings } from "../../lib/common/types";
 
@@ -66,6 +67,7 @@ githubRoutes.patch("/pulls", patchGithubPull);
 githubRoutes.post("/sync", postGithubSync);
 
 githubRoutes.post("/pat", postGithubPAT);
+githubRoutes.post("/disconnect", postGithubDisconnect);
 githubRoutes.get("/projects", getGithubProjects);
 githubRoutes.get("/projects/detail", getGithubProjectDetail);
 githubRoutes.post("/projects/items", postGithubProjectItem);

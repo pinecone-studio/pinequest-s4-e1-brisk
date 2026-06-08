@@ -882,6 +882,20 @@ export const postGithubPAT = async (c: Context<{ Bindings: Bindings }>) => {
   }
 };
 
+export const postGithubDisconnect = async (c: Context<{ Bindings: Bindings }>) => {
+  const body = (await c.req.json().catch(() => null)) as { userId?: string } | null;
+  if (!body?.userId) return c.json({ error: "userId is required" }, 400);
+
+  try {
+    const db = useDB(c);
+    await db.delete(githubIntegrations).where(eq(githubIntegrations.userId, body.userId));
+    return c.json({ disconnected: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to disconnect";
+    return c.json({ error: message }, 500);
+  }
+};
+
 export const getGithubProjects = async (c: Context<{ Bindings: Bindings }>) => {
   const userId = c.req.query("userId");
   const org = c.req.query("org");
