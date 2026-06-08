@@ -73,8 +73,9 @@ export async function onboardingNode(state: typeof BriskState.State) {
   try {
     const result = await model.generateContent(userContent);
     const parsed: GeminiOnboardingResponse = JSON.parse(result.response.text());
+    const onboardingPlan: OnboardingPlan = parseOnboardingPlan(parsed);
     return {
-      onboardingPlan: parseOnboardingPlan(parsed),
+      onboardingPlan,
       nextWorker: null,
     };
   } catch {
