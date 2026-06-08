@@ -1,7 +1,9 @@
 "use client";
 
 import { useOnboardingStore } from "@/app/onboarding/use-onboarding-store";
+import { fetchAsanaStatus, getAsanaConnectUrl } from "@/lib/integrations/asana";
 import { Check, ArrowRight } from "lucide-react";
+import { useEffect } from "react";
 
 function GithubMark() {
   return (
@@ -83,10 +85,27 @@ export function StepIntegrations() {
   const {
     step3,
     toggleGithubConnection,
-    toggleAsanaConnection,
+    setAsanaConnected,
     advanceFromStep3,
     skipStep3,
   } = useOnboardingStore();
+
+  useEffect(() => {
+    fetchAsanaStatus()
+      .then((status) => {
+        if (status.connected) {
+          setAsanaConnected(true);
+        }
+      })
+      .catch(() => {
+        // API unavailable or not connected yet.
+      });
+  }, [setAsanaConnected]);
+
+  const handleAsanaConnect = () => {
+    if (step3.asanaConnected) return;
+    window.location.href = getAsanaConnectUrl();
+  };
 
   return (
     <>
@@ -111,10 +130,8 @@ export function StepIntegrations() {
           name="Asana"
           desc="Import tasks & projects"
           logo={<AsanaMark />}
-          connected={data.asanaConnected}
-          onToggle={() => {
-            window.location.href = "/api/auth/asana?userId=user_wr";
-          }}
+          connected={step3.asanaConnected}
+          onToggle={handleAsanaConnect}
         />
       </div>
 

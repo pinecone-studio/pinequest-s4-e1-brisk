@@ -53,6 +53,7 @@ type OnboardingStoreContextValue = OnboardingStoreState & {
   removeCollaborator: (index: number) => void;
   toggleGithubConnection: () => void;
   toggleAsanaConnection: () => void;
+  setAsanaConnected: (connected: boolean) => void;
   setAiGoals: (aiGoals: string) => void;
   canAdvanceFromStep1: boolean;
   advanceFromStep1: () => boolean;
@@ -70,6 +71,7 @@ type OnboardingStoreAction =
   | { type: "REMOVE_COLLABORATOR"; index: number }
   | { type: "TOGGLE_GITHUB" }
   | { type: "TOGGLE_ASANA" }
+  | { type: "SET_ASANA_CONNECTED"; connected: boolean }
   | { type: "SKIP_STEP3" }
   | { type: "SET_AI_GOALS"; aiGoals: string };
 
@@ -152,6 +154,17 @@ function onboardingReducer(
         },
       };
     }
+    case "SET_ASANA_CONNECTED":
+      return {
+        ...state,
+        step3: {
+          ...state.step3,
+          asanaConnected: action.connected,
+          isAsanaDisconnected: action.connected
+            ? false
+            : state.step3.isAsanaDisconnected,
+        },
+      };
     case "SKIP_STEP3":
       return {
         ...state,
@@ -221,6 +234,10 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "TOGGLE_ASANA" });
   }, []);
 
+  const setAsanaConnected = useCallback((connected: boolean) => {
+    dispatch({ type: "SET_ASANA_CONNECTED", connected });
+  }, []);
+
   const setAiGoals = useCallback((aiGoals: string) => {
     dispatch({ type: "SET_AI_GOALS", aiGoals });
   }, []);
@@ -257,6 +274,7 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
       removeCollaborator,
       toggleGithubConnection,
       toggleAsanaConnection,
+      setAsanaConnected,
       setAiGoals,
       canAdvanceFromStep1,
       advanceFromStep1,
@@ -273,6 +291,7 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
       removeCollaborator,
       toggleGithubConnection,
       toggleAsanaConnection,
+      setAsanaConnected,
       setAiGoals,
       canAdvanceFromStep1,
       advanceFromStep1,
