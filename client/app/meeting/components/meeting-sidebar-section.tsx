@@ -3,7 +3,16 @@
 import { useSidebar } from "@/components/sidebar/sidebar-context";
 import { cn } from "@/lib/utils";
 import { ConnectionState } from "livekit-client";
-import { ChevronDown, ChevronRight, Headphones, Volume2 } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Headphones,
+  Mic,
+  MicOff,
+  Video,
+  VideoOff,
+  Volume2,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -215,6 +224,30 @@ export const MeetingSidebarSection = () => {
                               className="size-2 shrink-0 rounded-full bg-emerald-400"
                             />
                           ) : null}
+                          <span className="flex shrink-0 items-center gap-1 text-[#6b6b73]">
+                            {participant.isMicrophoneEnabled ? (
+                              <Mic
+                                aria-label="Microphone on"
+                                className="size-3 text-emerald-300"
+                              />
+                            ) : (
+                              <MicOff
+                                aria-label="Microphone muted"
+                                className="size-3 text-[#6b6b73]"
+                              />
+                            )}
+                            {participant.isCameraEnabled ? (
+                              <Video
+                                aria-label="Camera on"
+                                className="size-3 text-violet-300"
+                              />
+                            ) : (
+                              <VideoOff
+                                aria-label="Camera off"
+                                className="size-3 text-[#6b6b73]"
+                              />
+                            )}
+                          </span>
                           {participant.isLocal ? (
                             <span className="shrink-0 rounded bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-emerald-200">
                               You

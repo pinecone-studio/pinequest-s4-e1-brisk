@@ -38,6 +38,7 @@ export const useLivekitRoom = ({
   >([]);
   const [speakingParticipantIdentities, setSpeakingParticipantIdentities] =
     useState<string[]>([]);
+  const [participantMediaVersion, setParticipantMediaVersion] = useState(0);
   const [stateTransitions, setStateTransitions] = useState<string[]>([]);
   const [tokenDiagnostics, setTokenDiagnostics] =
     useState<LivekitTokenDiagnostics>({});
@@ -54,6 +55,7 @@ export const useLivekitRoom = ({
       setLocalParticipant(null);
       setRemoteParticipants([]);
       setSpeakingParticipantIdentities([]);
+      setParticipantMediaVersion(0);
       setStateTransitions([ConnectionState.Disconnected]);
       setTokenDiagnostics({});
       setUrlDiagnostics(null);
@@ -79,6 +81,11 @@ export const useLivekitRoom = ({
       if (!isActive || attemptIdRef.current !== attemptId) return;
 
       setRemoteParticipants(Array.from(activeRoom.remoteParticipants.values()));
+    };
+
+    const syncParticipantMedia = () => {
+      syncParticipants();
+      setParticipantMediaVersion((version) => version + 1);
     };
 
     const syncActiveSpeakers = (speakers: Participant[] = activeRoom.activeSpeakers) => {
@@ -156,12 +163,14 @@ export const useLivekitRoom = ({
       .on(RoomEvent.ConnectionStateChanged, recordState)
       .on(RoomEvent.ParticipantConnected, syncParticipants)
       .on(RoomEvent.ParticipantDisconnected, syncParticipants)
-      .on(RoomEvent.TrackPublished, syncParticipants)
-      .on(RoomEvent.TrackUnpublished, syncParticipants)
-      .on(RoomEvent.TrackSubscribed, syncParticipants)
-      .on(RoomEvent.TrackUnsubscribed, syncParticipants)
-      .on(RoomEvent.LocalTrackPublished, syncParticipants)
-      .on(RoomEvent.LocalTrackUnpublished, syncParticipants)
+      .on(RoomEvent.TrackPublished, syncParticipantMedia)
+      .on(RoomEvent.TrackUnpublished, syncParticipantMedia)
+      .on(RoomEvent.TrackSubscribed, syncParticipantMedia)
+      .on(RoomEvent.TrackUnsubscribed, syncParticipantMedia)
+      .on(RoomEvent.TrackMuted, syncParticipantMedia)
+      .on(RoomEvent.TrackUnmuted, syncParticipantMedia)
+      .on(RoomEvent.LocalTrackPublished, syncParticipantMedia)
+      .on(RoomEvent.LocalTrackUnpublished, syncParticipantMedia)
       .on(RoomEvent.ActiveSpeakersChanged, syncActiveSpeakers);
 
     void connectRoom();
@@ -180,6 +189,7 @@ export const useLivekitRoom = ({
     setLocalParticipant(null);
     setRemoteParticipants([]);
     setSpeakingParticipantIdentities([]);
+    setParticipantMediaVersion((version) => version + 1);
   };
 
   return {
@@ -187,6 +197,7 @@ export const useLivekitRoom = ({
     error,
     leaveRoom,
     localParticipant,
+    participantMediaVersion,
     remoteParticipants,
     room,
     speakingParticipantIdentities,
