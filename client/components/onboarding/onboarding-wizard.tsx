@@ -9,6 +9,7 @@ import { useState } from "react";
 import { initializeProject } from "@/lib/api/projects";
 import { clearOnboardingDraft } from "@/lib/onboarding-draft-storage";
 import { saveOnboardingData } from "@/lib/onboarding-storage";
+import { AuthThemeToggle } from "@/components/auth/auth-theme-toggle";
 import { StepHeader } from "./step-header";
 import { StepProjectSetup } from "./steps/step-project-setup";
 import { StepInviteTeam } from "./steps/step-invite-team";
@@ -25,10 +26,13 @@ function OnboardingWizardContent() {
     setSaving(true);
     setError(null);
 
-    const localData = toOnboardingData();
+    const payload = toInitializePayload();
+    const localData = {
+      ...toOnboardingData(),
+      scopedMilestones: payload.step4.milestoneDrafts,
+    };
 
     try {
-      const payload = toInitializePayload();
       const result = await initializeProject(payload);
       const members = result.members.map((member) => ({
         email: member.email,
@@ -56,7 +60,11 @@ function OnboardingWizardContent() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-5 py-12">
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-background px-5 py-12">
+      <div className="absolute top-6 right-6 w-[168px]">
+        <AuthThemeToggle />
+      </div>
+
       <div className="mb-6 flex items-center gap-2.5">
         <div className="grid h-[30px] w-[30px] place-items-center rounded-[9px] bg-violet-600 text-base font-bold text-white">
           B

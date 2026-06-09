@@ -43,4 +43,6 @@ export type CreateTaskBody = {
   description?: string;
 };
 
-export type UpdateTaskBody = Partial<CreateTaskBody>;
+export type UpdateTaskBody = Partial<CreateTaskBody> & {
+  userId?: string;
+};

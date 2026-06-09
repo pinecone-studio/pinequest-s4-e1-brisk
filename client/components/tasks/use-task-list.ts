@@ -15,6 +15,7 @@ import {
   type TaskStatus,
   type TaskUpdate,
 } from "@/components/tasks/task-types";
+import { useInternalUserId } from "@/hooks/use-internal-user-id";
 import {
   mapApiTaskToListItem,
   type ApiTaskListItem,
@@ -26,6 +27,7 @@ function mapTasksFromApi(records: ApiTaskListItem[]): TaskListItem[] {
 }
 
 export function useTaskList() {
+  const { userId } = useInternalUserId();
   const [tasks, setTasks] = useState<TaskListItem[]>([]);
   const [activeSource, setActiveSource] = useState<TaskSource>("github");
   const [activeTeam, setActiveTeam] = useState<string | null>(null);

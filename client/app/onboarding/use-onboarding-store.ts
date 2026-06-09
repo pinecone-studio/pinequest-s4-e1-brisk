@@ -7,6 +7,10 @@ import { DEFAULT_WORKSPACE_ID } from "@/lib/workspace-defaults";
 
 export type { MilestoneDraft };
 import {
+  applyDemoDefaultsToDraft,
+  DEMO_ONBOARDING_INITIAL,
+} from "@/lib/onboarding/demo-defaults";
+import {
   readOnboardingDraft,
   saveOnboardingDraft,
   type OnboardingDraft,
@@ -98,12 +102,8 @@ const INITIAL_STATE: OnboardingStoreState = {
   step: 0,
   projectId: createProjectId(),
   workspaceId: DEFAULT_WORKSPACE_ID,
-  aiGoals: "",
-  step1: {
-    projectName: "",
-    description: "",
-    timezone: "(GMT+00:00) UTC",
-  },
+  aiGoals: DEMO_ONBOARDING_INITIAL.aiGoals,
+  step1: { ...DEMO_ONBOARDING_INITIAL.step1 },
   step2: {
     collaborators: [],
   },
@@ -114,7 +114,7 @@ const INITIAL_STATE: OnboardingStoreState = {
     isAsanaDisconnected: false,
   },
   step4: {
-    milestoneDrafts: [],
+    milestoneDrafts: [...DEMO_ONBOARDING_INITIAL.step4.milestoneDrafts],
   },
 };
 
@@ -274,7 +274,7 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const draft = readOnboardingDraft();
     if (draft) {
-      dispatch({ type: "RESTORE", draft });
+      dispatch({ type: "RESTORE", draft: applyDemoDefaultsToDraft(draft) });
     }
     setDraftReady(true);
   }, []);

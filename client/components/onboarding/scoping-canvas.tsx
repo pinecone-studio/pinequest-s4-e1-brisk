@@ -75,9 +75,13 @@ type ScopingCanvasProps = {
 
 export function ScopingCanvas({ onStreamComplete }: ScopingCanvasProps) {
   const { getToken } = useAuth();
-  const { setAiGoals, setMilestoneDrafts, step4 } = useOnboardingStore();
-  const [prompt, setPrompt] = useState("");
+  const { aiGoals, setAiGoals, setMilestoneDrafts, step4 } = useOnboardingStore();
+  const [prompt, setPrompt] = useState(aiGoals);
   const [liveDrafts, setLiveDrafts] = useState<MilestoneDraft[]>([]);
+
+  useEffect(() => {
+    setPrompt((current) => current.trim() || aiGoals);
+  }, [aiGoals]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
