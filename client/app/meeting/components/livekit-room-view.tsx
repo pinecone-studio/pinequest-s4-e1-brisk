@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useMeetingSession } from "./meeting-session-provider";
+import { MeetingChat } from "./meeting-chat";
 import {
   getParticipantDisplayName,
   ParticipantTile,
@@ -56,6 +57,15 @@ export const LivekitRoomView = ({
       ...remoteParticipants,
     ],
     [localParticipant, remoteParticipants],
+  );
+  const participantAvatarUrls = useMemo(
+    () =>
+      new Map(
+        participants
+          .filter((participant) => participant.avatarUrl)
+          .map((participant) => [participant.identity, participant.avatarUrl]),
+      ),
+    [participants],
   );
   const localScreenShareEnabled = Boolean(localParticipant?.isScreenShareEnabled);
   const screenShareParticipants = useMemo(
@@ -254,9 +264,20 @@ export const LivekitRoomView = ({
               <ScreenShare className="size-3.5" />
               Screen share live
             </span>
-          ) : null}
-        </div>
-      </header>
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${recordingBadgeClassName}`}
+            >
+              <Radio className="size-3.5" />
+              {recordingLabel}
+            </span>
+            {screenShareParticipants.length ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-red-400/30 bg-red-500/15 px-3 py-1 text-xs font-semibold text-red-100">
+                <ScreenShare className="size-3.5" />
+                Screen share live
+              </span>
+            ) : null}
+          </div>
+        </header>
 
       {isConnecting ? (
         <p className="mx-4 mt-4 rounded-xl border border-violet-300/20 bg-violet-100 dark:bg-violet-500/10 p-3 text-sm text-violet-900 dark:text-violet-100">
@@ -302,6 +323,7 @@ export const LivekitRoomView = ({
             <div className="flex min-h-[360px] flex-1 items-center justify-center overflow-hidden rounded-3xl border border-border bg-card p-2 shadow-inner shadow-black/20">
               {stageParticipant ? (
                 <ParticipantTile
+                  avatarUrl={participantAvatarUrls.get(stageParticipant.identity)}
                   badge={stageMode === "screen" ? "LIVE" : undefined}
                   badgeTone="live"
                   className={`w-full ${
@@ -324,7 +346,6 @@ export const LivekitRoomView = ({
                       : Track.Source.Camera
                   }
                   participant={stageParticipant}
-                  showAudio={stageMode !== "screen"}
                   showMicStatus={stageMode !== "screen"}
                   variant="active"
                 />
@@ -436,5 +457,11 @@ export const LivekitRoomView = ({
         </div>
       </div>
     </section>
+      <MeetingChat
+        connectionState={connectionState}
+        participants={participants}
+        room={room}
+      />
+    </div>
   );
 };
