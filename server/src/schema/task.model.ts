@@ -20,6 +20,9 @@ export type TaskPriority = (typeof taskPriorityEnum)[number];
 export const taskSourceEnum = ["github", "asana", "internal"] as const;
 export type TaskSource = (typeof taskSourceEnum)[number];
 
+export const taskSyncStateEnum = ["Pending", "Synced", "Failed"] as const;
+export type TaskSyncState = (typeof taskSyncStateEnum)[number];
+
 export const tasks = sqliteTable("tasks", {
   id: text("id").primaryKey(),
   workspaceId: text("workspace_id")
@@ -53,6 +56,7 @@ export const tasks = sqliteTable("tasks", {
   membersJson: text("members_json").notNull().default("[]"),
   sequenceOrder: integer("sequence_order").notNull().default(0),
   dependencyTaskIdsJson: text("dependency_task_ids_json").notNull().default("[]"),
+  syncState: text("sync_state", { enum: taskSyncStateEnum }),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),
