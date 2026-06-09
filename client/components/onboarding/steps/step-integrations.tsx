@@ -1,7 +1,12 @@
 "use client";
 
 import { useOnboardingStore } from "@/app/onboarding/use-onboarding-store";
-import { fetchAsanaStatus, getAsanaConnectUrl } from "@/lib/integrations/asana";
+import { useInternalUserId } from "@/hooks/use-internal-user-id";
+import {
+  fetchAsanaStatus,
+  getAsanaConnectUrl,
+  setAsanaUserId,
+} from "@/lib/integrations/asana";
 import { Check, ArrowRight } from "lucide-react";
 import { useEffect } from "react";
 
@@ -82,6 +87,7 @@ function IntegrationCard({
 }
 
 export function StepIntegrations() {
+  const { userId, isLoaded: userReady } = useInternalUserId();
   const {
     step3,
     toggleGithubConnection,
@@ -91,6 +97,8 @@ export function StepIntegrations() {
   } = useOnboardingStore();
 
   useEffect(() => {
+    if (!userReady) return;
+    setAsanaUserId(userId);
     fetchAsanaStatus()
       .then((status) => {
         if (status.connected) {
@@ -100,10 +108,11 @@ export function StepIntegrations() {
       .catch(() => {
         // API unavailable or not connected yet.
       });
-  }, [setAsanaConnected]);
+  }, [setAsanaConnected, userReady, userId]);
 
   const handleAsanaConnect = () => {
-    if (step3.asanaConnected) return;
+    if (step3.asanaConnected || !userReady) return;
+    setAsanaUserId(userId);
     window.location.href = getAsanaConnectUrl();
   };
 
