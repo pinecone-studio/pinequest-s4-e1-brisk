@@ -2,6 +2,11 @@
 
 import { clientApi, TASKS_API_BASE } from "@/app/lib/client-api";
 import { createTask } from "@/components/tasks/task-factory";
+import {
+  filterTasksByMilestone,
+  isMilestoneParentTask,
+  partitionSourceTasks,
+} from "@/components/tasks/task-milestone-utils";
 import { readStoredTasks, saveStoredTasks } from "@/components/tasks/task-storage";
 import {
   getTaskTeam,
@@ -24,6 +29,9 @@ export function useTaskList() {
   const [tasks, setTasks] = useState<TaskListItem[]>([]);
   const [activeSource, setActiveSource] = useState<TaskSource>("github");
   const [activeTeam, setActiveTeam] = useState<string | null>(null);
+  const [activeMilestoneId, setActiveMilestoneId] = useState<
+    string | null | undefined
+  >(undefined);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -31,20 +39,33 @@ export function useTaskList() {
     () => tasks.filter((task) => task.source === activeSource),
     [activeSource, tasks],
   );
-  const visibleTasks = useMemo(
-    () =>
-      activeTeam
-        ? sourceTasks.filter((task) => getTaskTeam(task) === activeTeam)
-        : sourceTasks,
-    [activeTeam, sourceTasks],
+
+  const { milestones, boardTasks } = useMemo(
+    () => partitionSourceTasks(sourceTasks),
+    [sourceTasks],
   );
+
+  const hasMilestones = milestones.length > 0;
+
+  const visibleTasks = useMemo(() => {
+    let filtered = filterTasksByMilestone(boardTasks, activeMilestoneId);
+
+    if (activeTeam) {
+      filtered = filtered.filter((task) => getTaskTeam(task) === activeTeam);
+    }
+
+    return filtered;
+  }, [activeMilestoneId, activeTeam, boardTasks]);
+
   const selectedTask = useMemo(
     () => tasks.find((task) => task.id === selectedTaskId) ?? null,
     [selectedTaskId, tasks],
   );
 
-  const loadTasks = useCallback(async (): Promise<TaskListItem[]> => {
-    setIsLoading(true);
+  const loadTasks = useCallback(async (options?: { silent?: boolean }): Promise<TaskListItem[]> => {
+    if (!options?.silent) {
+      setIsLoading(true);
+    }
 
     try {
       const { data } = await clientApi.get<{ tasks: ApiTaskListItem[] }>(
@@ -59,7 +80,9 @@ export function useTaskList() {
       setTasks(fallback);
       return fallback;
     } finally {
-      setIsLoading(false);
+      if (!options?.silent) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
@@ -81,6 +104,13 @@ export function useTaskList() {
 
         setActiveSource(task.source);
         setActiveTeam(null);
+        if (isMilestoneParentTask(task, list)) {
+          setActiveMilestoneId(task.id);
+        } else if (task.parentId) {
+          setActiveMilestoneId(task.parentId);
+        } else {
+          setActiveMilestoneId(null);
+        }
         setSelectedTaskId(taskId);
         return true;
       };
@@ -95,7 +125,15 @@ export function useTaskList() {
 
   const updateTask = useCallback(
     (taskId: string, update: TaskUpdate) => {
+      let previousTask: TaskListItem | undefined;
+      let taskSource: TaskSource | undefined;
+
       setTasks((current) => {
+        previousTask = current.find((task) => task.id === taskId);
+        taskSource = previousTask?.source;
+
+        if (!previousTask) return current;
+
         const next = current.map((task) =>
           task.id === taskId ? { ...task, ...update } : task,
         );
@@ -103,19 +141,32 @@ export function useTaskList() {
         return next;
       });
 
-      void clientApi
-        .patch(`${TASKS_API_BASE}/${taskId}`, update)
-        .catch(() => {
-          void loadTasks();
+      if (!previousTask || taskSource === "github") {
+        return;
+      }
+
+      void clientApi.patch(`${TASKS_API_BASE}/${taskId}`, update).catch(() => {
+        if (!previousTask) return;
+
+        setTasks((current) => {
+          const next = current.map((task) =>
+            task.id === taskId ? previousTask! : task,
+          );
+          saveStoredTasks(next);
+          return next;
         });
+      });
     },
-    [loadTasks],
+    [],
   );
 
   const addTaskToColumn = useCallback(
     (status: TaskStatus) => {
       const team = activeTeam ?? sourceTasks[0]?.team ?? "General Team";
       const newTask = createTask(activeSource, tasks.length + 1, team, status);
+      if (typeof activeMilestoneId === "string") {
+        newTask.parentId = activeMilestoneId;
+      }
 
       setTasks((current) => {
         const next = [newTask, ...current];
@@ -123,7 +174,7 @@ export function useTaskList() {
         return next;
       });
     },
-    [activeSource, activeTeam, sourceTasks, tasks.length],
+    [activeMilestoneId, activeSource, activeTeam, sourceTasks, tasks.length],
   );
 
   const deleteTask = useCallback((taskId: string) => {
@@ -138,23 +189,30 @@ export function useTaskList() {
   const selectSource = useCallback((source: TaskSource) => {
     setActiveSource(source);
     setActiveTeam(null);
+    setActiveMilestoneId(undefined);
     setSelectedTaskId(null);
   }, []);
 
   return {
+    activeMilestoneId,
     activeSource,
     activeTeam,
     addTaskToColumn,
+    boardTasks,
     deleteTask,
     focusTask,
+    hasMilestones,
     isLoading,
     loadTasks,
+    milestoneTasks: milestones,
     selectedTask,
     selectedTaskId,
     selectSource,
+    setActiveMilestoneId,
     setActiveTeam,
     setSelectedTaskId,
     sourceTasks,
+    teamFilterTasks: boardTasks,
     updateTask,
     visibleTasks,
   };

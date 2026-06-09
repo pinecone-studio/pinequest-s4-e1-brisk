@@ -21,6 +21,7 @@ export type TaskListItemDto = {
   members: TaskMember[];
   sequenceOrder: number;
   dependencyTaskIds: string[];
+  boardColumn?: string | null;
 };
 
 export type CreateTaskBody = {
