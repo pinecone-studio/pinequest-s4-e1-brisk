@@ -1,7 +1,11 @@
 import type { Bindings } from "../common/types";
 
-const GROQ_MODEL = "llama-3.3-70b-versatile";
+const DEFAULT_GROQ_MODEL = "llama-3.1-8b-instant";
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
+
+function resolveGroqModel(bindings: Bindings): string {
+  return bindings.GROQ_MODEL?.trim() || DEFAULT_GROQ_MODEL;
+}
 
 const SUMMARY_PROMPT_PREFIX =
   "Summarize the following meeting transcript. Respond in Mongolian. " +
@@ -42,7 +46,7 @@ export async function generateGroqSummary(
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: GROQ_MODEL,
+      model: resolveGroqModel(bindings),
       response_format: { type: "json_object" },
       messages: [
         {
