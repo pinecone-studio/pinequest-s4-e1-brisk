@@ -11,6 +11,7 @@ export interface Bindings {
   CHIMEGE_API_KEY: string;
   CHIMEGE_BASE_URL?: string;
   GROQ_API_KEY?: string;
+  GROQ_MODEL?: string;
   GITHUB_CLIENT_ID?: string;
   GITHUB_CLIENT_SECRET?: string;
   GITHUB_OAUTH_REDIRECT_URI?: string;
