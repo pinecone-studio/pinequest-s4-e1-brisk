@@ -1,8 +1,10 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 
 /**
- * Keep middleware.ts (Edge) for OpenNext/Cloudflare — Next.js 16 proxy.ts runs on
- * Node.js only, which @opennextjs/cloudflare does not support yet.
+ * Use middleware.ts (Edge) instead of Next.js 16 proxy.ts:
+ * - @opennextjs/cloudflare does not support Node.js proxy/middleware yet.
+ * - Clerk Frontend API proxying (`/__clerk`) only works with production keys;
+ *   dev keys (`pk_test_*`) must talk to *.clerk.accounts.dev directly.
  */
 export default clerkMiddleware();
 
