@@ -7,6 +7,7 @@ import {
   fetchMyProjects,
   projectToOnboardingData,
 } from "@/lib/api/projects";
+import { useClientApiAuth } from "@/lib/api/auth-interceptor";
 import { saveOnboardingData } from "@/lib/onboarding-storage";
 import { useAuth, SignInButton } from "@clerk/nextjs";
 import { useParams, useRouter } from "next/navigation";
@@ -17,6 +18,11 @@ export default function InvitePage() {
   const token = params.token;
   const router = useRouter();
   const { isSignedIn, isLoaded } = useAuth();
+  // This page lives outside the app shell, which is where the Clerk auth
+  // interceptor is normally registered. Without it, the POST /invite/:token/accept
+  // call goes out with no Authorization header and the server rejects it (401),
+  // so the invitee is never saved as a collaborator. Register it here too.
+  useClientApiAuth();
   const [preview, setPreview] = useState<{
     projectName: string;
     description: string | null;
