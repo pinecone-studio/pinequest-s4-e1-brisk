@@ -1,4 +1,5 @@
 import type { Bindings } from "../common/types";
+import { resolveMeetingGroqKey } from "./groq-keys";
 
 const DEFAULT_GROQ_MODEL = "llama-3.1-8b-instant";
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
@@ -30,15 +31,9 @@ export async function generateGroqSummary(
   transcript: string,
   participantNames?: string[] | null,
 ): Promise<string> {
-  const apiKey = bindings.GROQ_API_KEY;
+  const apiKey = resolveMeetingGroqKey(bindings);
   if (!apiKey) {
-    console.error("[meetingTranscription] Groq summary generation is not configured", {
-      database: bindings.D1_DATABASE_NAME ?? "unknown",
-      environment: bindings.ENVIRONMENT ?? "unknown",
-      missingSecret: "GROQ_API_KEY",
-    });
-
-    throw new Error("Groq API key is not configured");
+    throw new Error("Groq meeting API key is not configured");
   }
 
   const participantsSection = participantNames?.length
