@@ -305,6 +305,10 @@ function toInitializePayload(
         isApproved: draft.isApproved,
       })),
     },
+    onboardingSessionId: state.onboardingSessionId || undefined,
+    aiGoals: state.aiGoals || undefined,
+    tddLayoutState: state.tddLayoutState ?? undefined,
+    tddConfirmed: state.tddConfirmed,
   };
 }
 

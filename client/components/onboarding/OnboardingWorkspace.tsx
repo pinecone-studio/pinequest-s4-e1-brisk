@@ -1,9 +1,13 @@
 "use client";
 
+import { AuthThemeToggle } from "@/components/auth/auth-theme-toggle";
 import { DiscoveryFeed } from "@/components/onboarding/discovery/DiscoveryFeed";
 import { DiscoveryInteractionFooter } from "@/components/onboarding/discovery/DiscoveryInteractionFooter";
 import { DiscoveryStatusBar } from "@/components/onboarding/discovery/DiscoveryStatusBar";
-import { useOnboardingBackRegistration } from "@/components/onboarding/onboarding-layout";
+import {
+  OnboardingBackButton,
+  useOnboardingBackRegistration,
+} from "@/components/onboarding/onboarding-layout";
 import { TddDraggableCanvas } from "@/components/onboarding/TddDraggableCanvas";
 import { useOnboardingStore } from "@/app/onboarding/use-onboarding-store";
 import { useInternalUserId } from "@/hooks/use-internal-user-id";
@@ -49,6 +53,9 @@ type OnboardingWorkspaceProps = {
   onSkip?: () => void;
 };
 
+const TDD_CANVAS_MAX_WIDTH = "max-w-6xl";
+const TDD_CANVAS_GUTTER = "px-6 md:px-8 lg:px-10";
+
 function createMessageId(): string {
   return crypto.randomUUID();
 }
@@ -83,22 +90,18 @@ export function OnboardingWorkspace({
   const hasHandledGoogleOAuthCallbackRef = useRef(false);
   const { registerBackHandler } = useOnboardingBackRegistration();
 
-  useEffect(() => {
-    registerBackHandler(() => {
-      if (phase === "canvas") {
-        setPhase("interview");
-        return;
-      }
-      onBack?.();
-    });
-    return () => registerBackHandler(null);
-  }, [onBack, phase, registerBackHandler]);
+  const handleWorkspaceBack = useCallback(() => {
+    if (phase === "canvas") {
+      setPhase("interview");
+      return;
+    }
+    onBack?.();
+  }, [onBack, phase]);
 
   useEffect(() => {
-    if (tddLayoutState && phase === "interview") {
-      setPhase("canvas");
-    }
-  }, [phase, tddLayoutState]);
+    registerBackHandler(handleWorkspaceBack);
+    return () => registerBackHandler(null);
+  }, [handleWorkspaceBack, registerBackHandler]);
 
   useEffect(() => {
     if (phase !== "canvas" || !onboardingSessionId || docUrl) {
@@ -285,6 +288,7 @@ export function OnboardingWorkspace({
         sessionId: onboardingSessionId,
         projectName: step1.projectName,
         tddLayoutState,
+        existingDocUrl: docUrl,
       });
       setDocUrl(result.docUrl);
     } catch (exportError) {
@@ -299,7 +303,7 @@ export function OnboardingWorkspace({
     } finally {
       setIsExporting(false);
     }
-  }, [onboardingSessionId, step1.projectName, tddLayoutState, userId]);
+  }, [docUrl, onboardingSessionId, step1.projectName, tddLayoutState, userId]);
 
   useEffect(() => {
     if (hasHandledGoogleOAuthCallbackRef.current) {
@@ -357,23 +361,37 @@ export function OnboardingWorkspace({
         ref={workspaceRef}
         className="flex h-full min-h-0 flex-col bg-background text-foreground"
       >
-        <DiscoveryStatusBar metrics={metrics} onSkip={onSkip} mode="canvas" />
-        <div className="flex min-h-0 flex-1 flex-col px-6 py-6">
-          <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 pb-6">
-            <div>
-              <p className="text-[15px] font-medium text-foreground">TDD Canvas</p>
-              <p className="mt-1 text-[13px] text-muted-foreground">
-                Drag blocks to reorder, select text to refine, then confirm to generate milestones.
-              </p>
+        <header className="shrink-0 border-b border-border bg-background/95 backdrop-blur-sm">
+          <div
+            className={`mx-auto flex w-full ${TDD_CANVAS_MAX_WIDTH} flex-col gap-4 ${TDD_CANVAS_GUTTER} py-4 lg:flex-row lg:items-center lg:justify-between`}
+          >
+            <div className="flex min-w-0 items-center gap-4">
+              <OnboardingBackButton
+                onClick={handleWorkspaceBack}
+                label="Back to chat"
+                className="shrink-0"
+              />
+              <div className="min-w-0 border-l border-border pl-4">
+                <p className="text-base font-semibold text-foreground md:text-lg">
+                  TDD Canvas
+                </p>
+                <p className="mt-0.5 text-[13px] leading-snug text-muted-foreground">
+                  Click any section to edit. Drag blocks to reorder, select text to refine with AI.
+                </p>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
               <button
                 type="button"
                 onClick={() => void handleExportGoogleDoc()}
                 disabled={isExporting}
-                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border px-3 text-[13px] font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
+                className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 text-[13px] font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
               >
-                {isExporting ? <Loader2 className="size-3.5 animate-spin" /> : <FileText className="size-3.5" />}
+                {isExporting ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <FileText className="size-3.5" />
+                )}
                 Sync to Google Docs
               </button>
               {docUrl ? (
@@ -381,21 +399,29 @@ export function OnboardingWorkspace({
                   href={docUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex h-9 items-center gap-1 rounded-lg px-2 text-[13px] font-medium text-violet-700 hover:text-violet-600 dark:text-violet-400"
+                  className="inline-flex h-9 shrink-0 items-center gap-1 rounded-lg px-2 text-[13px] font-medium text-violet-700 hover:text-violet-600 dark:text-violet-400"
                 >
                   Open doc
                   <ExternalLink className="size-3.5" />
                 </a>
               ) : null}
+              <div className="ml-auto shrink-0 border-border sm:ml-0 sm:border-l sm:pl-4">
+                <AuthThemeToggle className="min-w-[196px]" />
+              </div>
             </div>
           </div>
-          <div className="mx-auto min-h-0 w-full max-w-5xl flex-1 overflow-y-auto overscroll-y-contain">
+        </header>
+
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain py-4 md:py-5">
+          <div className={`mx-auto w-full ${TDD_CANVAS_MAX_WIDTH} ${TDD_CANVAS_GUTTER}`}>
             <TddDraggableCanvas
               layout={tddLayoutState}
               onLayoutChange={handleLayoutChange}
               projectName={step1.projectName}
+              sessionKey={onboardingSessionId ?? userId ?? "local"}
             />
-            <div className="mb-4 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-4 dark:border-violet-500/20 dark:bg-violet-500/10">
+            {repoUrl || docUrl ? (
+              <div className="mt-4 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 dark:border-violet-500/20 dark:bg-violet-500/10">
               <div className="mb-2 flex items-center gap-2">
                 <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300">
                   <Link2 className="size-3.5" />
@@ -431,23 +457,30 @@ export function OnboardingWorkspace({
                 ) : null}
               </ul>
             </div>
-          </div>
-          {error ? (
-            <p className="mx-auto mt-4 w-full max-w-5xl rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-[13px] text-rose-700 dark:text-rose-300">
-              {error}
-            </p>
           ) : null}
-          <div className="mx-auto mt-8 flex w-full max-w-5xl shrink-0 justify-start pt-2">
+          </div>
+        </div>
+
+        {error ? (
+          <p
+            className={`shrink-0 border-t border-rose-500/20 bg-rose-500/10 py-2 text-[13px] text-rose-700 dark:text-rose-300 ${TDD_CANVAS_GUTTER}`}
+          >
+            <span className={`mx-auto block w-full ${TDD_CANVAS_MAX_WIDTH}`}>{error}</span>
+          </p>
+        ) : null}
+
+        <footer className="shrink-0 border-t border-border bg-background/95 backdrop-blur-sm">
+          <div className={`mx-auto w-full ${TDD_CANVAS_MAX_WIDTH} ${TDD_CANVAS_GUTTER} py-4`}>
             <button
               type="button"
               onClick={() => void handleConfirmTdd()}
-              className="flex h-11 min-w-[220px] items-center justify-center gap-2 rounded-lg bg-violet-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-violet-500"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-violet-600 px-6 text-sm font-semibold text-white transition-colors hover:bg-violet-500 sm:w-auto sm:min-w-[300px]"
             >
               Confirm TDD & Generate Milestones
               <ArrowRight size={17} />
             </button>
           </div>
-        </div>
+        </footer>
       </div>
     );
   }
@@ -457,7 +490,7 @@ export function OnboardingWorkspace({
       ref={workspaceRef}
       className="flex h-full min-h-0 flex-col bg-background text-foreground"
     >
-      <DiscoveryStatusBar metrics={metrics} onSkip={onSkip} mode="interview" />
+      <DiscoveryStatusBar metrics={metrics} onBack={handleWorkspaceBack} onSkip={onSkip} mode="interview" />
       <DiscoveryFeed
         messages={messages}
         streamingContent={streamingContent}

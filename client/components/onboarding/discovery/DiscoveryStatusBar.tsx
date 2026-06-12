@@ -3,16 +3,19 @@
 import { HARD_ROUND_CAP, type DiscoveryStatusMetrics } from "@/lib/onboarding/discovery-types";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { OnboardingBackButton } from "@/components/onboarding/onboarding-layout";
 import { OnboardingSkipButton } from "@/components/onboarding/onboarding-skip-button";
 
 type DiscoveryStatusBarProps = {
   metrics: DiscoveryStatusMetrics;
+  onBack?: () => void;
   onSkip?: () => void;
   mode?: "interview" | "canvas";
 };
 
 export function DiscoveryStatusBar({
   metrics,
+  onBack,
   onSkip,
   mode = "interview",
 }: DiscoveryStatusBarProps) {
@@ -24,6 +27,7 @@ export function DiscoveryStatusBar({
       <div className={cn("mx-auto flex w-full flex-col gap-6", mode === "canvas" ? "max-w-5xl" : "max-w-3xl")}>
         <div className="flex items-start justify-between gap-6">
           <div className="flex items-center gap-4">
+            {onBack ? <OnboardingBackButton onClick={onBack} /> : null}
             {onSkip ? <OnboardingSkipButton onClick={onSkip} /> : null}
           </div>
           <div className="text-right">

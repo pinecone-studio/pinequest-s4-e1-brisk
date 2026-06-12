@@ -2,15 +2,9 @@
 
 import { MeetingChannelPresenceProvider } from "@/app/meeting/components/meeting-channel-presence-provider";
 import { MeetingSessionProvider } from "@/app/meeting/components/meeting-session-provider";
+import { ClientAuthSetup } from "@/components/client-auth-setup";
 import { DashboardSidebar } from "@/components/sidebar/sidebar";
-import { UserSync } from "@/components/user-sync";
-import { useClientApiAuth } from "@/lib/api/auth-interceptor";
 import { usePathname } from "next/navigation";
-
-const AuthSetup = () => {
-  useClientApiAuth();
-  return null;
-};
 
 export function DashboardAppShell({
   children,
@@ -27,8 +21,7 @@ export function DashboardAppShell({
     <MeetingChannelPresenceProvider>
       <MeetingSessionProvider>
         <div className="flex h-screen overflow-hidden bg-background">
-          <AuthSetup />
-          <UserSync />
+          <ClientAuthSetup />
           <DashboardSidebar />
           <main
             className={

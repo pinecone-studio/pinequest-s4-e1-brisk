@@ -10,6 +10,7 @@ import { useAuth } from "@clerk/nextjs";
 type InlineAiRefinementProps = {
   blockTitle: string;
   containerRef: React.RefObject<HTMLElement | null>;
+  editorRef?: React.RefObject<HTMLTextAreaElement | null>;
   content: string;
   onContentChange: (nextContent: string) => void;
 };
@@ -25,7 +26,21 @@ function isTypingTarget(target: EventTarget | null): boolean {
     return false;
   }
   const tag = target.tagName.toLowerCase();
-  return tag === "input" || tag === "textarea" || target.isContentEditable;
+  return tag === "input" || target.isContentEditable;
+}
+
+function getTextareaSelectionRect(textarea: HTMLTextAreaElement): DOMRect {
+  const bounds = textarea.getBoundingClientRect();
+  const style = window.getComputedStyle(textarea);
+  const lineHeight = Number.parseFloat(style.lineHeight) || 20;
+  const paddingLeft = Number.parseFloat(style.paddingLeft) || 12;
+  const paddingTop = Number.parseFloat(style.paddingTop) || 12;
+  return new DOMRect(
+    bounds.left + paddingLeft,
+    bounds.top + paddingTop + lineHeight,
+    Math.min(bounds.width * 0.5, 240),
+    lineHeight,
+  );
 }
 
 const MARKDOWN_NOISE = "[*_`#]*";
@@ -77,6 +92,7 @@ function findSelectionRange(content: string, selectedText: string): [number, num
 export function InlineAiRefinement({
   blockTitle,
   containerRef,
+  editorRef,
   content,
   onContentChange,
 }: InlineAiRefinementProps) {
@@ -94,12 +110,36 @@ export function InlineAiRefinement({
   }, []);
 
   const updateSelection = useCallback(() => {
-    if (isTypingTarget(document.activeElement)) {
+    const container = containerRef.current;
+    if (!container) {
+      clearSelection();
       return;
     }
 
-    const container = containerRef.current;
-    if (!container) {
+    const textarea = editorRef?.current;
+    if (textarea && container.contains(textarea)) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      if (start === end) {
+        clearSelection();
+        return;
+      }
+
+      const selectedText = textarea.value.slice(start, end).trim();
+      if (!selectedText) {
+        clearSelection();
+        return;
+      }
+
+      setSelection({
+        selectedText,
+        paragraphContext: content,
+        rect: getTextareaSelectionRect(textarea),
+      });
+      return;
+    }
+
+    if (isTypingTarget(document.activeElement)) {
       clearSelection();
       return;
     }
@@ -128,7 +168,28 @@ export function InlineAiRefinement({
       paragraphContext: content,
       rect,
     });
-  }, [clearSelection, containerRef, content]);
+  }, [clearSelection, containerRef, content, editorRef]);
+
+  useEffect(() => {
+    const textarea = editorRef?.current;
+    if (!textarea) {
+      return;
+    }
+
+    const handleEditorSelection = () => {
+      updateSelection();
+    };
+
+    textarea.addEventListener("select", handleEditorSelection);
+    textarea.addEventListener("mouseup", handleEditorSelection);
+    textarea.addEventListener("keyup", handleEditorSelection);
+
+    return () => {
+      textarea.removeEventListener("select", handleEditorSelection);
+      textarea.removeEventListener("mouseup", handleEditorSelection);
+      textarea.removeEventListener("keyup", handleEditorSelection);
+    };
+  }, [editorRef, updateSelection]);
 
   useEffect(() => {
     const handleSelectionChange = () => {
@@ -168,6 +229,9 @@ export function InlineAiRefinement({
         onContentChange(nextContent);
 
         window.getSelection()?.removeAllRanges();
+        if (editorRef?.current) {
+          editorRef.current.setSelectionRange(0, 0);
+        }
         clearSelection();
       } catch (refineError) {
         setError(
@@ -177,7 +241,7 @@ export function InlineAiRefinement({
         setIsRefining(false);
       }
     },
-    [blockTitle, clearSelection, content, getToken, isRefining, onContentChange, selection],
+    [blockTitle, clearSelection, content, editorRef, getToken, isRefining, onContentChange, selection],
   );
 
   if (!selection) {

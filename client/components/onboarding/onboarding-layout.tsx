@@ -136,6 +136,8 @@ type OnboardingShellProps = {
   showBack?: boolean;
   maxWidth?: "md" | "lg" | "xl" | "full";
   fillHeight?: boolean;
+  /** Hides shell chrome and uses the full viewport for step content (e.g. TDD canvas). */
+  immersive?: boolean;
   className?: string;
   contentClassName?: string;
 };
@@ -155,6 +157,7 @@ export function OnboardingShell({
   showBack = true,
   maxWidth = "md",
   fillHeight = false,
+  immersive = false,
   className,
   contentClassName,
 }: OnboardingShellProps) {
@@ -185,57 +188,63 @@ export function OnboardingShell({
     <OnboardingBackContext.Provider value={backContextValue}>
       <div
         className={cn(
-          "relative flex h-dvh flex-col bg-background pb-16 text-foreground",
+          "relative flex h-dvh flex-col bg-background text-foreground",
+          immersive ? "pb-0" : "pb-16",
           className,
         )}
       >
-        <header className="shrink-0 px-6 pt-5 md:px-10">
-          <div className="mb-5 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="grid size-8 place-items-center rounded-lg bg-[#7c3aed] text-sm font-bold text-white">
-                B
+        {!immersive ? (
+          <header className="shrink-0 px-6 pt-5 md:px-10">
+            <div className="mb-5 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="grid size-8 place-items-center rounded-lg bg-[#7c3aed] text-sm font-bold text-white">
+                  B
+                </div>
+                <span className="text-base font-semibold tracking-tight text-foreground">
+                  Brisk
+                </span>
               </div>
-              <span className="text-base font-semibold tracking-tight text-foreground">
-                Brisk
-              </span>
+              <div className="w-[148px]">
+                <AuthThemeToggle />
+              </div>
             </div>
-            <div className="w-[148px]">
-              <AuthThemeToggle />
+            <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-[#7c3aed] transition-[width] duration-500 ease-out"
+                style={{ width: `${progress}%` }}
+              />
             </div>
-          </div>
-          <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-[#7c3aed] transition-[width] duration-500 ease-out"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </header>
+          </header>
+        ) : null}
 
         <main
           className={cn(
-            "flex flex-1 flex-col items-center px-6 py-8 md:px-10 md:py-10",
-            fillHeight && "min-h-0",
+            "flex flex-1 flex-col",
+            !immersive && "items-center px-6 py-8 md:px-10 md:py-10",
+            (fillHeight || immersive) && "min-h-0",
             contentClassName,
           )}
         >
           <div
             className={cn(
               "w-full",
-              maxWidthClass[maxWidth],
-              fillHeight && "flex min-h-0 flex-1 flex-col",
+              !immersive && maxWidthClass[maxWidth],
+              (fillHeight || immersive) && "flex min-h-0 flex-1 flex-col",
             )}
           >
             {children}
           </div>
         </main>
 
-        <footer className="pointer-events-none fixed bottom-6 left-6 z-20 md:bottom-8 md:left-10">
-          {canGoBack ? (
-            <div className="pointer-events-auto">
-              <OnboardingBackButton onClick={handleBack} />
-            </div>
-          ) : null}
-        </footer>
+        {!immersive ? (
+          <footer className="pointer-events-none fixed bottom-6 left-6 z-20 md:bottom-8 md:left-10">
+            {canGoBack ? (
+              <div className="pointer-events-auto">
+                <OnboardingBackButton onClick={handleBack} />
+              </div>
+            ) : null}
+          </footer>
+        ) : null}
       </div>
     </OnboardingBackContext.Provider>
   );

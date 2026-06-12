@@ -9,6 +9,7 @@ import {
 } from "@/components/onboarding/onboarding-layout";
 import { useInternalUserId } from "@/hooks/use-internal-user-id";
 import { fetchAsanaStatus, setAsanaUserId } from "@/lib/integrations/asana";
+import { setGithubUserId } from "@/lib/integrations/github";
 import { useEffect } from "react";
 
 interface StepIntegrationsProps {
@@ -26,6 +27,7 @@ export function StepIntegrations({
   useEffect(() => {
     if (!userReady) return;
     setAsanaUserId(userId);
+    setGithubUserId(userId);
     fetchAsanaStatus()
       .then((status) => {
         if (status.connected) {

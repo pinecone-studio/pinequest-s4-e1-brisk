@@ -6,8 +6,8 @@ import {
 } from "@/app/onboarding/use-onboarding-store";
 import { OnboardingShell } from "@/components/onboarding/onboarding-layout";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { initializeProject } from "@/lib/api/projects";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { fetchMyProjects, initializeProject } from "@/lib/api/projects";
 import {
   exportGithubMilestones,
   extractApiError,
@@ -16,7 +16,6 @@ import {
 } from "@/lib/integrations/github";
 import { useInternalUserId } from "@/hooks/use-internal-user-id";
 import { clearOnboardingDraft } from "@/lib/onboarding-draft-storage";
-import { milestoneDraftsToScoped } from "@/lib/onboarding/scoped-milestones";
 import { PROJECT_CHANGED_EVENT, saveOnboardingData } from "@/lib/onboarding-storage";
 import { StepProjectSetup } from "./steps/step-project-setup";
 import { StepTddDiscovery } from "./steps/step-tdd-discovery";
@@ -51,45 +50,64 @@ function OnboardingWizardContent() {
   } = useOnboardingStore();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [projectCreateError, setProjectCreateError] = useState<string | null>(
+    null,
+  );
   const projectCreationRef = useRef(false);
+  const lastSyncedStepRef = useRef(-1);
+
+  const persistProject = useCallback(async () => {
+    const result = await initializeProject(toInitializePayload());
+    setInviteToken(result.project.inviteToken);
+    saveOnboardingData({
+      ...toOnboardingData(),
+      projectId: result.project.id,
+      workspaceId: result.project.workspaceId,
+      projectName: result.project.name,
+    });
+    window.dispatchEvent(new Event(PROJECT_CHANGED_EVENT));
+    return result;
+  }, [setInviteToken, toInitializePayload, toOnboardingData]);
 
   // Create the project as soon as step 1 ("Create project") is done so an
   // invite link can be shared before the rest of onboarding is finished.
   useEffect(() => {
-    if (step < 1 || inviteToken || projectCreationRef.current) {
+    if (step < 1 || inviteToken || projectCreationRef.current || !userReady) {
       return;
     }
     projectCreationRef.current = true;
+    setProjectCreateError(null);
 
-    initializeProject(toInitializePayload())
-      .then((result) => {
-        setInviteToken(result.project.inviteToken);
-        saveOnboardingData({
-          ...toOnboardingData(),
-          projectId: result.project.id,
-          workspaceId: result.project.workspaceId,
-          projectName: result.project.name,
-        });
-        window.dispatchEvent(new Event(PROJECT_CHANGED_EVENT));
-      })
-      .catch(() => {
-        projectCreationRef.current = false;
-      });
-  }, [step, inviteToken, setInviteToken, toInitializePayload, toOnboardingData]);
+    persistProject().catch((createError) => {
+      projectCreationRef.current = false;
+      setProjectCreateError(
+        extractApiError(createError, "Could not create project. Please retry."),
+      );
+    });
+  }, [step, inviteToken, userReady, persistProject]);
+
+  // Sync milestones and collaborators to the cloud as the user advances.
+  useEffect(() => {
+    if (step < 2 || !userReady || !inviteToken || step <= lastSyncedStepRef.current) {
+      return;
+    }
+    lastSyncedStepRef.current = step;
+    void persistProject().catch(() => {
+      lastSyncedStepRef.current = step - 1;
+    });
+  }, [step, inviteToken, userReady, persistProject]);
 
   const finish = async () => {
+    if (!userReady) {
+      setError("Sign in to finish onboarding and save your project.");
+      return;
+    }
+
     setSaving(true);
     setError(null);
 
-    const payload = toInitializePayload();
-    const localData = {
-      ...toOnboardingData(),
-      scopedMilestones: milestoneDraftsToScoped(step4.milestoneDrafts),
-    };
-
     try {
       if (
-        userReady &&
         step3.githubConnected &&
         step4.milestoneDrafts.some((draft) => draft.tasks.some((task) => task.trim()))
       ) {
@@ -100,15 +118,17 @@ function OnboardingWizardContent() {
             owner: status.repoOwner,
             repo: status.repoName,
             githubProjectId: status.githubProjectId,
-            milestones: step4.milestoneDrafts.map((draft) => ({
-              title: draft.title,
-              tasks: draft.tasks,
-            })),
+            milestones: step4.milestoneDrafts
+              .filter((draft) => draft.isApproved)
+              .map((draft) => ({
+                title: draft.title,
+                tasks: draft.tasks,
+              })),
           });
         }
       }
 
-      const result = await initializeProject(payload);
+      const result = await persistProject();
       const members = result.members.map((member) => ({
         email: member.email,
         name: member.email.split("@")[0] ?? member.email,
@@ -116,24 +136,23 @@ function OnboardingWizardContent() {
       }));
 
       saveOnboardingData({
-        ...localData,
+        ...toOnboardingData(),
         projectId: result.project.id,
         workspaceId: result.project.workspaceId,
         projectName: result.project.name,
         members,
       });
+
+      await fetchMyProjects({ force: true });
       clearOnboardingDraft();
       router.push("/dashboard");
     } catch (finishError) {
-      saveOnboardingData(localData);
-      clearOnboardingDraft();
       setError(
         extractApiError(
           finishError,
-          "Saved locally — sign in and retry to sync with your team.",
+          "Could not save your project. Check your connection and try again.",
         ),
       );
-      router.push("/dashboard");
     } finally {
       setSaving(false);
     }
@@ -146,8 +165,14 @@ function OnboardingWizardContent() {
         maxWidth="full"
         onBack={goToPreviousStep}
         fillHeight
-        contentClassName="min-h-0 py-4 md:py-6"
+        immersive
+        contentClassName="min-h-0"
       >
+        {projectCreateError ? (
+          <p className="mb-4 text-center text-sm text-amber-400">
+            {projectCreateError}
+          </p>
+        ) : null}
         <StepTddDiscovery />
       </OnboardingShell>
     );
@@ -161,6 +186,11 @@ function OnboardingWizardContent() {
       fillHeight={isExpandedStep(step)}
       contentClassName={isExpandedStep(step) ? "min-h-0 py-4 md:py-6" : undefined}
     >
+      {projectCreateError ? (
+        <p className="mb-4 text-center text-sm text-amber-400">
+          {projectCreateError}
+        </p>
+      ) : null}
       {step === 0 ? <StepProjectSetup /> : null}
       {step === 2 ? <StepPlanning /> : null}
       {step === 3 ? <StepInviteTeam /> : null}
