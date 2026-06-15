@@ -5,6 +5,8 @@ type MeetingApiOptions = {
 
 type ClerkWindow = Window & {
   Clerk?: {
+    loaded?: boolean;
+    load?: () => Promise<void>;
     session?: {
       getToken: () => Promise<string | null>;
     } | null;
@@ -27,7 +29,20 @@ const getClerkToken = async (): Promise<string | null> => {
   if (typeof window === "undefined") return null;
 
   try {
-    return (await (window as ClerkWindow).Clerk?.session?.getToken()) ?? null;
+    const clerk = (window as ClerkWindow).Clerk;
+    if (!clerk) return null;
+
+    const waitForClerk =
+      clerk.loaded || !clerk.load ? Promise.resolve() : clerk.load();
+
+    await Promise.race([
+      waitForClerk,
+      new Promise<void>((resolve) => {
+        window.setTimeout(resolve, 5_000);
+      }),
+    ]);
+
+    return (await clerk.session?.getToken()) ?? null;
   } catch {
     return null;
   }

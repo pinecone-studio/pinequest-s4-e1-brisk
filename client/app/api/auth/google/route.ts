@@ -2,8 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 const SCOPES = [
-  "https://www.googleapis.com/auth/calendar.readonly",
-  "https://www.googleapis.com/auth/calendar.events.readonly",
+  "https://www.googleapis.com/auth/calendar.events",
   "https://www.googleapis.com/auth/drive.file",
   "https://www.googleapis.com/auth/documents",
 ].join(" ");
@@ -46,7 +45,8 @@ export async function GET(request: Request) {
   authUrl.searchParams.set("response_type", "code");
   authUrl.searchParams.set("scope", SCOPES);
   authUrl.searchParams.set("access_type", "offline");
-  authUrl.searchParams.set("prompt", "select_account consent");
+  authUrl.searchParams.set("include_granted_scopes", "true");
+  authUrl.searchParams.set("prompt", "consent");
   authUrl.searchParams.set("state", state);
 
   redirect(authUrl.toString());

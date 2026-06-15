@@ -24,20 +24,27 @@ export async function saveGoogleTokens(
 ) {
   const encryptionKey = env.ENCRYPTION_KEY ?? "";
   const encryptedAccess = await encryptToken(tokens.accessToken, encryptionKey);
-  const encryptedRefresh = tokens.refreshToken
-    ? await encryptToken(tokens.refreshToken, encryptionKey)
-    : null;
   const expiryMs = Date.now() + tokens.expiresIn * 1000;
 
-  await db
-    .update(users)
-    .set({
-      encryptedGoogleAccessToken: encryptedAccess,
-      encryptedGoogleRefreshToken: encryptedRefresh,
-      googleTokenExpiry: expiryMs,
-      updatedAt: new Date(),
-    })
-    .where(eq(users.id, userId));
+  const update: {
+    encryptedGoogleAccessToken: string;
+    googleTokenExpiry: number;
+    updatedAt: Date;
+    encryptedGoogleRefreshToken?: string | null;
+  } = {
+    encryptedGoogleAccessToken: encryptedAccess,
+    googleTokenExpiry: expiryMs,
+    updatedAt: new Date(),
+  };
+
+  if (tokens.refreshToken) {
+    update.encryptedGoogleRefreshToken = await encryptToken(
+      tokens.refreshToken,
+      encryptionKey,
+    );
+  }
+
+  await db.update(users).set(update).where(eq(users.id, userId));
 }
 
 export async function getGoogleAccessToken(

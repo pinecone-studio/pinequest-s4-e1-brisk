@@ -1,22 +1,27 @@
 "use client";
 
 import {
+  createGoogleCalendarEvent,
   formatGoogleWorkspaceError,
   getGoogleCalendarAgenda,
 } from "@/lib/api/google-workspace";
 import { useClientApiAuth } from "@/lib/api/auth-interceptor";
-import type { AgendaEvent } from "@/lib/home/agenda-types";
+import type {
+  AgendaEvent,
+  CreateCalendarEventInput,
+} from "@/lib/home/agenda-types";
 import {
   enrichAgendaEvent,
   filterUpcomingEvents,
+  getDateKey,
   getEventsForDate,
-  getUpcomingWeekBounds,
+  getMonthGridBounds,
 } from "@/lib/home/google-agenda-utils";
+import { useAuth } from "@clerk/nextjs";
 import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -27,7 +32,11 @@ type GoogleAgendaContextValue = {
   connected: boolean | null;
   isLoading: boolean;
   error: string;
+  selectedDateKey: string;
+  setSelectedDate: (date: Date) => void;
   reload: () => Promise<void>;
+  reloadForMonth: (year: number, month: number) => Promise<void>;
+  createEvent: (input: CreateCalendarEventInput) => Promise<void>;
   getEventsForDate: (date: Date) => AgendaEvent[];
 };
 
@@ -35,18 +44,30 @@ const GoogleAgendaContext = createContext<GoogleAgendaContextValue | null>(null)
 
 export function GoogleAgendaProvider({ children }: { children: ReactNode }) {
   useClientApiAuth();
+  const { isLoaded } = useAuth();
 
   const [events, setEvents] = useState<AgendaEvent[]>([]);
   const [connected, setConnected] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [visibleMonth, setVisibleMonth] = useState(() => {
+    const today = new Date();
+    return { year: today.getFullYear(), month: today.getMonth() };
+  });
+  const [selectedDateKey, setSelectedDateKey] = useState(() => getDateKey(new Date()));
 
-  const loadAgenda = useCallback(async () => {
+  const setSelectedDate = useCallback((date: Date) => {
+    setSelectedDateKey(getDateKey(date));
+  }, []);
+
+  const loadAgendaForMonth = useCallback(async (year: number, month: number) => {
+    if (!isLoaded) return;
+
     setIsLoading(true);
     setError("");
 
     try {
-      const bounds = getUpcomingWeekBounds();
+      const bounds = getMonthGridBounds(year, month);
       const response = await getGoogleCalendarAgenda(bounds);
       setConnected(response.connected);
       setEvents(
@@ -61,11 +82,32 @@ export function GoogleAgendaProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [isLoaded]);
 
-  useEffect(() => {
-    void loadAgenda();
-  }, [loadAgenda]);
+  const reloadForMonth = useCallback(
+    async (year: number, month: number) => {
+      setVisibleMonth({ year, month });
+      await loadAgendaForMonth(year, month);
+    },
+    [loadAgendaForMonth],
+  );
+
+  const reload = useCallback(async () => {
+    await loadAgendaForMonth(visibleMonth.year, visibleMonth.month);
+  }, [loadAgendaForMonth, visibleMonth.month, visibleMonth.year]);
+
+  const createEvent = useCallback(
+    async (input: CreateCalendarEventInput) => {
+      try {
+        await createGoogleCalendarEvent(input);
+      } catch (caughtError) {
+        throw new Error(formatGoogleWorkspaceError(caughtError));
+      }
+
+      await loadAgendaForMonth(visibleMonth.year, visibleMonth.month);
+    },
+    [loadAgendaForMonth, visibleMonth.month, visibleMonth.year],
+  );
 
   const getEventsForDay = useCallback(
     (date: Date) => getEventsForDate(events, date),
@@ -78,10 +120,25 @@ export function GoogleAgendaProvider({ children }: { children: ReactNode }) {
       connected,
       isLoading,
       error,
-      reload: loadAgenda,
+      selectedDateKey,
+      setSelectedDate,
+      reload,
+      reloadForMonth,
+      createEvent,
       getEventsForDate: getEventsForDay,
     }),
-    [connected, error, events, getEventsForDay, isLoading, loadAgenda],
+    [
+      connected,
+      createEvent,
+      error,
+      events,
+      getEventsForDay,
+      isLoading,
+      reload,
+      reloadForMonth,
+      selectedDateKey,
+      setSelectedDate,
+    ],
   );
 
   return (
