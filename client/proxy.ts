@@ -2,10 +2,9 @@ import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 /**
- * Use middleware.ts (Edge) instead of Next.js 16 proxy.ts:
- * - @opennextjs/cloudflare does not support Node.js proxy/middleware yet.
- * - Clerk Frontend API proxying (`/__clerk`) only works with production keys;
- *   dev keys (`pk_test_*`) must talk to *.clerk.accounts.dev directly.
+ * Root auth + redirect logic runs in proxy.ts (Next.js 16 convention).
+ * OpenNext Cloudflare still reads `.next/server/middleware-manifest.json`;
+ * patch-handler-middleware.mjs inlines that manifest at deploy time.
  */
 export default clerkMiddleware(async (auth, req) => {
   // Resolve the root redirect here instead of in app/page.tsx. A server
