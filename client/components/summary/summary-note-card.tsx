@@ -10,6 +10,8 @@ import {
   CheckIcon,
   ClipboardListIcon,
   ClockIcon,
+  Loader2Icon,
+  MailIcon,
   PencilIcon,
   ScrollTextIcon,
   UserIcon,
@@ -18,11 +20,24 @@ import {
 type SummaryNoteCardProps = {
   note: SummaryNoteItem;
   approved: boolean;
+  emailSent: boolean;
+  isSendingEmail: boolean;
+  assigneeEmail: string | null;
   onApprove: () => void;
+  onSendEmail: () => void;
   onEdit: () => void;
 };
 
-export function SummaryNoteCard({ note, approved, onApprove, onEdit }: SummaryNoteCardProps) {
+export function SummaryNoteCard({
+  note,
+  approved,
+  emailSent,
+  isSendingEmail,
+  assigneeEmail,
+  onApprove,
+  onSendEmail,
+  onEdit,
+}: SummaryNoteCardProps) {
   const SourceIcon = note.source === "protocol" ? ScrollTextIcon : ClipboardListIcon;
 
   return (
@@ -74,6 +89,9 @@ export function SummaryNoteCard({ note, approved, onApprove, onEdit }: SummaryNo
             Assignee
           </span>
           <span className="text-sm font-medium text-foreground">{note.assignee}</span>
+          {assigneeEmail ? (
+            <span className="text-xs text-muted-foreground">{assigneeEmail}</span>
+          ) : null}
         </div>
 
         <div className="flex min-w-[10rem] flex-col gap-1">
@@ -87,27 +105,59 @@ export function SummaryNoteCard({ note, approved, onApprove, onEdit }: SummaryNo
           </span>
         </div>
 
-        <Button
-          type="button"
-          size="sm"
-          variant={approved ? "outline" : "default"}
-          className={cn(
-            "rounded-full px-4",
-            approved &&
-              "border-sage bg-sage/30 text-sage-foreground hover:bg-sage/40 dark:bg-sage/20",
-          )}
-          disabled={approved}
-          onClick={onApprove}
-        >
-          {approved ? (
-            <>
-              <CheckIcon className="size-3.5" />
-              Approved
-            </>
-          ) : (
-            "Approve"
-          )}
-        </Button>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant={approved ? "outline" : "default"}
+            className={cn(
+              "rounded-full px-4",
+              approved &&
+                "border-sage bg-sage/30 text-sage-foreground hover:bg-sage/40 dark:bg-sage/20",
+            )}
+            disabled={approved}
+            onClick={onApprove}
+          >
+            {approved ? (
+              <>
+                <CheckIcon className="size-3.5" />
+                Approved
+              </>
+            ) : (
+              "Approve"
+            )}
+          </Button>
+
+          <Button
+            type="button"
+            size="sm"
+            variant={emailSent ? "outline" : "secondary"}
+            className={cn(
+              "rounded-full px-4",
+              emailSent &&
+                "border-primary/30 bg-primary/10 text-primary hover:bg-primary/15",
+            )}
+            disabled={!approved || emailSent || isSendingEmail || !assigneeEmail}
+            onClick={onSendEmail}
+          >
+            {isSendingEmail ? (
+              <>
+                <Loader2Icon className="size-3.5 animate-spin" />
+                Sending…
+              </>
+            ) : emailSent ? (
+              <>
+                <CheckIcon className="size-3.5" />
+                Email sent
+              </>
+            ) : (
+              <>
+                <MailIcon className="size-3.5" />
+                Send email
+              </>
+            )}
+          </Button>
+        </div>
       </div>
     </article>
   );

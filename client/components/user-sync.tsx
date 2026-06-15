@@ -2,6 +2,7 @@
 
 import { seedDemoStandupAccount, syncClerkUser } from "@/lib/api/users";
 import { syncGoogleWorkspaceFromClerk } from "@/lib/api/google-workspace";
+import { persistDemoSignInEmail } from "@/lib/auth/demo-sign-in-email";
 import { isGoogleDemoShared } from "@/lib/google/demo-google";
 import { setClerkProfile } from "@/lib/meetings/clerk-profile";
 import { useUser } from "@clerk/nextjs";
@@ -28,6 +29,8 @@ export function UserSync() {
     }
 
     syncedRef.current = user.id;
+
+    persistDemoSignInEmail(email);
 
     setClerkProfile({
       clerkId: user.id,

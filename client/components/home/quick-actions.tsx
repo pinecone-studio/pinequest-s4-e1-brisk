@@ -1,16 +1,18 @@
 "use client";
 
+import { InviteEmailList } from "@/components/home/invite-email-list";
 import { slugifyRoomName } from "@/app/meeting/utils/slugify-room-name";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
+import { getClerkPrimaryEmail } from "@/lib/meetings/get-clerk-display-name";
 import { cn } from "@/lib/utils";
+import { useUser } from "@clerk/nextjs";
 import {
   CalendarDaysIcon,
   CalendarIcon,
   ClockIcon,
   KeyboardIcon,
-  MailIcon,
   Radio,
   TypeIcon,
   UploadCloudIcon,
@@ -18,7 +20,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 type ActionTab = "meeting" | "recording" | "schedule";
 
@@ -31,16 +33,29 @@ const TABS: { id: ActionTab; label: string; icon: LucideIcon }[] = [
 export function QuickActions() {
   const router = useRouter();
   const toast = useToast();
+  const { user, isLoaded } = useUser();
+  const seededInviteEmailRef = useRef(false);
   const [activeTab, setActiveTab] = useState<ActionTab>("meeting");
 
   const [meetingName, setMeetingName] = useState("");
-  const [inviteEmails, setInviteEmails] = useState("");
+  const [inviteEmails, setInviteEmails] = useState<string[]>([]);
 
   const [scheduleTitle, setScheduleTitle] = useState("");
-  const [scheduleInvites, setScheduleInvites] = useState("");
+  const [scheduleInvites, setScheduleInvites] = useState<string[]>([]);
   const [scheduleDate, setScheduleDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
+
+  useEffect(() => {
+    if (!isLoaded || !user || seededInviteEmailRef.current) return;
+
+    const email = getClerkPrimaryEmail(user).toLowerCase();
+    if (!email) return;
+
+    seededInviteEmailRef.current = true;
+    setInviteEmails((current) => (current.includes(email) ? current : [email]));
+    setScheduleInvites((current) => (current.includes(email) ? current : [email]));
+  }, [isLoaded, user]);
 
   const goToRecordings = (action?: "record" | "upload") => {
     router.push(action ? `/recordings?action=${action}` : "/recordings");
@@ -50,7 +65,9 @@ export function QuickActions() {
     e.preventDefault();
     toast.add({
       title: "Meeting Scheduled",
-      description: `${scheduleTitle} set for ${scheduleDate} from ${startTime} to ${endTime}`,
+      description: `${scheduleTitle} set for ${scheduleDate} from ${startTime} to ${endTime}${
+        scheduleInvites.length ? ` · ${scheduleInvites.length} invite(s) queued` : ""
+      }`,
       type: "success",
     });
   };
@@ -58,6 +75,13 @@ export function QuickActions() {
   const handleStartCapture = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const meetingId = slugifyRoomName(meetingName) || `instant-${Date.now()}`;
+    if (inviteEmails.length > 0) {
+      toast.add({
+        title: "Invites queued",
+        description: `${inviteEmails.length} teammate${inviteEmails.length === 1 ? "" : "s"} will be invited when the room opens.`,
+        type: "success",
+      });
+    }
     router.push(
       `/meeting?meetingId=${meetingId}&roomName=${meetingName || "Instant Meeting"}`,
     );
@@ -104,7 +128,7 @@ export function QuickActions() {
             onSubmit={handleStartCapture}
             className="flex flex-col gap-4 lg:flex-row lg:items-center"
           >
-            <div className="relative flex-[1.4]">
+            <div className="relative min-w-0 flex-[1.2] lg:flex-1">
               <KeyboardIcon className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground/80" />
               <Input
                 value={meetingName}
@@ -113,18 +137,18 @@ export function QuickActions() {
                 className="h-13 w-full rounded-2xl bg-transparent pl-12 pr-4 text-base focus-visible:ring-primary/50"
               />
             </div>
-            <div className="relative flex-1">
-              <MailIcon className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground/80" />
-              <Input
-                value={inviteEmails}
-                onChange={(e) => setInviteEmails(e.target.value)}
-                placeholder="Invite teammates by email (optional)"
-                className="h-13 w-full rounded-2xl bg-transparent pl-12 pr-4 text-base focus-visible:ring-primary/50"
-              />
-            </div>
+
+            <InviteEmailList
+              emails={inviteEmails}
+              onEmailsChange={setInviteEmails}
+              layout="inline"
+              placeholder="Invite by email (optional)"
+              className="min-w-0 flex-1"
+            />
+
             <Button
               type="submit"
-              className="h-13 gap-2.5 rounded-2xl bg-primary px-7 text-base font-semibold text-primary-foreground hover:bg-primary/80"
+              className="h-13 shrink-0 gap-2.5 rounded-2xl bg-primary px-7 text-base font-semibold text-primary-foreground hover:bg-primary/80 lg:whitespace-nowrap"
             >
               <VideoIcon className="size-5" />
               Start new meeting
@@ -203,14 +227,13 @@ export function QuickActions() {
               </div>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="relative flex-1">
-                <MailIcon className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground/80" />
-                <Input
-                  value={scheduleInvites}
-                  onChange={(e) => setScheduleInvites(e.target.value)}
+            <div className="flex flex-col gap-4 md:flex-row">
+              <div className="flex-1">
+                <InviteEmailList
+                  emails={scheduleInvites}
+                  onEmailsChange={setScheduleInvites}
+                  layout="stacked"
                   placeholder="Invitees (comma separated emails)"
-                  className="h-13 w-full rounded-2xl bg-transparent pl-12 pr-4 text-base focus-visible:ring-primary/50"
                 />
               </div>
               <Button

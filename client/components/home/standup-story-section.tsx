@@ -1,32 +1,14 @@
 "use client";
 
-import {
-  MOCK_STANDUP_DAYS,
-  MOCK_STANDUP_STORY_INTRO,
-} from "@/lib/meetings/mock-standup-story";
+import { MOCK_STANDUP_DAYS } from "@/lib/meetings/mock-standup-story";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRightIcon, SparklesIcon } from "lucide-react";
+import { ArrowRightIcon } from "lucide-react";
 import Link from "next/link";
 
 export function StandupStorySection() {
   return (
     <section className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h2 className="font-heading text-lg font-semibold text-foreground">
-            {MOCK_STANDUP_STORY_INTRO.title}
-          </h2>
-          <Badge className="gap-1 bg-primary/15 text-primary">
-            <SparklesIcon className="size-3" />
-            Demo түүх
-          </Badge>
-        </div>
-        <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground">
-          {MOCK_STANDUP_STORY_INTRO.description}
-        </p>
-      </div>
-
       <ul className="flex list-none flex-col gap-4">
         {MOCK_STANDUP_DAYS.map((day) => (
           <li key={day.id}>
