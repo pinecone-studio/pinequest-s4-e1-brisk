@@ -1,8 +1,11 @@
 "use client";
 
-import { fetchMeetings, type MeetingListItem, type MeetingTranscriptionStatus } from "@/app/meeting";
+import {
+  fetchMeetings,
+  type MeetingListItem,
+  type MeetingTranscriptionStatus,
+} from "@/app/meeting";
 import { parseRoomCodeInput } from "@/app/meeting/utils/parse-room-code";
-import { StandupStorySection } from "@/components/home/standup-story-section";
 import { MeetingActivityCard } from "@/components/meetings/meeting-activity-card";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +24,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import {
+  buildStandupStorySearchSuggestions,
+  isMockStandupMeeting,
+  prependMockStandupMeetings,
+} from "@/lib/meetings/mock-standup-story";
+import { buildMeetingSearchSuggestions } from "@/lib/search/build-search-suggestions";
+import { useDashboardSearch } from "@/lib/search/dashboard-search-context";
+import { filterMeetingsBySearch } from "@/lib/search/filter-meetings";
+import { useRegisterSearchSuggestions } from "@/lib/search/use-register-search-suggestions";
 import { cn } from "@/lib/utils";
 import {
   ArrowRightIcon,
@@ -32,15 +44,6 @@ import {
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import {
-  isMockStandupMeeting,
-  prependMockStandupMeetings,
-} from "@/lib/meetings/mock-standup-story";
-import { filterMeetingsBySearch } from "@/lib/search/filter-meetings";
-import { buildStandupStorySearchSuggestions } from "@/lib/meetings/mock-standup-story";
-import { buildMeetingSearchSuggestions } from "@/lib/search/build-search-suggestions";
-import { useDashboardSearch } from "@/lib/search/dashboard-search-context";
-import { useRegisterSearchSuggestions } from "@/lib/search/use-register-search-suggestions";
 
 type StatusFilter = MeetingTranscriptionStatus | "none" | "all";
 type MeetingScope = "mine" | "all" | "shared";
@@ -109,7 +112,8 @@ export default function MeetingsPage() {
 
     fetchMeetings()
       .then((response) => {
-        if (isActive) setMeetings(prependMockStandupMeetings(response.meetings));
+        if (isActive)
+          setMeetings(prependMockStandupMeetings(response.meetings));
       })
       .catch(() => {
         if (isActive) setMeetings(prependMockStandupMeetings([]));
@@ -127,26 +131,34 @@ export default function MeetingsPage() {
     if (scope === "shared") return [];
 
     const scopedMeetings = meetings.filter((meeting) => {
-      return statusFilter === "all" || (meeting.transcriptionStatus ?? "none") === statusFilter;
+      return (
+        statusFilter === "all" ||
+        (meeting.transcriptionStatus ?? "none") === statusFilter
+      );
     });
 
     return filterMeetingsBySearch(scopedMeetings, query);
   }, [meetings, scope, statusFilter, query]);
 
   const listMeetings = useMemo(
-    () => filteredMeetings.filter((meeting) => !isMockStandupMeeting(meeting.id)),
+    () =>
+      filteredMeetings.filter((meeting) => !isMockStandupMeeting(meeting.id)),
     [filteredMeetings],
   );
 
   return (
     <div className="relative flex w-full flex-1 flex-col px-6 py-6 lg:px-8">
       <div className="flex shrink-0 items-center justify-between gap-3">
-        <h2 className="font-heading text-2xl font-bold text-zinc-900 dark:text-zinc-50">{SCOPE_TITLES[scope]}</h2>
+        <h2 className="font-heading text-2xl font-bold text-zinc-900 dark:text-zinc-50">
+          {SCOPE_TITLES[scope]}
+        </h2>
 
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setViewMode((mode) => (mode === "list" ? "grid" : "list"))}
+            onClick={() =>
+              setViewMode((mode) => (mode === "list" ? "grid" : "list"))
+            }
             className="flex h-11 w-11 min-w-[44px] items-center justify-center rounded-xl border border-zinc-200 text-zinc-500 transition-colors duration-200 hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
             aria-label="Toggle layout"
           >
@@ -170,7 +182,8 @@ export default function MeetingsPage() {
                   key={item.value}
                   onClick={() => setStatusFilter(item.value)}
                   className={cn(
-                    statusFilter === item.value && "bg-accent text-accent-foreground",
+                    statusFilter === item.value &&
+                      "bg-accent text-accent-foreground",
                   )}
                 >
                   {item.label}
@@ -195,7 +208,10 @@ export default function MeetingsPage() {
                   Paste a meeting link or enter a room code to join.
                 </DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleJoinWithCode} className="flex flex-col gap-2">
+              <form
+                onSubmit={handleJoinWithCode}
+                className="flex flex-col gap-2"
+              >
                 <Input
                   value={joinCode}
                   onChange={(event) => {
@@ -232,14 +248,19 @@ export default function MeetingsPage() {
         {isLoading ? (
           <div className="flex flex-col gap-4">
             {[0, 1, 2].map((key) => (
-              <div key={key} className="h-40 animate-pulse rounded-xl bg-muted" />
+              <div
+                key={key}
+                className="h-40 animate-pulse rounded-xl bg-muted"
+              />
             ))}
           </div>
         ) : filteredMeetings.length > 0 ? (
           <div
             className={cn(
               "pb-4",
-              viewMode === "list" ? "flex flex-col gap-4" : "grid gap-4 md:grid-cols-2",
+              viewMode === "list"
+                ? "flex flex-col gap-4"
+                : "grid gap-4 md:grid-cols-2",
             )}
           >
             {filteredMeetings.map((meeting) => (

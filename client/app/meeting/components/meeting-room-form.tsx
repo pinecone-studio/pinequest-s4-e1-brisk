@@ -11,6 +11,7 @@ import {
   createMeetingRoom,
   endMeeting,
   joinMeetingRoom,
+  startMeeting,
 } from "../index";
 import type { MeetingRoomListItem } from "../types/meeting-room.types";
 import { slugifyRoomName } from "../utils/slugify-room-name";
@@ -113,6 +114,9 @@ export const MeetingRoomForm = ({
             url: getSafeLivekitUrl(result.url),
           },
         });
+        void startMeeting(selectedRoom.meetingId, {
+          title: selectedRoom.roomName,
+        }).catch(() => undefined);
       } catch {
         try {
           const participantIdentity = getParticipantIdentity({
@@ -136,6 +140,9 @@ export const MeetingRoomForm = ({
               url: getSafeLivekitUrl(result.url),
             },
           });
+          void startMeeting(selectedRoom.meetingId, {
+            title: selectedRoom.roomName,
+          }).catch(() => undefined);
         } catch (caughtError) {
           setError(formatUserError(caughtError));
         }
@@ -154,7 +161,10 @@ export const MeetingRoomForm = ({
           meetingId={activeSession.meetingId}
           onLeave={() => {
             const meetingId = activeSession.meetingId;
-            void endMeeting(meetingId)
+            const title =
+              activeSession.response.displayRoomName ??
+              activeSession.response.roomName;
+            void endMeeting(meetingId, { title })
               .catch(() => undefined)
               .finally(() => router.push(`/meetings/${meetingId}`));
           }}

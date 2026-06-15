@@ -2,7 +2,7 @@ import { formatHttpError } from "@/lib/errors/format-user-error";
 
 type MeetingApiOptions = {
   body?: unknown;
-  method?: "DELETE" | "GET" | "POST";
+  method?: "DELETE" | "GET" | "PATCH" | "POST";
 };
 
 type ClerkWindow = Window & {

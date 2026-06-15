@@ -1,8 +1,8 @@
-import { Suspense } from "react";
 import {
   HomePageContent,
   HomePageFallback,
 } from "@/components/home/home-page-content";
+import { Suspense } from "react";
 
 export default function HomePage() {
   return (

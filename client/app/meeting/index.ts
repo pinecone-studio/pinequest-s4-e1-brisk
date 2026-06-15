@@ -1,6 +1,8 @@
 export { createMeetingRoom } from "./api/create-meeting-room";
 export { deleteMeetingTranscript } from "./api/delete-meeting-transcript";
 export { endMeeting } from "./api/end-meeting";
+export { startMeeting } from "./api/start-meeting";
+export { updateMeeting } from "./api/update-meeting";
 export { fetchMeetingAnalysisDetails } from "./api/fetch-meeting-analysis-details";
 export { fetchMeetings } from "./api/fetch-meetings";
 export { generateMeetingSummary } from "./api/generate-meeting-summary";
@@ -39,5 +41,6 @@ export type {
   MeetingTranscriptionStatus,
   MeetingTranscriptSegment,
   StartMeetingEgressResponse,
+  StartMeetingResponse,
   StopMeetingEgressResponse,
 } from "./types/meeting-response.types";
