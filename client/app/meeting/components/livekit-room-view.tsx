@@ -7,6 +7,7 @@ import {
   type Participant,
 } from "livekit-client";
 import { useEffect, useMemo, useState } from "react";
+import { displayUserError } from "@/lib/errors/format-user-error";
 import { useMediaToggleShortcuts } from "@/hooks/use-media-toggle-shortcuts";
 import type { TranscriptLanguage } from "../utils/transcript-language";
 import { MeetingParticipantFilmstrip } from "./meeting-participant-filmstrip";

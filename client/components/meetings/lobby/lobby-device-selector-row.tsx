@@ -17,7 +17,7 @@ const BACKGROUND_EFFECT_OPTIONS: { label: string; value: BackgroundEffect }[] =
   ];
 
 const PILL_TRIGGER_CLASS =
-  "flex min-w-0 flex-1 items-center justify-between gap-2 rounded-full border border-zinc-200 bg-white/80 px-4 py-2 text-xs font-medium text-zinc-700 shadow-sm transition-colors hover:bg-zinc-50";
+  "flex min-w-0 flex-1 items-center justify-between gap-2 rounded-full border border-border bg-card/80 px-4 py-2 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-muted";
 
 type LobbyDeviceSelectorRowProps = {
   audioInputDevices: MediaDeviceOption[];
@@ -57,7 +57,7 @@ function DevicePickerPill({
             {selected?.label ?? "System default"}
           </span>
         </span>
-        <ChevronDown className="size-3.5 shrink-0 text-zinc-400" />
+        <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start">
         <DropdownMenuItem onClick={() => onSelect(null)}>
@@ -121,7 +121,7 @@ export function LobbyDeviceSelectorRow({
             <Sparkles className="size-3.5 shrink-0" />
             <span className="truncate">{backgroundEffectLabel}</span>
           </span>
-          <ChevronDown className="size-3.5 shrink-0 text-zinc-400" />
+          <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
           {BACKGROUND_EFFECT_OPTIONS.map((option) => (

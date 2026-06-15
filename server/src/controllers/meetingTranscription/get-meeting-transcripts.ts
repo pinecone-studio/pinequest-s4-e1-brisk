@@ -3,6 +3,11 @@ import { desc } from "drizzle-orm";
 import { useDB } from "../../lib/db/db";
 import { meetingTranscriptions } from "../../schema/meetingTranscription/meeting-transcription.schema";
 import type { Bindings } from "../../lib/common/types";
+import {
+  PUBLIC_ERRORS,
+  sanitizeTranscriptForClient,
+  toPublicApiError,
+} from "../../lib/errors/public-error";
 
 export const getMeetingTranscripts = async (
   c: Context<{ Bindings: Bindings }>,
@@ -21,9 +26,12 @@ export const getMeetingTranscripts = async (
       )
       .limit(20);
 
-    return c.json({ transcripts }, 200);
+    return c.json(
+      { transcripts: transcripts.map(sanitizeTranscriptForClient) },
+      200,
+    );
   } catch (error) {
-    return c.json({ error: (error as Error).message }, 500);
+    return c.json({ error: toPublicApiError(500) }, 500);
   }
 };
 
@@ -43,11 +51,11 @@ export const getLatestMeetingTranscript = async (
       .get();
 
     if (!transcript) {
-      return c.json({ error: "Transcript not found" }, 404);
+      return c.json({ error: PUBLIC_ERRORS.notFound }, 404);
     }
 
-    return c.json(transcript, 200);
+    return c.json(sanitizeTranscriptForClient(transcript), 200);
   } catch (error) {
-    return c.json({ error: (error as Error).message }, 500);
+    return c.json({ error: toPublicApiError(500) }, 500);
   }
 };

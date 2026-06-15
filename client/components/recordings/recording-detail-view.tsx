@@ -8,15 +8,16 @@ import { useRecordingStatus } from "@/app/recordings/hooks/use-recording-status"
 import { RecordingDetailContent } from "@/components/recordings/recording-detail-content";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CircleBackLink } from "@/components/ui/circle-back-link";
 import { formatMeetingDateLong } from "@/lib/meetings/format-meeting-date";
 import { TRANSCRIPTION_STATUS_STYLES } from "@/lib/meetings/transcription-status";
 import {
   formatRecordingDuration,
   formatRecordingFileSize,
 } from "@/lib/recordings/format-recording";
+import { displayUserError, formatUserError } from "@/lib/errors/format-user-error";
 import { cn } from "@/lib/utils";
 import {
-  ArrowLeftIcon,
   CalendarIcon,
   ClockIcon,
   DownloadIcon,
@@ -27,9 +28,10 @@ import {
   Trash2Icon,
   UsersIcon,
 } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { buildRecordingDetailSearchSuggestions } from "@/lib/search/build-search-suggestions";
+import { useRegisterSearchSuggestions } from "@/lib/search/use-register-search-suggestions";
 
 type RecordingDetailViewProps = {
   recordingId: string;
@@ -51,6 +53,12 @@ export function RecordingDetailView({ recordingId }: RecordingDetailViewProps) {
   const [actionError, setActionError] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+
+  const recordingSuggestions = useMemo(
+    () => (recording ? buildRecordingDetailSearchSuggestions(recording) : []),
+    [recording],
+  );
+  useRegisterSearchSuggestions(`recording-detail-${recordingId}`, recordingSuggestions);
 
   useEffect(() => {
     setIsLoading(true);
@@ -79,10 +87,7 @@ export function RecordingDetailView({ recordingId }: RecordingDetailViewProps) {
         <p className="text-sm text-muted-foreground">
           This recording doesn&apos;t exist or you don&apos;t have access to it.
         </p>
-        <Button variant="outline" size="sm" render={<Link href="/recordings" />}>
-          <ArrowLeftIcon />
-          Back to recordings
-        </Button>
+        <CircleBackLink href="/recordings" label="Back to recordings" />
       </div>
     );
   }
@@ -99,7 +104,7 @@ export function RecordingDetailView({ recordingId }: RecordingDetailViewProps) {
     try {
       await downloadRecording(recording.id, recording.title);
     } catch (caughtError) {
-      setActionError((caughtError as Error).message);
+      setActionError(formatUserError(caughtError));
     } finally {
       setIsDownloading(false);
     }
@@ -116,7 +121,7 @@ export function RecordingDetailView({ recordingId }: RecordingDetailViewProps) {
       router.push("/recordings");
       router.refresh();
     } catch (caughtError) {
-      setActionError((caughtError as Error).message);
+      setActionError(formatUserError(caughtError));
       setIsDeleting(false);
     }
   };
@@ -124,10 +129,7 @@ export function RecordingDetailView({ recordingId }: RecordingDetailViewProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4 lg:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Button variant="ghost" size="sm" render={<Link href="/recordings" />}>
-          <ArrowLeftIcon />
-          Back to recordings
-        </Button>
+        <CircleBackLink href="/recordings" label="Back to recordings" />
 
         <div className="flex items-center gap-2">
           <Button
@@ -211,13 +213,13 @@ export function RecordingDetailView({ recordingId }: RecordingDetailViewProps) {
 
       {actionError ? (
         <p className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-          {actionError}
+          {displayUserError(actionError)}
         </p>
       ) : null}
 
       {error && recording ? (
         <p className="text-xs text-muted-foreground">
-          Couldn&apos;t refresh status: {error}
+          {formatUserError(error)}
         </p>
       ) : null}
     </div>

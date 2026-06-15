@@ -1,6 +1,7 @@
 "use client";
 
 import { fetchRecordingAudioObjectUrl } from "@/app/recordings/api/recordings-api";
+import { formatUserError, displayUserError } from "@/lib/errors/format-user-error";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -35,7 +36,7 @@ export function RecordingAudioPlayer({
       })
       .catch((caughtError: unknown) => {
         if (isActive) {
-          setError((caughtError as Error).message);
+          setError(formatUserError(caughtError));
         }
       })
       .finally(() => {
@@ -61,7 +62,7 @@ export function RecordingAudioPlayer({
     return (
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <AlertTriangle className="size-3.5 shrink-0" />
-        {error ?? "Аудио бэлэн биш байна."}
+        {error ? displayUserError(error) : "Аудио бэлэн биш байна."}
       </div>
     );
   }

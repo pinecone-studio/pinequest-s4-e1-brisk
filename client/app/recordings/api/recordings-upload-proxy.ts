@@ -1,4 +1,9 @@
 import { getBackendBaseUrls } from "@/app/meeting/api/meeting-proxy";
+import {
+  formatHttpError,
+  formatUserError,
+  USER_ERRORS,
+} from "@/lib/errors/format-user-error";
 
 const getTargetUrl = (baseUrl: string, path: string) =>
   new URL(path, `${baseUrl}/`).toString();
@@ -17,10 +22,14 @@ const readResponseBody = async (response: Response) => {
 
 const getProxyError = (body: unknown, status: number) => {
   if (body && typeof body === "object" && "error" in body) {
-    return String((body as { error: unknown }).error);
+    const raw = (body as { error: unknown }).error;
+    return formatHttpError(
+      status,
+      typeof raw === "string" ? raw : undefined,
+    );
   }
 
-  return `Recording backend request failed with status ${status}.`;
+  return formatHttpError(status);
 };
 
 // Forwards a multipart/form-data upload to the Worker. The raw body and its
@@ -33,7 +42,7 @@ export const proxyRecordingUpload = async (request: Request, path: string) => {
 
   if (!targetUrls.length) {
     return Response.json(
-      { error: "Recording backend URL is not configured." },
+      { error: USER_ERRORS.server },
       { status: 500 },
     );
   }
@@ -72,10 +81,7 @@ export const proxyRecordingUpload = async (request: Request, path: string) => {
 
   return Response.json(
     {
-      error:
-        lastError instanceof Error
-          ? lastError.message
-          : "Recording upload proxy failed.",
+      error: lastError ? formatUserError(lastError) : USER_ERRORS.server,
     },
     { status: 500 },
   );

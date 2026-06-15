@@ -9,6 +9,11 @@ import {
 } from "../../schema/meeting.model";
 import { meetingTranscriptions } from "../../schema/meetingTranscription/meeting-transcription.schema";
 import type { Bindings, Variables } from "../../lib/common/types";
+import {
+  PUBLIC_ERRORS,
+  sanitizeTranscriptForClient,
+  toPublicApiError,
+} from "../../lib/errors/public-error";
 
 export const getMeetingDetails = async (
   c: Context<{ Bindings: Bindings; Variables: Variables }>,
@@ -17,7 +22,7 @@ export const getMeetingDetails = async (
     const userId = await getAuthenticatedUserId(c);
 
     if (!userId) {
-      return c.json({ error: "Unauthorized" }, 401);
+      return c.json({ error: PUBLIC_ERRORS.auth }, 401);
     }
 
     const meetingId = c.req.param("id");
@@ -33,7 +38,7 @@ export const getMeetingDetails = async (
       .get();
 
     if (!meeting) {
-      return c.json({ error: "Meeting not found" }, 404);
+      return c.json({ error: PUBLIC_ERRORS.notFound }, 404);
     }
 
     const [transcription, summary, transcriptSegments] = await Promise.all([
@@ -59,13 +64,13 @@ export const getMeetingDetails = async (
     return c.json(
       {
         meeting,
-        transcription: transcription ?? null,
+        transcription: transcription ? sanitizeTranscriptForClient(transcription) : null,
         summary: summary ?? null,
         transcriptSegments,
       },
       200,
     );
   } catch (error) {
-    return c.json({ error: (error as Error).message }, 500);
+    return c.json({ error: toPublicApiError(500) }, 500);
   }
 };

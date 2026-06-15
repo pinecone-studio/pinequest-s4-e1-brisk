@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { CircleBackLink } from "@/components/ui/circle-back-link";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,7 +10,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/components/ui/toast";
 import {
-  ArrowLeftIcon,
   CalendarIcon,
   ClockIcon,
   CopyIcon,
@@ -72,10 +72,7 @@ export const MeetingDetailTopbar = ({
   return (
     <header className="relative z-10 flex shrink-0 flex-wrap items-start justify-between gap-4 border-b border-zinc-100 px-4 py-4 dark:border-white/5 lg:px-6">
       <div className="flex flex-col gap-2">
-        <Button variant="ghost" size="sm" className="-ml-2 w-fit" render={<Link href="/meetings" />}>
-          <ArrowLeftIcon />
-          Back to meetings
-        </Button>
+        <CircleBackLink href="/meetings" label="Back to meetings" className="-ml-0.5 rounded-full" />
         <h1 className="font-heading text-xl font-semibold text-foreground lg:text-2xl">{title}</h1>
         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
           {createdDate ? (

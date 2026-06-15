@@ -7,6 +7,7 @@ import {
   formatElapsed,
   useRecordingUploader,
 } from "@/components/recordings/use-recording-uploader";
+import { displayUserError } from "@/lib/errors/format-user-error";
 import { cn } from "@/lib/utils";
 import { Loader2, Mic, Square, Upload } from "lucide-react";
 
@@ -128,7 +129,7 @@ export function VoiceRecorderCard({ onUploaded }: VoiceRecorderCardProps) {
 
       {error ? (
         <p className="mt-3 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
+          {displayUserError(error)}
         </p>
       ) : null}
     </div>

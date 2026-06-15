@@ -1,4 +1,5 @@
 import { meetingApi } from "@/app/meeting/api/meeting-api";
+import { formatHttpError } from "@/lib/errors/format-user-error";
 import { RECORDING_ENDPOINTS } from "./recordings-endpoints";
 import type {
   ListRecordingsResponse,
@@ -25,13 +26,11 @@ const getClerkToken = async (): Promise<string | null> => {
 };
 
 const getErrorMessage = async (response: Response) => {
-  const fallback = `Recording API request failed with status ${response.status}.`;
-
   try {
     const data = (await response.json()) as { error?: string };
-    return data.error ?? fallback;
+    return formatHttpError(response.status, data.error);
   } catch {
-    return fallback;
+    return formatHttpError(response.status);
   }
 };
 

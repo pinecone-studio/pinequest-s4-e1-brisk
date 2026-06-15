@@ -7,16 +7,16 @@ import {
 } from "@/app/meeting";
 import { useTranscriptionStatus } from "@/app/meeting/hooks/use-transcription-status";
 import { parseMeetingSummary } from "@/app/meeting/utils/parse-meeting-summary";
-import { Button } from "@/components/ui/button";
+import { CircleBackLink } from "@/components/ui/circle-back-link";
 import { formatMeetingDateLong } from "@/lib/meetings/format-meeting-date";
 import { getMeetingDurationLabel } from "@/lib/meetings/meeting-duration";
 import { getMeetingParticipants } from "@/lib/meetings/meeting-participants";
 import { getMeetingSentiment } from "@/lib/meetings/meeting-sentiment";
 import { getSpeakerTalkTimeStats } from "@/lib/meetings/meeting-speaker-stats";
 import { getMeetingTopics } from "@/lib/meetings/meeting-topics";
-import { ArrowLeftIcon } from "lucide-react";
-import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { buildMeetingDetailSearchSuggestions } from "@/lib/search/build-search-suggestions";
+import { useRegisterSearchSuggestions } from "@/lib/search/use-register-search-suggestions";
 import { MeetingContentTabs } from "./meeting-content-tabs";
 import { MeetingDetailTopbar } from "./meeting-detail-topbar";
 import { MeetingInsightsSidebar } from "./meeting-insights-sidebar";
@@ -43,10 +43,7 @@ const MeetingDetailNotFound = () => (
     <p className="text-sm text-muted-foreground">
       This meeting doesn&apos;t exist or you don&apos;t have access to it.
     </p>
-    <Button variant="outline" size="sm" render={<Link href="/meetings" />}>
-      <ArrowLeftIcon />
-      Back to meetings
-    </Button>
+    <CircleBackLink href="/meetings" label="Back to meetings" />
   </div>
 );
 
@@ -91,6 +88,38 @@ export const MeetingDetailView = ({ meetingId }: MeetingDetailViewProps) => {
       .catch(() => {});
   }, [status, details, meetingId]);
 
+  const detailSuggestions = useMemo(() => {
+    if (!details) return [];
+
+    const transcription = liveTranscription ?? details.transcription;
+    const meetingListItem: MeetingListItem = {
+      id: details.meeting.id,
+      title: details.meeting.title,
+      createdAt: details.meeting.createdAt,
+      updatedAt: details.meeting.updatedAt,
+      transcriptionStatus: transcription?.status ?? null,
+      summaryPreview: details.summary?.content ?? null,
+    };
+    const summaryContent = parseMeetingSummary(transcription?.summary);
+    const topics = getMeetingTopics(meetingListItem, summaryContent);
+    const keyPoints =
+      summaryContent?.keyDecisions ?? details.summary?.keyPoints ?? [];
+    const actionItems =
+      summaryContent?.actionItems ?? details.summary?.actionItems ?? [];
+
+    return buildMeetingDetailSearchSuggestions({
+      meetingId: details.meeting.id,
+      title: details.meeting.title,
+      summaryText: details.summary?.content ?? null,
+      keyPoints,
+      actionItems,
+      topics,
+      segments: details.transcriptSegments,
+    });
+  }, [details, liveTranscription]);
+
+  useRegisterSearchSuggestions(`meeting-detail-${meetingId}`, detailSuggestions);
+
   if (isLoading) return <MeetingDetailSkeleton />;
   if (notFound || !details) return <MeetingDetailNotFound />;
 
@@ -119,6 +148,7 @@ export const MeetingDetailView = ({ meetingId }: MeetingDetailViewProps) => {
     summaryContent?.keyDecisions ?? details.summary?.keyPoints ?? [];
   const actionItems =
     summaryContent?.actionItems ?? details.summary?.actionItems ?? [];
+
 
   return (
     <div className="relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">

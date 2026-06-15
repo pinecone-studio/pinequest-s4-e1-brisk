@@ -21,6 +21,11 @@ import {
   formatRecordingDuration,
   formatRecordingFileSize,
 } from "@/lib/recordings/format-recording";
+import {
+  formatBackendErrorMessage,
+  displayUserError,
+  formatUserError,
+} from "@/lib/errors/format-user-error";
 import { cn } from "@/lib/utils";
 import {
   CalendarIcon,
@@ -44,7 +49,7 @@ type RecordingResultCardProps = {
 
 const getRecordingPreview = (recording: StandaloneRecording) => {
   if (recording.status === "failed" && recording.errorMessage) {
-    return recording.errorMessage;
+    return formatBackendErrorMessage(recording.errorMessage);
   }
 
   if (recording.keyPoints?.[0]) return recording.keyPoints[0];
@@ -86,7 +91,7 @@ export function RecordingResultCard({
     try {
       await downloadRecording(current.id, current.title);
     } catch (caughtError) {
-      setActionError((caughtError as Error).message);
+      setActionError(formatUserError(caughtError));
     } finally {
       setIsDownloading(false);
     }
@@ -102,7 +107,7 @@ export function RecordingResultCard({
       await deleteRecording(current.id);
       onDeleted?.();
     } catch (caughtError) {
-      setActionError((caughtError as Error).message);
+      setActionError(formatUserError(caughtError));
       setIsDeleting(false);
     }
   };
@@ -203,7 +208,7 @@ export function RecordingResultCard({
         </div>
 
         {actionError ? (
-          <p className="text-xs text-destructive">{actionError}</p>
+          <p className="text-xs text-destructive">{displayUserError(actionError)}</p>
         ) : null}
       </CardContent>
     </Card>

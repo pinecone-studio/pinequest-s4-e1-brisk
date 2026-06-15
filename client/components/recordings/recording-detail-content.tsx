@@ -2,9 +2,12 @@
 
 import type { StandaloneRecording } from "@/app/recordings/types";
 import { RecordingAudioPlayer } from "@/components/recordings/recording-audio-player";
+import { formatBackendErrorMessage } from "@/lib/errors/format-user-error";
+import { useDashboardSearch } from "@/lib/search/dashboard-search-context";
+import { matchesSearchQuery } from "@/lib/search/matches-search-query";
 import { cn } from "@/lib/utils";
 import { AlertTriangle, Check } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 const speakerToneClasses = [
   "bg-primary/10 text-primary",
@@ -105,6 +108,37 @@ export function RecordingDetailContent({
   recording,
   isProcessing = false,
 }: RecordingDetailContentProps) {
+  const { query } = useDashboardSearch();
+
+  const filteredKeyPoints = useMemo(() => {
+    const keyPoints = recording.keyPoints ?? [];
+    if (!query.trim()) return keyPoints;
+    return keyPoints.filter((point) => matchesSearchQuery(query, point));
+  }, [query, recording.keyPoints]);
+
+  const filteredSegments = useMemo(() => {
+    const segments = recording.scriptSegments ?? [];
+    if (!query.trim()) return segments;
+
+    return segments.filter((segment) =>
+      matchesSearchQuery(query, segment.speakerLabel, segment.text),
+    );
+  }, [query, recording.scriptSegments]);
+
+  const showTranscript = useMemo(() => {
+    if (!recording.transcript?.trim()) return false;
+    if (!query.trim()) return true;
+    return matchesSearchQuery(query, recording.transcript);
+  }, [query, recording.transcript]);
+
+  const matchesTitle = matchesSearchQuery(query, recording.title);
+  const hasSearch = Boolean(query.trim());
+  const hasVisibleContent =
+    matchesTitle ||
+    showTranscript ||
+    filteredKeyPoints.length > 0 ||
+    filteredSegments.length > 0;
+
   return (
     <div className="space-y-5">
       <RecordingAudioPlayer recordingId={recording.id} />
@@ -113,7 +147,9 @@ export function RecordingDetailContent({
         <div className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
           <span>
-            {recording.errorMessage ?? "Processing failed. Please try again."}
+            {formatBackendErrorMessage(
+              recording.errorMessage ?? "Processing failed. Please try again.",
+            )}
           </span>
         </div>
       ) : isProcessing ? (
@@ -124,7 +160,13 @@ export function RecordingDetailContent({
         </div>
       ) : (
         <>
-          {recording.transcript?.trim() ? (
+          {hasSearch && !hasVisibleContent ? (
+            <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+              No recording content matches your search.
+            </div>
+          ) : null}
+
+          {showTranscript || (hasSearch && matchesTitle && recording.transcript?.trim()) ? (
             <section className="space-y-2">
               <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Full transcript
@@ -137,21 +179,31 @@ export function RecordingDetailContent({
             </section>
           ) : null}
 
-          {recording.keyPoints && recording.keyPoints.length > 0 ? (
+          {(matchesTitle ? recording.keyPoints : filteredKeyPoints)?.length ? (
             <section className="space-y-2">
               <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Гол санаанууд
               </h4>
-              <KeyPointsChecklist keyPoints={recording.keyPoints} />
+              <KeyPointsChecklist
+                keyPoints={
+                  matchesTitle ? (recording.keyPoints ?? []) : filteredKeyPoints
+                }
+              />
             </section>
           ) : null}
 
-          {recording.scriptSegments && recording.scriptSegments.length > 0 ? (
+          {(matchesTitle ? recording.scriptSegments : filteredSegments)?.length ? (
             <section className="space-y-2">
               <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Яриа
               </h4>
-              <ScriptTimeline segments={recording.scriptSegments} />
+              <ScriptTimeline
+                segments={
+                  matchesTitle
+                    ? (recording.scriptSegments ?? [])
+                    : filteredSegments
+                }
+              />
             </section>
           ) : null}
         </>

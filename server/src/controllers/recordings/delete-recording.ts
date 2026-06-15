@@ -3,6 +3,7 @@ import { useDB } from "../../lib/db/db";
 import { getAuthenticatedUserId } from "../../lib/auth/clerk";
 import { deleteRecordingForUser } from "./recordings.service";
 import type { Bindings, Variables } from "../../lib/common/types";
+import { PUBLIC_ERRORS, toPublicApiError } from "../../lib/errors/public-error";
 
 export const deleteRecording = async (
   c: Context<{ Bindings: Bindings; Variables: Variables }>,
@@ -10,7 +11,7 @@ export const deleteRecording = async (
   const userId = await getAuthenticatedUserId(c);
 
   if (!userId) {
-    return c.json({ error: "Unauthorized" }, 401);
+    return c.json({ error: PUBLIC_ERRORS.auth }, 401);
   }
 
   const id = c.req.param("id");
@@ -24,11 +25,11 @@ export const deleteRecording = async (
     const deleted = await deleteRecordingForUser(c.env, db, id, userId);
 
     if (!deleted) {
-      return c.json({ error: "Recording not found" }, 404);
+      return c.json({ error: PUBLIC_ERRORS.notFound }, 404);
     }
 
     return c.json({ ok: true }, 200);
   } catch (error) {
-    return c.json({ error: (error as Error).message }, 500);
+    return c.json({ error: toPublicApiError(500) }, 500);
   }
 };

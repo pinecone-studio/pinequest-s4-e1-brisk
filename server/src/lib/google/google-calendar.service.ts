@@ -43,7 +43,11 @@ function formatTimeLabel(value: string | undefined) {
   return timeFormatter.format(date);
 }
 
-function normalizeEvent(item: GCalItem, nowMs: number): GoogleAgendaEvent | null {
+function normalizeEventItem(
+  item: GCalItem,
+  nowMs: number,
+  includePast = false,
+): GoogleAgendaEvent | null {
   if (item.status === "cancelled") {
     return null;
   }
@@ -62,7 +66,7 @@ function normalizeEvent(item: GCalItem, nowMs: number): GoogleAgendaEvent | null
     return null;
   }
 
-  if (endMs <= nowMs) {
+  if (!includePast && endMs <= nowMs) {
     return null;
   }
 
@@ -88,6 +92,79 @@ function normalizeEvent(item: GCalItem, nowMs: number): GoogleAgendaEvent | null
     isNow: nowMs >= startMs && nowMs <= endMs,
     autoJoinDefault: Boolean(meetingUrl),
   };
+}
+
+function normalizeEvent(item: GCalItem, nowMs: number): GoogleAgendaEvent | null {
+  return normalizeEventItem(item, nowMs);
+}
+
+export type CreateCalendarEventInput = {
+  summary: string;
+  startDateTime: string;
+  endDateTime: string;
+  timeZone: string;
+  attendeeEmails?: string[];
+};
+
+export async function createCalendarEvent(
+  accessToken: string,
+  input: CreateCalendarEventInput,
+): Promise<GoogleAgendaEvent> {
+  const attendees = (input.attendeeEmails ?? [])
+    .map((email) => email.trim())
+    .filter(Boolean)
+    .map((email) => ({ email }));
+
+  const response = await fetch(
+    "https://www.googleapis.com/calendar/v3/calendars/primary/events?sendUpdates=all",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        summary: input.summary.trim(),
+        start: {
+          dateTime: input.startDateTime,
+          timeZone: input.timeZone,
+        },
+        end: {
+          dateTime: input.endDateTime,
+          timeZone: input.timeZone,
+        },
+        ...(attendees.length ? { attendees } : {}),
+      }),
+      cache: "no-store",
+    },
+  );
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    if (
+      response.status === 403 &&
+      /insufficient authentication scopes|insufficientPermissions|Insufficient Permission/i.test(
+        detail,
+      )
+    ) {
+      throw new Error("INSUFFICIENT_GOOGLE_SCOPES");
+    }
+
+    throw new Error(
+      detail
+        ? `Failed to create Google Calendar event: ${detail.slice(0, 200)}`
+        : "Failed to create Google Calendar event.",
+    );
+  }
+
+  const item = (await response.json()) as GCalItem;
+  const created = normalizeEventItem(item, Date.now(), true);
+
+  if (!created) {
+    throw new Error("Google Calendar returned an invalid event.");
+  }
+
+  return created;
 }
 
 export async function fetchCalendarAgenda(

@@ -7,6 +7,7 @@ import {
   createStandaloneRecording,
 } from "./recordings.service";
 import type { Bindings, Variables } from "../../lib/common/types";
+import { PUBLIC_ERRORS, toPublicApiError } from "../../lib/errors/public-error";
 
 const MAX_UPLOAD_BYTES = 100 * 1024 * 1024; // 100 MB
 
@@ -29,32 +30,32 @@ export const uploadRecording = async (
   const userId = await getAuthenticatedUserId(c);
 
   if (!userId) {
-    return c.json({ error: "Unauthorized" }, 401);
+    return c.json({ error: PUBLIC_ERRORS.auth }, 401);
   }
 
   let form: FormData;
   try {
     form = await c.req.formData();
   } catch {
-    return c.json({ error: "Expected multipart/form-data body" }, 400);
+    return c.json({ error: PUBLIC_ERRORS.client }, 400);
   }
 
   const file = form.get("file");
 
   if (!(file instanceof File)) {
-    return c.json({ error: "file is required" }, 400);
+    return c.json({ error: PUBLIC_ERRORS.client }, 400);
   }
 
   if (file.size === 0) {
-    return c.json({ error: "file is empty" }, 400);
+    return c.json({ error: PUBLIC_ERRORS.client }, 400);
   }
 
   if (file.size > MAX_UPLOAD_BYTES) {
-    return c.json({ error: "file exceeds the 100MB limit" }, 413);
+    return c.json({ error: "File is too large. Maximum size is 20MB." }, 413);
   }
 
   if (!isAcceptedAudio(file)) {
-    return c.json({ error: `Unsupported audio type: ${file.type}` }, 415);
+    return c.json({ error: PUBLIC_ERRORS.client }, 415);
   }
 
   const recordingId = `rec_${nanoid(12)}`;
@@ -105,6 +106,6 @@ export const uploadRecording = async (
       recordingId,
     });
 
-    return c.json({ error: (error as Error).message }, 500);
+    return c.json({ error: toPublicApiError(500) }, 500);
   }
 };
