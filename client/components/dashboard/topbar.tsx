@@ -11,6 +11,7 @@ import { useDashboardSearch } from "@/lib/search/dashboard-search-context";
 import { getSearchPlaceholder } from "@/lib/search/get-search-placeholder";
 import { cn } from "@/lib/utils";
 import { UserButton } from "@clerk/nextjs";
+import { CLERK_GOOGLE_ADDITIONAL_SCOPES } from "@/lib/google/google-oauth-scopes";
 import { MoonIcon, SearchIcon, SunIcon } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -113,6 +114,11 @@ export function Topbar() {
             )}
           </Button>
           <UserButton
+            userProfileProps={{
+              additionalOAuthScopes: {
+                google: [...CLERK_GOOGLE_ADDITIONAL_SCOPES],
+              },
+            }}
             appearance={{
               elements: {
                 userButtonTrigger: cn(

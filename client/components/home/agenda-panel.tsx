@@ -1,20 +1,16 @@
 "use client";
 
 import { AgendaEventCards } from "@/components/home/agenda-event-cards";
-import { Button } from "@/components/ui/button";
 import { displayUserError } from "@/lib/errors/format-user-error";
-import {
-  disconnectGoogleWorkspace,
-  startGoogleWorkspaceConnect,
-} from "@/lib/api/google-workspace";
 import { formatDayHeading, parseDateKey } from "@/lib/home/google-agenda-utils";
+import { isGoogleDemoShared } from "@/lib/google/demo-google";
 import { useGoogleAgenda } from "@/lib/home/use-google-agenda";
 import { filterAgendaEventsBySearch } from "@/lib/search/filter-agenda-events";
 import { buildAgendaSearchSuggestions } from "@/lib/search/build-search-suggestions";
 import { useDashboardSearch } from "@/lib/search/dashboard-search-context";
 import { useRegisterSearchSuggestions } from "@/lib/search/use-register-search-suggestions";
 import { Loader2Icon } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 export function AgendaPanel() {
   const {
@@ -22,11 +18,9 @@ export function AgendaPanel() {
     connected,
     isLoading,
     error,
-    reload,
     selectedDateKey,
     getEventsForDate,
   } = useGoogleAgenda();
-  const [isDisconnecting, setIsDisconnecting] = useState(false);
   const { query } = useDashboardSearch();
 
   const selectedDate = useMemo(
@@ -47,43 +41,11 @@ export function AgendaPanel() {
   );
   useRegisterSearchSuggestions("agenda", agendaSuggestions);
 
-  const handleDisconnect = async () => {
-    setIsDisconnecting(true);
-    try {
-      await disconnectGoogleWorkspace();
-      await reload();
-    } finally {
-      setIsDisconnecting(false);
-    }
-  };
-
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-3">
-        <p className="font-heading text-sm font-semibold text-foreground">
-          {formatDayHeading(selectedDateKey)}
-        </p>
-        {connected ? (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-8 rounded-full px-3 text-xs text-muted-foreground"
-            disabled={isDisconnecting}
-            onClick={() => void handleDisconnect()}
-          >
-            {isDisconnecting ? "Disconnecting…" : "Disconnect"}
-          </Button>
-        ) : (
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-8 rounded-full px-3 text-xs"
-            onClick={() => startGoogleWorkspaceConnect("/home")}
-          >
-            Connect Google
-          </Button>
-        )}
-      </div>
+      <p className="font-heading text-sm font-semibold text-foreground">
+        {formatDayHeading(selectedDateKey)}
+      </p>
 
       {isLoading ? (
         <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
@@ -96,7 +58,9 @@ export function AgendaPanel() {
         </div>
       ) : connected === false ? (
         <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-          Connect Google Workspace to see your events here.
+          {isGoogleDemoShared()
+            ? "Shared demo calendar is not configured yet."
+            : "Sign in with Google to see your calendar events here."}
         </div>
       ) : dayEvents.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">

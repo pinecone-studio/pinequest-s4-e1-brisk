@@ -1,11 +1,8 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { GOOGLE_WORKSPACE_OAUTH_SCOPES } from "@/lib/google/google-oauth-scopes";
 
-const SCOPES = [
-  "https://www.googleapis.com/auth/calendar.events",
-  "https://www.googleapis.com/auth/drive.file",
-  "https://www.googleapis.com/auth/documents",
-].join(" ");
+const SCOPES = GOOGLE_WORKSPACE_OAUTH_SCOPES.join(" ");
 
 function getBaseUrl(request: Request) {
   const url = new URL(request.url);
