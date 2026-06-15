@@ -301,7 +301,8 @@
 }
 
 @layer components {
-  .dashboard-shell {
+  .dashboard-shell,
+  .lobby-canvas {
     background-color: var(--background);
     background-image:
       radial-gradient(
@@ -317,7 +318,8 @@
       linear-gradient(155deg, #f3f0ff 0%, #faf9fc 46%, #ffffff 100%);
   }
 
-  .dark .dashboard-shell {
+  .dark .dashboard-shell,
+  .dark .lobby-canvas {
     background-color: var(--background);
     background-image: none;
   }

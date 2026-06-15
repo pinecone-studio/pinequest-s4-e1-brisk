@@ -2,6 +2,7 @@
 
 import { NotificationsMenu } from "@/components/dashboard/notifications-menu";
 import { SearchSuggestions } from "@/components/dashboard/search-suggestions";
+import { BriskLogo } from "@/components/brisk-logo";
 import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,12 +35,15 @@ export function Topbar() {
   }, []);
 
   return (
-    <header className="flex h-16 shrink-0 items-center gap-3 bg-transparent px-4 lg:px-6">
-      <div className="flex size-8 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground lg:hidden">
-        B
+    <header className="flex h-16 shrink-0 items-center bg-transparent lg:col-span-2 lg:grid lg:grid-cols-[16rem_minmax(0,1fr)] lg:items-center">
+      <div className="hidden items-center justify-center lg:flex">
+        <BriskLogo />
       </div>
 
-      <div className="relative max-w-md flex-1">
+      <div className="flex min-w-0 items-center gap-3 px-4 lg:px-6">
+        <BriskLogo className="shrink-0 lg:hidden" />
+
+        <div className="relative max-w-md flex-1">
         <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           ref={inputRef}
@@ -87,37 +91,38 @@ export function Topbar() {
             }}
           />
         ) : null}
-      </div>
+        </div>
 
-      <div className="ml-auto flex items-center gap-1.5">
-        <NotificationsMenu triggerClassName={topbarIconButtonClass} />
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Toggle appearance"
-          className={cn(
-            topbarIconButtonClass,
-            "text-muted-foreground hover:text-foreground",
-          )}
-          onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-        >
-          {resolvedTheme === "dark" ? (
-            <SunIcon className="size-4.5" />
-          ) : (
-            <MoonIcon className="size-4.5" />
-          )}
-        </Button>
-        <UserButton
-          appearance={{
-            elements: {
-              userButtonTrigger: cn(
-                topbarIconButtonClass,
-                "focus:shadow-none focus-visible:shadow-none",
-              ),
-              avatarBox: "size-7 rounded-lg",
-            },
-          }}
-        />
+        <div className="ml-auto flex items-center gap-1.5">
+          <NotificationsMenu triggerClassName={topbarIconButtonClass} />
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Toggle appearance"
+            className={cn(
+              topbarIconButtonClass,
+              "text-muted-foreground hover:text-foreground",
+            )}
+            onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+          >
+            {resolvedTheme === "dark" ? (
+              <SunIcon className="size-4.5" />
+            ) : (
+              <MoonIcon className="size-4.5" />
+            )}
+          </Button>
+          <UserButton
+            appearance={{
+              elements: {
+                userButtonTrigger: cn(
+                  topbarIconButtonClass,
+                  "focus:shadow-none focus-visible:shadow-none",
+                ),
+                avatarBox: "size-7 rounded-lg",
+              },
+            }}
+          />
+        </div>
       </div>
     </header>
   );

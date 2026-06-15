@@ -5,7 +5,7 @@ import type { StandaloneRecording } from "@/app/recordings/types";
 import { RecordingDropzone } from "@/components/recordings/recording-dropzone";
 import { RecordingResultCard } from "@/components/recordings/recording-result-card";
 import { VoiceRecorderCard } from "@/components/recordings/voice-recorder-card";
-import { formatUserError } from "@/lib/errors/format-user-error";
+import { formatUserError, displayUserError } from "@/lib/errors/format-user-error";
 import { filterRecordingsBySearch } from "@/lib/search/filter-recordings";
 import { buildRecordingSearchSuggestions } from "@/lib/search/build-search-suggestions";
 import { useDashboardSearch } from "@/lib/search/dashboard-search-context";
@@ -49,7 +49,7 @@ export default function RecordingsPage() {
     <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4 lg:p-6">
       {error ? (
         <p className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
+          {displayUserError(error)}
         </p>
       ) : null}
 

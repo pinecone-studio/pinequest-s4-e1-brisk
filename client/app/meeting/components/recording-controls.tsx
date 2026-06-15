@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { formatUserError } from "@/lib/errors/format-user-error";
+import { formatUserError, displayUserError } from "@/lib/errors/format-user-error";
 import {
   startMeetingEgress,
   stopMeetingEgress,
@@ -81,7 +81,7 @@ export const RecordingControls = ({
 
   return error ? (
     <p className="rounded-2xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-      {error}
+      {displayUserError(error)}
     </p>
   ) : null;
 };

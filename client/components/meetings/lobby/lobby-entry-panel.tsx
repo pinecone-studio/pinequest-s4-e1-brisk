@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown, Copy, Link2 } from "lucide-react";
+import { displayUserError } from "@/lib/errors/format-user-error";
 import { useState } from "react";
 
 const COPY_FEEDBACK_DURATION_MS = 1500;
@@ -75,7 +76,7 @@ export function LobbyEntryPanel({
 
         {error ? (
           <p className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-            {error}
+            {displayUserError(error)}
           </p>
         ) : null}
       </div>
@@ -83,7 +84,7 @@ export function LobbyEntryPanel({
       <div className="dropdown-container rounded-2xl w-full">
         <DropdownMenu>
           <DropdownMenuTrigger
-            className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-5 py-2.5 text-sm font-medium text-primary shadow-sm transition-colors hover:bg-zinc-50 w-1/2 justify-center"
+            className="inline-flex w-1/2 items-center justify-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-sm font-medium text-primary shadow-sm transition-colors hover:bg-muted"
             type="button"
           >
             Other ways to join

@@ -15,6 +15,7 @@ import {
 import { pollEgressUntilFinal } from "./egress-polling.service";
 import { stopRoomEgress } from "./livekit-egress.service";
 import type { Bindings, Variables } from "../../lib/common/types";
+import { toPublicApiError } from "../../lib/errors/public-error";
 
 const getEgressErrorMessage = (egressStatus: string, error?: string) => {
   return error
@@ -106,6 +107,6 @@ export const stopEgress = async (
       200,
     );
   } catch (error) {
-    return c.json({ error: (error as Error).message }, 500);
+    return c.json({ error: toPublicApiError(500) }, 500);
   }
 };

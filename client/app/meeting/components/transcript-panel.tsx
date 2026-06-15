@@ -1,7 +1,7 @@
 "use client";
 
 import { useMeetingTranscript } from "../hooks/use-meeting-transcript";
-import { formatBackendErrorMessage } from "@/lib/errors/format-user-error";
+import { displayUserError, formatBackendErrorMessage } from "@/lib/errors/format-user-error";
 import { MeetingSummaryCard } from "./meeting-summary-card";
 
 type TranscriptPanelProps = {
@@ -33,7 +33,11 @@ export const TranscriptPanel = ({ transcriptionId }: TranscriptPanelProps) => {
         </button>
       </div>
 
-      {error ? <p className="text-sm text-red-800 dark:text-red-200">{error}</p> : null}
+      {error ? (
+        <p className="text-sm text-red-800 dark:text-red-200">
+          {displayUserError(error)}
+        </p>
+      ) : null}
       {isLoading && !transcript ? (
         <p className="text-sm text-muted-foreground">Loading transcript...</p>
       ) : null}

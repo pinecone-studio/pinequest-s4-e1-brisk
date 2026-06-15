@@ -6,6 +6,11 @@ import {
   listRecordingsForUser,
 } from "./recordings.service";
 import type { Bindings, Variables } from "../../lib/common/types";
+import {
+  PUBLIC_ERRORS,
+  sanitizeRecordingForClient,
+  toPublicApiError,
+} from "../../lib/errors/public-error";
 
 export const getRecordings = async (
   c: Context<{ Bindings: Bindings; Variables: Variables }>,
@@ -13,16 +18,19 @@ export const getRecordings = async (
   const userId = await getAuthenticatedUserId(c);
 
   if (!userId) {
-    return c.json({ error: "Unauthorized" }, 401);
+    return c.json({ error: PUBLIC_ERRORS.auth }, 401);
   }
 
   try {
     const db = useDB(c);
     const recordings = await listRecordingsForUser(db, userId);
 
-    return c.json({ recordings }, 200);
+    return c.json(
+      { recordings: recordings.map(sanitizeRecordingForClient) },
+      200,
+    );
   } catch (error) {
-    return c.json({ error: (error as Error).message }, 500);
+    return c.json({ error: toPublicApiError(500) }, 500);
   }
 };
 
@@ -32,7 +40,7 @@ export const getRecording = async (
   const userId = await getAuthenticatedUserId(c);
 
   if (!userId) {
-    return c.json({ error: "Unauthorized" }, 401);
+    return c.json({ error: PUBLIC_ERRORS.auth }, 401);
   }
 
   const id = c.req.param("id");
@@ -46,12 +54,12 @@ export const getRecording = async (
     const recording = await findRecordingForUser(db, id, userId);
 
     if (!recording) {
-      return c.json({ error: "Recording not found" }, 404);
+      return c.json({ error: PUBLIC_ERRORS.notFound }, 404);
     }
 
-    return c.json(recording, 200);
+    return c.json(sanitizeRecordingForClient(recording), 200);
   } catch (error) {
-    return c.json({ error: (error as Error).message }, 500);
+    return c.json({ error: toPublicApiError(500) }, 500);
   }
 };
 
@@ -64,7 +72,7 @@ export const getRecordingAudio = async (
   const userId = await getAuthenticatedUserId(c);
 
   if (!userId) {
-    return c.json({ error: "Unauthorized" }, 401);
+    return c.json({ error: PUBLIC_ERRORS.auth }, 401);
   }
 
   const id = c.req.param("id");
@@ -78,13 +86,13 @@ export const getRecordingAudio = async (
     const recording = await findRecordingForUser(db, id, userId);
 
     if (!recording) {
-      return c.json({ error: "Recording not found" }, 404);
+      return c.json({ error: PUBLIC_ERRORS.notFound }, 404);
     }
 
     const object = await c.env.R2_BUCKET.get(recording.audioUrl);
 
     if (!object) {
-      return c.json({ error: "Recording audio not found" }, 404);
+      return c.json({ error: PUBLIC_ERRORS.notFound }, 404);
     }
 
     const headers = new Headers();
@@ -97,6 +105,6 @@ export const getRecordingAudio = async (
 
     return new Response(object.body, { status: 200, headers });
   } catch (error) {
-    return c.json({ error: (error as Error).message }, 500);
+    return c.json({ error: toPublicApiError(500) }, 500);
   }
 };

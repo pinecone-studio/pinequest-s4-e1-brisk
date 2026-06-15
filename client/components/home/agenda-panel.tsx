@@ -2,6 +2,7 @@
 
 import { AgendaEventCards } from "@/components/home/agenda-event-cards";
 import { Button } from "@/components/ui/button";
+import { displayUserError } from "@/lib/errors/format-user-error";
 import {
   disconnectGoogleWorkspace,
   startGoogleWorkspaceConnect,
@@ -76,7 +77,7 @@ export function AgendaPanel() {
         </div>
       ) : error ? (
         <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
+          {displayUserError(error)}
         </div>
       ) : connected === false ? (
         <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
