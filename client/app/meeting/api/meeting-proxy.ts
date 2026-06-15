@@ -1,3 +1,9 @@
+import {
+  formatHttpError,
+  formatUserError,
+  USER_ERRORS,
+} from "@/lib/errors/format-user-error";
+
 type ProxyMeetingRequestOptions = {
   body?: unknown;
   method: "DELETE" | "GET" | "POST";
@@ -78,10 +84,14 @@ const readResponseBody = async (response: Response) => {
 
 const getProxyError = (body: unknown, status: number) => {
   if (body && typeof body === "object" && "error" in body) {
-    return String((body as { error: unknown }).error);
+    const raw = (body as { error: unknown }).error;
+    return formatHttpError(
+      status,
+      typeof raw === "string" ? raw : undefined,
+    );
   }
 
-  return `Meeting backend request failed with status ${status}.`;
+  return formatHttpError(status);
 };
 
 const getTargetUrl = (baseUrl: string, path: string) =>
@@ -98,17 +108,11 @@ const isLocalBackendUrl = (targetUrl: string) => {
 };
 
 const getProxyConnectionError = (error: unknown, targetUrl: string) => {
-  const errorMessage =
-    error instanceof Error ? error.message : "Meeting proxy failed.";
-
   if (isLocalBackendUrl(targetUrl)) {
-    return (
-      `Local meeting backend is unavailable at ${targetUrl}. ` +
-      "Start the server Worker with `cd server && bunx wrangler dev --port 8787`, then refresh Meeting Summaries."
-    );
+    return USER_ERRORS.network;
   }
 
-  return errorMessage;
+  return formatUserError(error);
 };
 
 const logProxyFailure = ({
@@ -143,8 +147,8 @@ export const proxyMeetingRequest = async ({
 
   if (!targetUrls.length) {
     return Response.json(
-      { error: "Meeting backend URL is not configured." },
-      { status: 500 }
+      { error: USER_ERRORS.server },
+      { status: 500 },
     );
   }
 
@@ -185,7 +189,7 @@ export const proxyMeetingRequest = async ({
     {
       error: lastError
         ? getProxyConnectionError(lastError, targetUrls.at(-1) ?? "")
-        : "Meeting proxy failed.",
+        : USER_ERRORS.server,
     },
     { status: 500 }
   );
@@ -203,7 +207,10 @@ export const proxyMeetingPostRequest = async (
       authorization: request.headers.get("Authorization"),
     });
   } catch {
-    return Response.json({ error: "Invalid JSON request body." }, { status: 400 });
+    return Response.json(
+      { error: USER_ERRORS.client },
+      { status: 400 },
+    );
   }
 };
 

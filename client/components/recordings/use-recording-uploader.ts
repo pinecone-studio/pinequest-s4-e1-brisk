@@ -1,6 +1,7 @@
 "use client";
 
 import { uploadRecording } from "@/app/recordings/api/recordings-api";
+import { formatUserError } from "@/lib/errors/format-user-error";
 import { useEffect, useRef, useState } from "react";
 
 export const MAX_RECORDING_BYTES = 20 * 1024 * 1024;
@@ -72,7 +73,7 @@ export function useRecordingUploader(onUploaded: (recordingId: string) => void) 
       );
       onUploaded(recordingId);
     } catch (caughtError) {
-      setError((caughtError as Error).message);
+      setError(formatUserError(caughtError));
     } finally {
       setIsUploading(false);
     }
@@ -135,11 +136,7 @@ export function useRecordingUploader(onUploaded: (recordingId: string) => void) 
         });
       }, 1000);
     } catch (caughtError) {
-      setError(
-        caughtError instanceof DOMException
-          ? "Microphone access was denied. Allow it in your browser to record."
-          : (caughtError as Error).message,
-      );
+      setError(formatUserError(caughtError));
     }
   };
 

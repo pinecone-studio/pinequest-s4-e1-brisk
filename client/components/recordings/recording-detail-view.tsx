@@ -14,6 +14,7 @@ import {
   formatRecordingDuration,
   formatRecordingFileSize,
 } from "@/lib/recordings/format-recording";
+import { formatUserError } from "@/lib/errors/format-user-error";
 import { cn } from "@/lib/utils";
 import {
   ArrowLeftIcon,
@@ -99,7 +100,7 @@ export function RecordingDetailView({ recordingId }: RecordingDetailViewProps) {
     try {
       await downloadRecording(recording.id, recording.title);
     } catch (caughtError) {
-      setActionError((caughtError as Error).message);
+      setActionError(formatUserError(caughtError));
     } finally {
       setIsDownloading(false);
     }
@@ -116,7 +117,7 @@ export function RecordingDetailView({ recordingId }: RecordingDetailViewProps) {
       router.push("/recordings");
       router.refresh();
     } catch (caughtError) {
-      setActionError((caughtError as Error).message);
+      setActionError(formatUserError(caughtError));
       setIsDeleting(false);
     }
   };
@@ -217,7 +218,7 @@ export function RecordingDetailView({ recordingId }: RecordingDetailViewProps) {
 
       {error && recording ? (
         <p className="text-xs text-muted-foreground">
-          Couldn&apos;t refresh status: {error}
+          {formatUserError(error)}
         </p>
       ) : null}
     </div>

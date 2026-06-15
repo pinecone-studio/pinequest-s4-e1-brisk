@@ -1,4 +1,9 @@
 import { getBackendBaseUrls } from "@/app/meeting/api/meeting-proxy";
+import {
+  formatHttpError,
+  formatUserError,
+  USER_ERRORS,
+} from "@/lib/errors/format-user-error";
 
 const getTargetUrl = (baseUrl: string, path: string) =>
   new URL(path, `${baseUrl}/`).toString();
@@ -14,7 +19,7 @@ export const proxyRecordingAudio = async (request: Request, path: string) => {
 
   if (!targetUrls.length) {
     return Response.json(
-      { error: "Recording backend URL is not configured." },
+      { error: USER_ERRORS.server },
       { status: 500 },
     );
   }
@@ -32,7 +37,7 @@ export const proxyRecordingAudio = async (request: Request, path: string) => {
       if (!response.ok) {
         const text = await response.text();
         return Response.json(
-          { error: text || `Recording audio request failed (${response.status}).` },
+          { error: formatHttpError(response.status, text || undefined) },
           { status: response.status },
         );
       }
@@ -55,10 +60,7 @@ export const proxyRecordingAudio = async (request: Request, path: string) => {
 
   return Response.json(
     {
-      error:
-        lastError instanceof Error
-          ? lastError.message
-          : "Recording audio proxy failed.",
+      error: lastError ? formatUserError(lastError) : USER_ERRORS.server,
     },
     { status: 500 },
   );

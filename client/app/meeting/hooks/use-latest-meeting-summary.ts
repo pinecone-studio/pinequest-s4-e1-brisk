@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { formatUserError } from "@/lib/errors/format-user-error";
 import {
   getLatestMeetingTranscript,
   type GetMeetingTranscriptResponse,
@@ -28,7 +29,7 @@ export const useLatestMeetingSummary = () => {
       } catch (caughtError) {
         if (isActive) {
           setTranscript(null);
-          setError((caughtError as Error).message);
+          setError(formatUserError(caughtError));
         }
       } finally {
         if (isActive) {

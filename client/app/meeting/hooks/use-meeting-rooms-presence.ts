@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { formatUserError } from "@/lib/errors/format-user-error";
 import {
   getMeetingRoomParticipants,
   type MeetingRoomParticipantSummary,
@@ -90,10 +91,7 @@ export const useMeetingRoomsPresence = (rooms: RoomIdentity[]) => {
               roomKey,
               {
                 count: 0,
-                error:
-                  error instanceof Error
-                    ? error.message
-                    : "Unable to load participants.",
+                error: formatUserError(error),
                 hasLoaded: true,
                 isLoading: false,
                 participants: [],

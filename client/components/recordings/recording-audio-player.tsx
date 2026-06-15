@@ -1,6 +1,7 @@
 "use client";
 
 import { fetchRecordingAudioObjectUrl } from "@/app/recordings/api/recordings-api";
+import { formatUserError } from "@/lib/errors/format-user-error";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -35,7 +36,7 @@ export function RecordingAudioPlayer({
       })
       .catch((caughtError: unknown) => {
         if (isActive) {
-          setError((caughtError as Error).message);
+          setError(formatUserError(caughtError));
         }
       })
       .finally(() => {
