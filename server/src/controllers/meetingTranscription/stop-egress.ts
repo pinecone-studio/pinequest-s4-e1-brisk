@@ -1,6 +1,8 @@
 import { Context } from "hono";
 import { useDB } from "../../lib/db/db";
 import { getAuthenticatedUserId } from "../../lib/auth/clerk";
+import type { MeetingParticipantContact } from "../../lib/meetingTypes/meeting-participant-contact.types";
+import { normalizeParticipantContacts } from "../../lib/meetingTypes/meeting-participant-contact.types";
 import {
   findByEgressId,
   markFailed,
@@ -27,7 +29,7 @@ export const stopEgress = async (
   c: Context<{ Bindings: Bindings; Variables: Variables }>,
 ) => {
   try {
-    const { egressId, participantNames } = await c.req.json();
+    const { egressId, participantNames, participants } = await c.req.json();
     const userId = await getAuthenticatedUserId(c);
 
     if (typeof egressId !== "string" || !egressId.trim()) {
@@ -36,6 +38,18 @@ export const stopEgress = async (
 
     const savedParticipantNames = Array.isArray(participantNames)
       ? participantNames.filter((name): name is string => typeof name === "string")
+      : null;
+
+    const savedParticipants = Array.isArray(participants)
+      ? normalizeParticipantContacts(
+          participants.filter(
+            (participant): participant is MeetingParticipantContact =>
+              Boolean(participant) &&
+              typeof participant === "object" &&
+              typeof participant.name === "string" &&
+              typeof participant.email === "string",
+          ),
+        )
       : null;
 
     const db = useDB(c);
@@ -50,7 +64,12 @@ export const stopEgress = async (
       egressId,
     });
 
-    await markEgressStopped(db, transcription.id, savedParticipantNames);
+    await markEgressStopped(
+      db,
+      transcription.id,
+      savedParticipantNames,
+      savedParticipants,
+    );
 
     const finalEgress = isCompleteEgress(egress)
       ? egress

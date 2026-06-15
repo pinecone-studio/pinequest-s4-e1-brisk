@@ -7,12 +7,14 @@ import {
   stopMeetingEgress,
   type StartMeetingEgressResponse,
 } from "../index";
+import type { MeetingParticipantContact } from "../types/meeting-request.types";
 
 type RecordingControlsProps = {
   autoStart?: boolean;
   meetingId: string;
   onStatusChange?: (status: RecordingStatus) => void;
   participantNames?: string[];
+  participants?: MeetingParticipantContact[];
   roomName: string;
 };
 
@@ -23,6 +25,7 @@ export const RecordingControls = ({
   meetingId,
   onStatusChange,
   participantNames,
+  participants,
   roomName,
 }: RecordingControlsProps) => {
   const [recording, setRecording] =
@@ -32,10 +35,12 @@ export const RecordingControls = ({
   const recordingRef = useRef(recording);
   const hasStoppedRef = useRef(hasStopped);
   const participantNamesRef = useRef(participantNames);
+  const participantsRef = useRef(participants);
 
   recordingRef.current = recording;
   hasStoppedRef.current = hasStopped;
   participantNamesRef.current = participantNames;
+  participantsRef.current = participants;
 
   const recordingStatus: RecordingStatus =
     recording?.egressId && !hasStopped
@@ -74,6 +79,7 @@ export const RecordingControls = ({
       void stopMeetingEgress({
         egressId: activeRecording.egressId,
         participantNames: participantNamesRef.current,
+        participants: participantsRef.current,
       });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

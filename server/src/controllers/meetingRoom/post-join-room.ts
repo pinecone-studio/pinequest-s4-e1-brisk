@@ -1,6 +1,10 @@
 import { Context } from "hono";
 import { AccessToken } from "livekit-server-sdk";
 import { getAuthenticatedUserId } from "../../lib/auth/clerk";
+import {
+  buildParticipantMetadata,
+  getAuthenticatedUserEmail,
+} from "../../lib/auth/meeting-participant-metadata";
 import type { Bindings, Variables } from "../../lib/common/types";
 import { toPublicApiError } from "../../lib/errors/public-error";
 
@@ -19,7 +23,8 @@ export const postJoinRoom = async (
       return c.json({ error: "participantName is required" }, 400);
 
     const userId = await getAuthenticatedUserId(c);
-    const metadata = userId ? JSON.stringify({ userId }) : undefined;
+    const email = await getAuthenticatedUserEmail(c, userId);
+    const metadata = userId ? buildParticipantMetadata(userId, email) : undefined;
 
     const token = new AccessToken(
       c.env.LIVEKIT_API_KEY,

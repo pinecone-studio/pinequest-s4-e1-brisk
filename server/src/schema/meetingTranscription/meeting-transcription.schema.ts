@@ -1,4 +1,5 @@
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import type { MeetingParticipantContact } from "../../lib/meetingTypes/meeting-participant-contact.types";
 
 export const meetingTranscriptions = sqliteTable("meeting_transcriptions", {
   id: text("id").primaryKey(),
@@ -10,6 +11,9 @@ export const meetingTranscriptions = sqliteTable("meeting_transcriptions", {
   summary: text("summary"),
   participantNames: text("participant_names", { mode: "json" }).$type<
     string[]
+  >(),
+  participantEmails: text("participant_emails", { mode: "json" }).$type<
+    MeetingParticipantContact[]
   >(),
   errorMessage: text("error_message"),
   status: text("status", {
@@ -24,6 +28,8 @@ export const meetingTranscriptions = sqliteTable("meeting_transcriptions", {
     () => new Date(),
   ),
   completedAt: integer("completed_at", { mode: "timestamp" }),
+  summaryEmailsSentAt: integer("summary_emails_sent_at", { mode: "timestamp" }),
+  summaryEmailsError: text("summary_emails_error"),
 });
 
 export type MeetingTranscription = typeof meetingTranscriptions.$inferSelect;

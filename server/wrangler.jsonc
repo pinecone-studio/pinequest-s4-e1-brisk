@@ -53,7 +53,10 @@
     "CLERK_PUBLISHABLE_KEY": "pk_test_c2VsZWN0ZWQtbXV0dC0zMS5jbGVyay5hY2NvdW50cy5kZXYk",
     "CLIENT_APP_URL": "https://brisk-client.danny-otgontsetseg.workers.dev",
     "FRONTEND_URL": "https://brisk-client.danny-otgontsetseg.workers.dev",
+    "EMAIL_FROM_ADDRESS": "summary@pinequest.dev",
+    "EMAIL_FROM_NAME": "Brisk",
   },
+  "send_email": [{ "name": "EMAIL" }],
   "env": {
     "production": {
       "d1_databases": [
@@ -104,7 +107,10 @@
         "CLERK_PUBLISHABLE_KEY": "pk_test_c2VsZWN0ZWQtbXV0dC0zMS5jbGVyay5hY2NvdW50cy5kZXYk",
         "CLIENT_APP_URL": "https://brisk-client.danny-otgontsetseg.workers.dev",
         "FRONTEND_URL": "https://brisk-client.danny-otgontsetseg.workers.dev",
+        "EMAIL_FROM_ADDRESS": "summary@pinequest.dev",
+        "EMAIL_FROM_NAME": "Brisk",
       },
+      "send_email": [{ "name": "EMAIL" }],
     },
   },
 }

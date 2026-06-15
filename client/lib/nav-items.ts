@@ -1,9 +1,4 @@
-import {
-  CalendarDaysIcon,
-  HomeIcon,
-  MicIcon,
-  type LucideIcon,
-} from "lucide-react";
+import { CalendarDaysIcon, HomeIcon, MicIcon, type LucideIcon } from "lucide-react";
 
 export type NavItemChild = {
   label: string;

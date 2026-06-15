@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/home/empty-state";
 import { HomeDashboard } from "@/components/home/home-dashboard";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
+import { prependMockSummaryMeeting } from "@/lib/meetings/mock-summary-meeting";
 import { filterMeetingsBySearch } from "@/lib/search/filter-meetings";
 import { buildMeetingSearchSuggestions } from "@/lib/search/build-search-suggestions";
 import { useDashboardSearch } from "@/lib/search/dashboard-search-context";
@@ -31,7 +32,7 @@ export function HomePageContent() {
 
     fetchMeetings()
       .then((response) => {
-        if (isActive) setMeetings(response.meetings);
+        if (isActive) setMeetings(prependMockSummaryMeeting(response.meetings));
       })
       .catch(() => {})
       .finally(() => {
