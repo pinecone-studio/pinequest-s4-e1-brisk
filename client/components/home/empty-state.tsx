@@ -42,7 +42,7 @@ export function EmptyState() {
         transition={{ duration: 0.35, delay: 0.1 }}
         className="w-full max-w-3xl"
       >
-        <QuickActions variant="hero" />
+        <QuickActions />
       </motion.div>
     </div>
   );
