@@ -8,9 +8,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import {
   CalendarIcon,
+  CheckIcon,
   ClockIcon,
   CopyIcon,
   DownloadIcon,
@@ -22,6 +24,7 @@ import {
   VideoIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 
 type MeetingDetailTopbarProps = {
   meetingId: string;
@@ -31,6 +34,11 @@ type MeetingDetailTopbarProps = {
   transcript: string | null;
   audioUrl: string | null;
   roomName: string | null;
+  summaryView?: boolean;
+  isEditingTitle?: boolean;
+  onTitleChange?: (title: string) => void;
+  onToggleEditTitle?: () => void;
+  onOpenGoogleDocs?: () => void;
 };
 
 export const MeetingDetailTopbar = ({
@@ -41,9 +49,22 @@ export const MeetingDetailTopbar = ({
   transcript,
   audioUrl,
   roomName,
+  summaryView = false,
+  isEditingTitle = false,
+  onTitleChange,
+  onToggleEditTitle,
+  onOpenGoogleDocs,
 }: MeetingDetailTopbarProps) => {
   const toast = useToast();
+  const titleInputRef = useRef<HTMLInputElement>(null);
   const isRecording = title === "Instant Meeting";
+
+  useEffect(() => {
+    if (isEditingTitle) {
+      titleInputRef.current?.focus();
+      titleInputRef.current?.select();
+    }
+  }, [isEditingTitle]);
 
   const handleDownloadTranscript = () => {
     if (!transcript) return;
@@ -69,11 +90,32 @@ export const MeetingDetailTopbar = ({
     });
   };
 
+  const handleTitleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      onToggleEditTitle?.();
+    }
+
+    if (event.key === "Escape") {
+      onToggleEditTitle?.();
+    }
+  };
+
   return (
     <header className="relative z-10 flex shrink-0 flex-wrap items-start justify-between gap-4 border-b border-zinc-100 px-4 py-4 dark:border-white/5 lg:px-6">
-      <div className="flex flex-col gap-2">
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
         <CircleBackLink href="/meetings" label="Back to meetings" className="-ml-0.5 rounded-full" />
-        <h1 className="font-heading text-xl font-semibold text-foreground lg:text-2xl">{title}</h1>
+        {summaryView && isEditingTitle ? (
+          <Input
+            ref={titleInputRef}
+            value={title}
+            onChange={(event) => onTitleChange?.(event.target.value)}
+            onKeyDown={handleTitleKeyDown}
+            className="h-10 max-w-xl font-heading text-lg font-semibold lg:text-xl"
+            aria-label="Meeting title"
+          />
+        ) : (
+          <h1 className="font-heading text-xl font-semibold text-foreground lg:text-2xl">{title}</h1>
+        )}
         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
           {createdDate ? (
             <span className="flex items-center gap-1.5">
@@ -95,63 +137,91 @@ export const MeetingDetailTopbar = ({
       </div>
 
       <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="icon"
-          className="rounded-full"
-          onClick={handleDownloadTranscript}
-          disabled={!transcript}
-          aria-label="Download transcript"
-        >
-          <DownloadIcon />
-        </Button>
+        {summaryView ? (
+          <>
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-full"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={onToggleEditTitle}
+              aria-label={isEditingTitle ? "Save meeting title" : "Edit meeting title"}
+            >
+              {isEditingTitle ? <CheckIcon /> : <PencilIcon />}
+            </Button>
 
-        <Button
-          variant="outline"
-          size="icon"
-          className="rounded-full"
-          disabled
-          title="Editing isn't available yet"
-          aria-label="Edit meeting"
-        >
-          <PencilIcon />
-        </Button>
+            <Button
+              size="sm"
+              className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/80"
+              onClick={onOpenGoogleDocs}
+            >
+              <FileTextIcon />
+              Open in Google Docs
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-full"
+              onClick={handleDownloadTranscript}
+              disabled={!transcript}
+              aria-label="Download transcript"
+            >
+              <DownloadIcon />
+            </Button>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            className="flex size-8 items-center justify-center rounded-full border border-border text-muted-foreground transition-all duration-200 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-            aria-label="More options"
-          >
-            <MoreHorizontalIcon className="size-4" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={handleCopyLink}>
-              <CopyIcon />
-              Copy meeting link
-            </DropdownMenuItem>
-            {audioUrl ? (
-              <DropdownMenuItem render={<a href={audioUrl} target="_blank" rel="noreferrer" />}>
-                <PlayCircleIcon />
-                Open recording
-              </DropdownMenuItem>
-            ) : null}
-            {roomName ? (
-              <DropdownMenuItem render={<Link href={`/meeting?meetingId=${meetingId}&roomName=${roomName}`} />}>
-                <VideoIcon />
-                Rejoin room
-              </DropdownMenuItem>
-            ) : null}
-          </DropdownMenuContent>
-        </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className="flex size-8 items-center justify-center rounded-full border border-border text-muted-foreground transition-all duration-200 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                aria-label="More options"
+              >
+                <MoreHorizontalIcon className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleCopyLink}>
+                  <CopyIcon />
+                  Copy meeting link
+                </DropdownMenuItem>
+                {audioUrl ? (
+                  <DropdownMenuItem render={<a href={audioUrl} target="_blank" rel="noreferrer" />}>
+                    <PlayCircleIcon />
+                    Open recording
+                  </DropdownMenuItem>
+                ) : null}
+                {roomName ? (
+                  <DropdownMenuItem
+                    render={<Link href={`/meeting?meetingId=${meetingId}&roomName=${roomName}`} />}
+                  >
+                    <VideoIcon />
+                    Rejoin room
+                  </DropdownMenuItem>
+                ) : null}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-        <Button
-          size="sm"
-          className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/80"
-          render={<a href="#" />}
-        >
-          <FileTextIcon />
-          Open in Google Docs
-        </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-full"
+              disabled
+              title="Editing isn't available yet"
+              aria-label="Edit meeting"
+            >
+              <PencilIcon />
+            </Button>
+
+            <Button
+              size="sm"
+              className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/80"
+              render={<a href="https://docs.google.com/document/create" target="_blank" rel="noreferrer" />}
+            >
+              <FileTextIcon />
+              Open in Google Docs
+            </Button>
+          </>
+        )}
       </div>
     </header>
   );

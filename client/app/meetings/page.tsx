@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { prependMockSummaryMeeting } from "@/lib/meetings/mock-summary-meeting";
 import { filterMeetingsBySearch } from "@/lib/search/filter-meetings";
 import { buildMeetingSearchSuggestions } from "@/lib/search/build-search-suggestions";
 import { useDashboardSearch } from "@/lib/search/dashboard-search-context";
@@ -100,7 +101,7 @@ export default function MeetingsPage() {
 
     fetchMeetings()
       .then((response) => {
-        if (isActive) setMeetings(response.meetings);
+        if (isActive) setMeetings(prependMockSummaryMeeting(response.meetings));
       })
       .catch(() => {})
       .finally(() => {

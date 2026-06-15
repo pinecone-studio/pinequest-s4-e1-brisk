@@ -1,4 +1,4 @@
-import { D1Database, Queue, R2Bucket } from "@cloudflare/workers-types";
+import { D1Database, Queue, R2Bucket, SendEmail } from "@cloudflare/workers-types";
 
 export type MeetingTranscriptionJob = {
   egressId: string;
@@ -57,6 +57,9 @@ export interface Bindings {
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
   ENCRYPTION_KEY?: string;
+  EMAIL?: SendEmail;
+  EMAIL_FROM_ADDRESS?: string;
+  EMAIL_FROM_NAME?: string;
 }
 
 export interface Variables {

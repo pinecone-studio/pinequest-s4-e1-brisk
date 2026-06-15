@@ -1,5 +1,6 @@
 "use client";
 
+import { useUser } from "@clerk/nextjs";
 import {
   ConnectionState,
   ParticipantEvent,
@@ -8,6 +9,7 @@ import {
 } from "livekit-client";
 import { useEffect, useMemo, useState } from "react";
 import { displayUserError } from "@/lib/errors/format-user-error";
+import { buildParticipantContacts } from "@/lib/meeting/build-participant-contacts";
 import { useMediaToggleShortcuts } from "@/hooks/use-media-toggle-shortcuts";
 import { useLatestMeetingSummary } from "../hooks/use-latest-meeting-summary";
 import { useMeetingTasks } from "../hooks/use-meeting-tasks";
@@ -39,6 +41,7 @@ export const LivekitRoomView = ({
   roomName,
   transcriptLanguage = "en",
 }: LivekitRoomViewProps) => {
+  const { user } = useUser();
   const {
     activeSessionHref,
     connectionState,
@@ -189,6 +192,17 @@ export const LivekitRoomView = ({
       : getParticipantLabel(stageParticipant)
     : "";
 
+  const participantContacts = useMemo(
+    () =>
+      buildParticipantContacts({
+        participants,
+        remoteParticipants,
+        localEmail: user?.primaryEmailAddress?.emailAddress ?? null,
+        localName: user?.fullName ?? user?.firstName ?? null,
+      }),
+    [participants, remoteParticipants, user?.primaryEmailAddress?.emailAddress, user?.fullName, user?.firstName],
+  );
+
   return (
     <section
       className="flex size-full flex-col gap-4 rounded-[32px] bg-white p-6 shadow-xl"
@@ -206,6 +220,7 @@ export const LivekitRoomView = ({
         meetingId={meetingId}
         onStatusChange={setRecordingStatus}
         participantNames={participants.map((participant) => participant.displayName)}
+        participants={participantContacts}
         roomName={livekitRoomName}
       />
 

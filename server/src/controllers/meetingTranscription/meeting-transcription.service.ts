@@ -11,7 +11,9 @@ import { diarizedTranscribe } from "../../lib/diarization/diarized-transcribe";
 import { parseMeetingSummary } from "../../lib/gemini/parse-meeting-summary";
 import { downloadRecordingFromR2 } from "./r2-recording-download.service";
 import { runD1Statements } from "../../lib/db/d1-batch";
+import { sendMeetingSummaryEmails } from "../../lib/email/send-meeting-summary-emails";
 import type { Bindings } from "../../lib/common/types";
+import type { MeetingParticipantContact } from "../../lib/meetingTypes/meeting-participant-contact.types";
 import type { MeetingTranscriptionDb } from "../../lib/meetingTypes/meeting-transcription.types";
 
 type BatchStatement = Parameters<MeetingTranscriptionDb["batch"]>[0][number];
@@ -72,6 +74,7 @@ export const markEgressStopped = async (
   db: MeetingTranscriptionDb,
   transcriptionId: string,
   participantNames?: string[] | null,
+  participantEmails?: MeetingParticipantContact[] | null,
 ) => {
   await db
     .update(meetingTranscriptions)
@@ -79,6 +82,7 @@ export const markEgressStopped = async (
       status: "processing",
       errorMessage: null,
       ...(participantNames ? { participantNames } : {}),
+      ...(participantEmails?.length ? { participantEmails } : {}),
     })
     .where(eq(meetingTranscriptions.id, transcriptionId));
 };
@@ -226,6 +230,19 @@ export const transcribeRecording = async ({
     }
 
     await runD1Statements(db, statements);
+
+    void sendMeetingSummaryEmails({
+      db,
+      env,
+      meetingId,
+      transcriptionId,
+    }).catch((error) => {
+      console.error("[email] Failed to send meeting summary emails", {
+        meetingId,
+        transcriptionId,
+        error: (error as Error).message,
+      });
+    });
 
     return { transcript, summary: finalSummary };
   } catch (error) {

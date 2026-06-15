@@ -17,10 +17,15 @@ import { getMeetingTopics } from "@/lib/meetings/meeting-topics";
 import { useEffect, useMemo, useState } from "react";
 import { buildMeetingDetailSearchSuggestions } from "@/lib/search/build-search-suggestions";
 import { useRegisterSearchSuggestions } from "@/lib/search/use-register-search-suggestions";
+import { MeetingSummaryView } from "@/components/summary/meeting-summary-view";
+import { buildSummaryNotesFromMeetings } from "@/lib/summary/build-summary-notes";
+import { mapSpeakerStatsToSummaryParticipants } from "@/lib/summary/build-summary-participants";
+import { isMockSummaryMeeting } from "@/lib/meetings/mock-summary-meeting";
 import { MeetingContentTabs } from "./meeting-content-tabs";
 import { MeetingDetailTopbar } from "./meeting-detail-topbar";
 import { MeetingInsightsSidebar } from "./meeting-insights-sidebar";
 import { MeetingReplayPlayer } from "./meeting-replay-player";
+import { MockSummaryMeetingDetailView } from "./mock-summary-meeting-detail-view";
 
 type MeetingDetailViewProps = {
   meetingId: string;
@@ -48,6 +53,14 @@ const MeetingDetailNotFound = () => (
 );
 
 export const MeetingDetailView = ({ meetingId }: MeetingDetailViewProps) => {
+  if (isMockSummaryMeeting(meetingId)) {
+    return <MockSummaryMeetingDetailView />;
+  }
+
+  return <MeetingDetailViewContent meetingId={meetingId} />;
+};
+
+const MeetingDetailViewContent = ({ meetingId }: MeetingDetailViewProps) => {
   const [details, setDetails] =
     useState<GetMeetingAnalysisDetailsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -149,6 +162,24 @@ export const MeetingDetailView = ({ meetingId }: MeetingDetailViewProps) => {
   const actionItems =
     summaryContent?.actionItems ?? details.summary?.actionItems ?? [];
 
+  const isFinished = transcription?.status === "done";
+
+  if (isFinished) {
+    const summaryParticipants = mapSpeakerStatsToSummaryParticipants(speakerStats);
+    const summaryNotes = buildSummaryNotesFromMeetings([details]);
+
+    return (
+      <MeetingSummaryView
+        meetingId={meetingListItem.id}
+        initialTitle={meetingListItem.title}
+        createdDate={createdDate}
+        durationLabel={durationLabel}
+        participants={summaryParticipants}
+        initialTopics={topics}
+        initialNotes={summaryNotes}
+      />
+    );
+  }
 
   return (
     <div className="relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">

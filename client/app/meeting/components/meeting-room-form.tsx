@@ -49,8 +49,8 @@ const getParticipantIdentity = ({
   user: ReturnType<typeof useUser>["user"];
 }) => {
   const stableId =
+    user?.primaryEmailAddress?.emailAddress?.trim() ||
     user?.id ||
-    user?.primaryEmailAddress?.emailAddress ||
     displayName.toLowerCase();
 
   return `${displayName.trim()}__${stableId}`;

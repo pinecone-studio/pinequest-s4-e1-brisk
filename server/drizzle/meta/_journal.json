@@ -169,6 +169,13 @@
       "when": 1781338821765,
       "tag": "0024_nostalgic_famine",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "6",
+      "when": 1782000000000,
+      "tag": "0028_meeting_summary_emails",
+      "breakpoints": true
     }
   ]
 }
