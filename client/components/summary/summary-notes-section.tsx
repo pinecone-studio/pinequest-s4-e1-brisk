@@ -4,6 +4,11 @@ import { EditSummaryNoteDialog } from "@/components/summary/edit-summary-note-di
 import { SummaryNoteCard } from "@/components/summary/summary-note-card";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/components/ui/toast";
+import { sendActionItemEmail } from "@/lib/api/summary-actions";
+import { formatUserError } from "@/lib/errors/format-user-error";
+import { formatSummaryNoteDateTime } from "@/lib/summary/format-summary-note-date";
+import { resolveAssigneeEmail } from "@/lib/summary/resolve-assignee-email";
 import type { SummaryNoteItem } from "@/lib/summary/summary-note.types";
 import { NotebookPenIcon } from "lucide-react";
 import { useCallback, useState } from "react";
@@ -37,15 +42,20 @@ function SummaryNotesSkeleton() {
 type SummaryNotesSectionProps = {
   notes: SummaryNoteItem[];
   onNotesChange: (notes: SummaryNoteItem[]) => void;
+  topics?: string[];
   isLoading?: boolean;
 };
 
 export function SummaryNotesSection({
   notes,
   onNotesChange,
+  topics = [],
   isLoading = false,
 }: SummaryNotesSectionProps) {
+  const toast = useToast();
   const [approvedIds, setApprovedIds] = useState<Set<string>>(() => new Set());
+  const [sentEmailIds, setSentEmailIds] = useState<Set<string>>(() => new Set());
+  const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
   const [editingNote, setEditingNote] = useState<SummaryNoteItem | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
@@ -56,6 +66,55 @@ export function SummaryNotesSection({
       return next;
     });
   }, []);
+
+  const sendNoteEmail = useCallback(
+    async (note: SummaryNoteItem) => {
+      const assigneeEmail = resolveAssigneeEmail(note.assignee);
+      if (!assigneeEmail) {
+        toast.add({
+          title: "No email for assignee",
+          description: "Edit the card and use a name from your team or a full email address.",
+          type: "info",
+        });
+        return;
+      }
+
+      setSendingEmailId(note.id);
+
+      try {
+        await sendActionItemEmail({
+          meetingId: note.meetingId,
+          meetingTitle: note.meetingTitle,
+          noteTitle: note.title,
+          assignee: note.assignee,
+          assigneeEmail,
+          dateTimeLabel: formatSummaryNoteDateTime(note.dateTime),
+          source: note.source,
+        });
+
+        setSentEmailIds((current) => {
+          const next = new Set(current);
+          next.add(note.id);
+          return next;
+        });
+
+        toast.add({
+          title: "Email sent",
+          description: `Action item emailed to ${assigneeEmail}.`,
+          type: "success",
+        });
+      } catch (caughtError) {
+        toast.add({
+          title: "Could not send email",
+          description: formatUserError(caughtError),
+          type: "error",
+        });
+      } finally {
+        setSendingEmailId(null);
+      }
+    },
+    [toast],
+  );
 
   const handleEditNote = useCallback((note: SummaryNoteItem) => {
     setEditingNote(note);
@@ -102,7 +161,11 @@ export function SummaryNotesSection({
                 key={note.id}
                 note={note}
                 approved={approvedIds.has(note.id)}
+                emailSent={sentEmailIds.has(note.id)}
+                isSendingEmail={sendingEmailId === note.id}
+                assigneeEmail={resolveAssigneeEmail(note.assignee)}
                 onApprove={() => approveNote(note.id)}
+                onSendEmail={() => void sendNoteEmail(note)}
                 onEdit={() => handleEditNote(note)}
               />
             ))
@@ -112,6 +175,7 @@ export function SummaryNotesSection({
 
       <EditSummaryNoteDialog
         note={editingNote}
+        topics={topics}
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         onSave={handleSaveNote}

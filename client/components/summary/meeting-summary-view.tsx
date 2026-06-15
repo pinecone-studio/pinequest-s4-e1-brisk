@@ -61,13 +61,13 @@ export function MeetingSummaryView({
     }
   }, [createdDate, durationLabel, notes, participants, title, toast, topics]);
 
-  const handleToggleEditTitle = useCallback(() => {
-    setIsEditingTitle((current) => {
-      if (current) {
-        setTitle((value) => value.trim() || initialTitle);
-      }
-      return !current;
-    });
+  const handleStartEditTitle = useCallback(() => {
+    setIsEditingTitle(true);
+  }, []);
+
+  const handleFinishEditTitle = useCallback(() => {
+    setTitle((value) => value.trim() || initialTitle);
+    setIsEditingTitle(false);
   }, [initialTitle]);
 
   return (
@@ -83,7 +83,8 @@ export function MeetingSummaryView({
         summaryView
         isEditingTitle={isEditingTitle}
         onTitleChange={setTitle}
-        onToggleEditTitle={handleToggleEditTitle}
+        onStartEditTitle={handleStartEditTitle}
+        onFinishEditTitle={handleFinishEditTitle}
         onOpenGoogleDocs={() => void handleOpenGoogleDocs()}
       />
 

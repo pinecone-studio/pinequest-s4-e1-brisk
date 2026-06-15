@@ -12,6 +12,7 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
 } from "@/lib/mock-api";
+import { useNotificationStream } from "@/lib/notifications/use-notification-stream";
 import { cn } from "@/lib/utils";
 import type { NotificationItem, NotificationType } from "@/types";
 import {
@@ -51,6 +52,12 @@ export function NotificationsMenu({ triggerClassName }: NotificationsMenuProps) 
   useEffect(() => {
     getNotifications().then(setNotifications);
   }, []);
+
+  useNotificationStream({
+    onHeartbeat: () => {
+      void getNotifications().then(setNotifications);
+    },
+  });
 
   const unreadCount = notifications.filter(
     (notification) => !notification.read,

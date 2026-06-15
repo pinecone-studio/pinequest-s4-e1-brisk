@@ -12,7 +12,6 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import {
   CalendarIcon,
-  CheckIcon,
   ClockIcon,
   CopyIcon,
   DownloadIcon,
@@ -25,6 +24,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
+import { cn } from "@/lib/utils";
 
 type MeetingDetailTopbarProps = {
   meetingId: string;
@@ -37,7 +37,8 @@ type MeetingDetailTopbarProps = {
   summaryView?: boolean;
   isEditingTitle?: boolean;
   onTitleChange?: (title: string) => void;
-  onToggleEditTitle?: () => void;
+  onStartEditTitle?: () => void;
+  onFinishEditTitle?: () => void;
   onOpenGoogleDocs?: () => void;
 };
 
@@ -52,7 +53,8 @@ export const MeetingDetailTopbar = ({
   summaryView = false,
   isEditingTitle = false,
   onTitleChange,
-  onToggleEditTitle,
+  onStartEditTitle,
+  onFinishEditTitle,
   onOpenGoogleDocs,
 }: MeetingDetailTopbarProps) => {
   const toast = useToast();
@@ -92,11 +94,13 @@ export const MeetingDetailTopbar = ({
 
   const handleTitleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
-      onToggleEditTitle?.();
+      event.preventDefault();
+      onFinishEditTitle?.();
     }
 
     if (event.key === "Escape") {
-      onToggleEditTitle?.();
+      event.preventDefault();
+      onFinishEditTitle?.();
     }
   };
 
@@ -110,11 +114,21 @@ export const MeetingDetailTopbar = ({
             value={title}
             onChange={(event) => onTitleChange?.(event.target.value)}
             onKeyDown={handleTitleKeyDown}
+            onBlur={() => onFinishEditTitle?.()}
             className="h-10 max-w-xl font-heading text-lg font-semibold lg:text-xl"
             aria-label="Meeting title"
           />
         ) : (
-          <h1 className="font-heading text-xl font-semibold text-foreground lg:text-2xl">{title}</h1>
+          <h1
+            className={cn(
+              "font-heading text-xl font-semibold text-foreground lg:text-2xl",
+              summaryView && "cursor-text rounded-lg transition-colors hover:bg-muted/40",
+            )}
+            onDoubleClick={summaryView ? () => onStartEditTitle?.() : undefined}
+            title={summaryView ? "Double-click to edit title" : undefined}
+          >
+            {title}
+          </h1>
         )}
         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
           {createdDate ? (
@@ -140,27 +154,14 @@ export const MeetingDetailTopbar = ({
 
       <div className="flex items-center gap-2">
         {summaryView ? (
-          <>
-            <Button
-              variant="outline"
-              size="icon"
-              className="rounded-full"
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={onToggleEditTitle}
-              aria-label={isEditingTitle ? "Save meeting title" : "Edit meeting title"}
-            >
-              {isEditingTitle ? <CheckIcon /> : <PencilIcon />}
-            </Button>
-
-            <Button
-              size="sm"
-              className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/80"
-              onClick={onOpenGoogleDocs}
-            >
-              <FileTextIcon />
-              Open in Google Docs
-            </Button>
-          </>
+          <Button
+            size="sm"
+            className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/80"
+            onClick={onOpenGoogleDocs}
+          >
+            <FileTextIcon />
+            Open in Google Docs
+          </Button>
         ) : (
           <>
             <Button

@@ -33,6 +33,7 @@ export function SummarySectionsGrid({
       <SummaryNotesSection
         notes={notes}
         onNotesChange={onNotesChange}
+        topics={topics}
         isLoading={isLoadingNotes}
       />
     </div>
