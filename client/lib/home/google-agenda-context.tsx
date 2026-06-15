@@ -5,6 +5,7 @@ import {
   formatGoogleWorkspaceError,
   getGoogleCalendarAgenda,
 } from "@/lib/api/google-workspace";
+import { isGoogleDemoShared } from "@/lib/google/demo-google";
 import { useClientApiAuth } from "@/lib/api/auth-interceptor";
 import type {
   AgendaEvent,
@@ -68,7 +69,18 @@ export function GoogleAgendaProvider({ children }: { children: ReactNode }) {
 
     try {
       const bounds = getMonthGridBounds(year, month);
-      const response = await getGoogleCalendarAgenda(bounds);
+      let response = await getGoogleCalendarAgenda(bounds);
+
+      if (!response.connected && !isGoogleDemoShared()) {
+        const { ensureGoogleWorkspaceConnection } = await import(
+          "@/lib/api/google-workspace"
+        );
+        const connected = await ensureGoogleWorkspaceConnection();
+        if (connected) {
+          response = await getGoogleCalendarAgenda(bounds);
+        }
+      }
+
       setConnected(response.connected);
       setEvents(
         filterUpcomingEvents(

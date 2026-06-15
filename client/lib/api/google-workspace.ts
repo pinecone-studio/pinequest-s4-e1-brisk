@@ -1,4 +1,5 @@
 import { clientApi } from "@/app/lib/client-api";
+import { isGoogleDemoShared } from "@/lib/google/demo-google";
 import type {
   AgendaEvent,
   CreateCalendarEventInput,
@@ -7,8 +8,80 @@ import type {
 } from "@/lib/home/agenda-types";
 import axios from "axios";
 
+export type GoogleWorkspaceStatus = {
+  connected: boolean;
+  connectedFromPath: string | null;
+};
+
+export function getGoogleConnectReturnPath(returnTo?: string) {
+  if (returnTo?.startsWith("/") && !returnTo.startsWith("//")) {
+    return returnTo;
+  }
+
+  if (typeof window === "undefined") {
+    return "/home";
+  }
+
+  const nextPath = `${window.location.pathname}${window.location.search}`;
+  return nextPath.startsWith("/") ? nextPath : "/home";
+}
+
+const GOOGLE_OAUTH_REDIRECT_KEY = "google_oauth_redirect_attempted";
+
+export function clearGoogleOAuthRedirectAttempt() {
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(GOOGLE_OAUTH_REDIRECT_KEY);
+}
+
+export async function syncGoogleWorkspaceFromClerk() {
+  if (isGoogleDemoShared()) {
+    return { connected: false };
+  }
+
+  const { data } = await clientApi.post<{ connected: boolean }>(
+    "/api/backend/google/sync-from-clerk",
+    {
+      connectedFromPath: getGoogleConnectReturnPath(),
+    },
+  );
+  return data;
+}
+
+export function ensureGoogleWorkspaceOAuth() {
+  if (isGoogleDemoShared()) {
+    return false;
+  }
+
+  if (typeof window === "undefined") return false;
+  if (sessionStorage.getItem(GOOGLE_OAUTH_REDIRECT_KEY) === "1") {
+    return false;
+  }
+
+  sessionStorage.setItem(GOOGLE_OAUTH_REDIRECT_KEY, "1");
+  startGoogleWorkspaceConnect();
+  return true;
+}
+
+export async function ensureGoogleWorkspaceConnection() {
+  const status = await getGoogleWorkspaceStatus();
+  if (status.connected) {
+    return true;
+  }
+
+  if (isGoogleDemoShared()) {
+    return false;
+  }
+
+  const synced = await syncGoogleWorkspaceFromClerk();
+  if (synced.connected) {
+    return true;
+  }
+
+  return !ensureGoogleWorkspaceOAuth();
+}
+
 export async function getGoogleWorkspaceStatus() {
-  const { data } = await clientApi.get<{ connected: boolean }>(
+  const { data } = await clientApi.get<GoogleWorkspaceStatus>(
     "/api/backend/google/status",
   );
   return data;
@@ -58,11 +131,11 @@ export function formatGoogleWorkspaceError(error: unknown) {
       payload?.code === GOOGLE_SCOPE_ERROR_CODE ||
       (typeof message === "string" && isGoogleScopeError(message))
     ) {
-      return "Google needs permission to create events. Reconnect Google and try again.";
+      return "Google Calendar access is missing. Sign in with Google or grant calendar access.";
     }
 
     if (error.response?.status === 401) {
-      return "Sign in to connect Google Workspace.";
+      return "Sign in with Google to use Calendar.";
     }
 
     if (typeof message === "string" && message.trim()) {
@@ -71,7 +144,7 @@ export function formatGoogleWorkspaceError(error: unknown) {
   }
 
   if (error instanceof Error && isGoogleScopeError(error.message)) {
-    return "Google needs permission to create events. Reconnect Google and try again.";
+    return "Google Calendar access is missing. Sign in with Google or grant calendar access.";
   }
 
   return "Could not load Google Calendar. Try again.";
@@ -84,13 +157,15 @@ export async function disconnectGoogleWorkspace() {
   return data;
 }
 
-export async function reconnectGoogleWorkspace(returnTo = "/home") {
+export async function reconnectGoogleWorkspace(returnTo?: string) {
   await disconnectGoogleWorkspace();
   startGoogleWorkspaceConnect(returnTo);
 }
 
-export function startGoogleWorkspaceConnect(returnTo = "/home") {
-  const params = new URLSearchParams({ returnTo });
+export function startGoogleWorkspaceConnect(returnTo?: string) {
+  const params = new URLSearchParams({
+    returnTo: getGoogleConnectReturnPath(returnTo),
+  });
   window.location.href = `/api/auth/google?${params.toString()}`;
 }
 

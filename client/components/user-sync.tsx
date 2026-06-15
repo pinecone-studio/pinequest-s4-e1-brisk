@@ -1,6 +1,8 @@
 "use client";
 
 import { syncClerkUser } from "@/lib/api/users";
+import { syncGoogleWorkspaceFromClerk } from "@/lib/api/google-workspace";
+import { isGoogleDemoShared } from "@/lib/google/demo-google";
 import { useUser } from "@clerk/nextjs";
 import { useEffect, useRef } from "react";
 
@@ -30,9 +32,11 @@ export function UserSync() {
       email,
       name,
       avatarUrl: user.imageUrl ?? null,
-    }).catch(() => {
-      syncedRef.current = null;
-    });
+    })
+      .then(() => (isGoogleDemoShared() ? null : syncGoogleWorkspaceFromClerk()))
+      .catch(() => {
+        syncedRef.current = null;
+      });
   }, [isLoaded, user]);
 
   return null;

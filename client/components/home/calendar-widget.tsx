@@ -2,7 +2,6 @@
 
 import { CreateCalendarEventPanel } from "@/components/home/create-calendar-event-dialog";
 import { Button } from "@/components/ui/button";
-import { startGoogleWorkspaceConnect } from "@/lib/api/google-workspace";
 import { useGoogleAgenda } from "@/lib/home/use-google-agenda";
 import { getDateKey } from "@/lib/home/google-agenda-utils";
 import { cn } from "@/lib/utils";
@@ -114,7 +113,6 @@ export function CalendarWidget() {
 
   const handleDayClick = (date: Date, rect: DOMRect) => {
     if (connected !== true) {
-      startGoogleWorkspaceConnect("/home");
       return;
     }
 

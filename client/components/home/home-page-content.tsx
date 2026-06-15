@@ -4,7 +4,6 @@ import { fetchMeetings, type MeetingListItem } from "@/app/meeting";
 import { EmptyState } from "@/components/home/empty-state";
 import { HomeDashboard } from "@/components/home/home-dashboard";
 import { AnimatePresence, motion } from "framer-motion";
-import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { filterMeetingsBySearch } from "@/lib/search/filter-meetings";
 import { buildMeetingSearchSuggestions } from "@/lib/search/build-search-suggestions";
@@ -14,8 +13,6 @@ import { useRegisterSearchSuggestions } from "@/lib/search/use-register-search-s
 export function HomePageContent() {
   const [meetings, setMeetings] = useState<MeetingListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const searchParams = useSearchParams();
-  const router = useRouter();
   const { query } = useDashboardSearch();
 
   const meetingSuggestions = useMemo(
@@ -45,12 +42,6 @@ export function HomePageContent() {
       isActive = false;
     };
   }, []);
-
-  useEffect(() => {
-    if (searchParams.get("google_connected") || searchParams.get("google_error")) {
-      router.replace("/home");
-    }
-  }, [router, searchParams]);
 
   const todayLabel = new Date().toLocaleDateString("en-US", {
     weekday: "long",
