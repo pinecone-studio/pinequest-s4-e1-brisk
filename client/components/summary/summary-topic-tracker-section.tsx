@@ -3,17 +3,22 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import { CheckIcon, PencilIcon, TagsIcon, XIcon } from "lucide-react";
 import { useState, type FormEvent, type KeyboardEvent } from "react";
 
 type SummaryTopicTrackerSectionProps = {
   topics: string[];
   onTopicsChange: (topics: string[]) => void;
+  activeTopic?: string | null;
+  onTopicSelect?: (topic: string | null) => void;
 };
 
 export function SummaryTopicTrackerSection({
   topics,
   onTopicsChange,
+  activeTopic = null,
+  onTopicSelect,
 }: SummaryTopicTrackerSectionProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [newTopic, setNewTopic] = useState("");
@@ -33,6 +38,14 @@ export function SummaryTopicTrackerSection({
 
   const handleRemoveTopic = (topic: string) => {
     onTopicsChange(topics.filter((item) => item !== topic));
+    if (activeTopic === topic) {
+      onTopicSelect?.(null);
+    }
+  };
+
+  const handleTopicClick = (topic: string) => {
+    if (isEditing || !onTopicSelect) return;
+    onTopicSelect(activeTopic === topic ? null : topic);
   };
 
   const handleTopicKeyDown = (event: KeyboardEvent<HTMLInputElement>, index: number) => {
@@ -108,12 +121,18 @@ export function SummaryTopicTrackerSection({
                   </Button>
                 </div>
               ) : (
-                <span
+                <button
                   key={topic}
-                  className="rounded-full bg-primary px-2.5 py-1 text-[11px] font-medium text-white ring-1 ring-inset ring-white/10"
+                  type="button"
+                  onClick={() => handleTopicClick(topic)}
+                  className={cn(
+                    "rounded-full bg-primary px-2.5 py-1 text-[11px] font-medium text-white ring-1 ring-inset ring-white/10 transition-all",
+                    onTopicSelect && "cursor-pointer hover:brightness-110",
+                    activeTopic === topic && "ring-2 ring-white ring-offset-2 ring-offset-primary",
+                  )}
                 >
                   {topic}
-                </span>
+                </button>
               ),
             )}
           </div>

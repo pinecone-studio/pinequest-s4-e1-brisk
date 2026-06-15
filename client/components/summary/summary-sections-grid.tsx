@@ -5,6 +5,7 @@ import { SummaryParticipantsSection } from "@/components/summary/summary-partici
 import { SummaryTopicTrackerSection } from "@/components/summary/summary-topic-tracker-section";
 import type { SummaryNoteItem } from "@/lib/summary/summary-note.types";
 import type { SummaryParticipant } from "@/lib/summary/summary-participant.types";
+import { useCallback, useState } from "react";
 
 type SummarySectionsGridProps = {
   participants: SummaryParticipant[];
@@ -23,17 +24,29 @@ export function SummarySectionsGrid({
   onNotesChange,
   isLoadingNotes = false,
 }: SummarySectionsGridProps) {
+  const [activeTopic, setActiveTopic] = useState<string | null>(null);
+
+  const handleTopicSelect = useCallback((topic: string | null) => {
+    setActiveTopic(topic);
+  }, []);
+
   return (
     <div className="grid gap-6 pb-4 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
       <aside className="flex flex-col gap-4">
         <SummaryParticipantsSection participants={participants} />
-        <SummaryTopicTrackerSection topics={topics} onTopicsChange={onTopicsChange} />
+        <SummaryTopicTrackerSection
+          topics={topics}
+          onTopicsChange={onTopicsChange}
+          activeTopic={activeTopic}
+          onTopicSelect={handleTopicSelect}
+        />
       </aside>
 
       <SummaryNotesSection
         notes={notes}
         onNotesChange={onNotesChange}
         topics={topics}
+        activeTopic={activeTopic}
         isLoading={isLoadingNotes}
       />
     </div>
