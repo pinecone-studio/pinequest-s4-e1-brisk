@@ -39,12 +39,7 @@ export function Topbar() {
   }, []);
 
   return (
-    <header className="flex h-16 shrink-0 items-center bg-transparent lg:col-span-2 lg:grid lg:grid-cols-[16rem_minmax(0,1fr)] lg:items-center">
-      <div className="hidden items-center justify-center lg:flex">
-        <BriskLogo />
-      </div>
-
-      <div className="flex min-w-0 items-center gap-3 px-4 lg:px-6">
+    <header className="flex h-16 w-full min-w-0 shrink-0 items-center gap-3 bg-transparent px-4 lg:col-start-2 lg:row-start-1 lg:px-6">
         <BriskLogo className="shrink-0 lg:hidden" />
 
         <div className="relative max-w-md flex-1">
@@ -130,7 +125,6 @@ export function Topbar() {
             }}
           />
         </div>
-      </div>
     </header>
   );
 }

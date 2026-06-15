@@ -4,19 +4,27 @@ import { MeetingSummaryView } from "@/components/summary/meeting-summary-view";
 import { formatMeetingDateLong } from "@/lib/meetings/format-meeting-date";
 import { getMeetingDurationLabel } from "@/lib/meetings/meeting-duration";
 import {
-  buildMockSummaryMeetingSearchSuggestions,
-  getMockSummaryMeetingDisplay,
-} from "@/lib/meetings/mock-summary-meeting";
+  buildMockStandupSearchSuggestions,
+  getMockStandupMeetingDisplay,
+} from "@/lib/meetings/mock-standup-story";
 import { useRegisterSearchSuggestions } from "@/lib/search/use-register-search-suggestions";
 import { useMemo } from "react";
 
-export function MockSummaryMeetingDetailView() {
-  const mock = getMockSummaryMeetingDisplay();
+type MockStandupMeetingDetailViewProps = {
+  meetingId: string;
+};
+
+export function MockStandupMeetingDetailView({ meetingId }: MockStandupMeetingDetailViewProps) {
+  const mock = getMockStandupMeetingDisplay(meetingId);
+
+  const searchSuggestions = useMemo(() => buildMockStandupSearchSuggestions(), []);
+  useRegisterSearchSuggestions(`meeting-detail-${meetingId}`, searchSuggestions);
+
+  if (!mock) {
+    return null;
+  }
+
   const { listItem, participants, topics, notes } = mock;
-
-  const searchSuggestions = useMemo(() => buildMockSummaryMeetingSearchSuggestions(), []);
-  useRegisterSearchSuggestions(`meeting-detail-${listItem.id}`, searchSuggestions);
-
   const createdDate = formatMeetingDateLong(listItem.createdAt) || null;
   const durationLabel = getMeetingDurationLabel(listItem);
 
@@ -32,3 +40,6 @@ export function MockSummaryMeetingDetailView() {
     />
   );
 }
+
+/** @deprecated Use MockStandupMeetingDetailView */
+export const MockSummaryMeetingDetailView = MockStandupMeetingDetailView;

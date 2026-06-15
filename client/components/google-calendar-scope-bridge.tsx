@@ -15,9 +15,10 @@ import { useEffect, useRef } from "react";
 const REAUTH_ATTEMPT_KEY = "google_calendar_scope_reauth_attempted";
 
 function getGoogleExternalAccount(user: NonNullable<ReturnType<typeof useUser>["user"]>) {
-  return user.externalAccounts.find(
-    (account) => account.provider === "google" || account.provider === "oauth_google",
-  );
+  return user.externalAccounts.find((account) => {
+    const provider = String(account.provider);
+    return provider === "google" || provider === "oauth_google";
+  });
 }
 
 export function GoogleCalendarScopeBridge() {

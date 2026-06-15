@@ -1,8 +1,9 @@
 "use client";
 
-import { syncClerkUser } from "@/lib/api/users";
+import { seedDemoStandupAccount, syncClerkUser } from "@/lib/api/users";
 import { syncGoogleWorkspaceFromClerk } from "@/lib/api/google-workspace";
 import { isGoogleDemoShared } from "@/lib/google/demo-google";
+import { setClerkProfile } from "@/lib/meetings/clerk-profile";
 import { useUser } from "@clerk/nextjs";
 import { useEffect, useRef } from "react";
 
@@ -12,6 +13,7 @@ export function UserSync() {
 
   useEffect(() => {
     if (!isLoaded || !user) {
+      setClerkProfile(null);
       return;
     }
 
@@ -27,15 +29,40 @@ export function UserSync() {
 
     syncedRef.current = user.id;
 
+    setClerkProfile({
+      clerkId: user.id,
+      email,
+      name,
+      avatarUrl: user.imageUrl ?? null,
+      internalUserId: null,
+    });
+
     syncClerkUser({
       clerkId: user.id,
       email,
       name,
       avatarUrl: user.imageUrl ?? null,
     })
-      .then(() => (isGoogleDemoShared() ? null : syncGoogleWorkspaceFromClerk()))
+      .then(async (syncedUser) => {
+        setClerkProfile({
+          clerkId: user.id,
+          email,
+          name,
+          avatarUrl: user.imageUrl ?? null,
+          internalUserId: syncedUser.id,
+        });
+
+        await seedDemoStandupAccount().catch(() => {});
+
+        if (isGoogleDemoShared()) {
+          return null;
+        }
+
+        return syncGoogleWorkspaceFromClerk();
+      })
       .catch(() => {
         syncedRef.current = null;
+        setClerkProfile(null);
       });
   }, [isLoaded, user]);
 

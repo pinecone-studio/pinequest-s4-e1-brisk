@@ -1,6 +1,10 @@
 "use client";
 
 import SplitText from "@/components/SplitText";
+import {
+  getClerkDefaultDisplayName,
+  getClerkPrimaryEmail,
+} from "@/lib/meetings/get-clerk-display-name";
 import { useUser } from "@clerk/nextjs";
 
 type WelcomeHeaderProps = {
@@ -10,7 +14,14 @@ type WelcomeHeaderProps = {
 export function WelcomeHeader({ todayLabel }: WelcomeHeaderProps) {
   const { user } = useUser();
 
-  const greetingText = `Hello${user?.firstName ? `, ${user.firstName}` : ""}!`;
+  const email = getClerkPrimaryEmail(user);
+  const displayName = getClerkDefaultDisplayName(user);
+  const greetingTarget =
+    user?.firstName?.trim() ||
+    (email ? email.split("@")[0] : "") ||
+    displayName.split("@")[0] ||
+    "there";
+  const greetingText = `Hello, ${greetingTarget}!`;
 
   return (
     <div className="flex flex-col gap-1">

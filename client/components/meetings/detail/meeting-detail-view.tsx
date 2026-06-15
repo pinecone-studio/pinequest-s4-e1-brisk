@@ -20,12 +20,12 @@ import { useRegisterSearchSuggestions } from "@/lib/search/use-register-search-s
 import { MeetingSummaryView } from "@/components/summary/meeting-summary-view";
 import { buildSummaryNotesFromMeetings } from "@/lib/summary/build-summary-notes";
 import { mapSpeakerStatsToSummaryParticipants } from "@/lib/summary/build-summary-participants";
-import { isMockSummaryMeeting } from "@/lib/meetings/mock-summary-meeting";
+import { isMockStandupMeeting } from "@/lib/meetings/mock-standup-story";
 import { MeetingContentTabs } from "./meeting-content-tabs";
 import { MeetingDetailTopbar } from "./meeting-detail-topbar";
 import { MeetingInsightsSidebar } from "./meeting-insights-sidebar";
 import { MeetingReplayPlayer } from "./meeting-replay-player";
-import { MockSummaryMeetingDetailView } from "./mock-summary-meeting-detail-view";
+import { MockStandupMeetingDetailView } from "./mock-summary-meeting-detail-view";
 
 type MeetingDetailViewProps = {
   meetingId: string;
@@ -53,8 +53,8 @@ const MeetingDetailNotFound = () => (
 );
 
 export const MeetingDetailView = ({ meetingId }: MeetingDetailViewProps) => {
-  if (isMockSummaryMeeting(meetingId)) {
-    return <MockSummaryMeetingDetailView />;
+  if (isMockStandupMeeting(meetingId)) {
+    return <MockStandupMeetingDetailView meetingId={meetingId} />;
   }
 
   return <MeetingDetailViewContent meetingId={meetingId} />;

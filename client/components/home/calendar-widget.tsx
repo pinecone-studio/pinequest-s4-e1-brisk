@@ -95,16 +95,14 @@ export function CalendarWidget() {
   const eventCountByDate = useMemo(() => {
     const counts = new Map<string, number>();
 
-    if (!connected) {
-      return counts;
-    }
-
     for (const event of events) {
       counts.set(event.dateKey, (counts.get(event.dateKey) ?? 0) + 1);
     }
 
     return counts;
-  }, [connected, events]);
+  }, [events]);
+
+  const canSelectDays = events.length > 0 || connected === true;
 
   const monthLabel = cursor.toLocaleDateString("en-US", {
     month: "long",
@@ -112,7 +110,7 @@ export function CalendarWidget() {
   });
 
   const handleDayClick = (date: Date, rect: DOMRect) => {
-    if (connected !== true) {
+    if (!canSelectDays) {
       return;
     }
 

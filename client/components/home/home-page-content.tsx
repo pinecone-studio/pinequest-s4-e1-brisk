@@ -5,7 +5,10 @@ import { EmptyState } from "@/components/home/empty-state";
 import { HomeDashboard } from "@/components/home/home-dashboard";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
-import { prependMockSummaryMeeting } from "@/lib/meetings/mock-summary-meeting";
+import {
+  buildStandupStorySearchSuggestions,
+  prependMockStandupMeetings,
+} from "@/lib/meetings/mock-standup-story";
 import { filterMeetingsBySearch } from "@/lib/search/filter-meetings";
 import { buildMeetingSearchSuggestions } from "@/lib/search/build-search-suggestions";
 import { useDashboardSearch } from "@/lib/search/dashboard-search-context";
@@ -16,10 +19,13 @@ export function HomePageContent() {
   const [isLoading, setIsLoading] = useState(true);
   const { query } = useDashboardSearch();
 
-  const meetingSuggestions = useMemo(
-    () => buildMeetingSearchSuggestions(meetings),
-    [meetings],
-  );
+  const meetingSuggestions = useMemo(() => {
+    const fromMeetings = buildMeetingSearchSuggestions(meetings);
+    const fromStory = buildStandupStorySearchSuggestions().filter(
+      (suggestion) => suggestion.category !== "Meeting",
+    );
+    return [...fromStory, ...fromMeetings];
+  }, [meetings]);
   useRegisterSearchSuggestions("home-meetings", meetingSuggestions);
 
   const filteredMeetings = useMemo(
@@ -32,9 +38,11 @@ export function HomePageContent() {
 
     fetchMeetings()
       .then((response) => {
-        if (isActive) setMeetings(prependMockSummaryMeeting(response.meetings));
+        if (isActive) setMeetings(prependMockStandupMeetings(response.meetings));
       })
-      .catch(() => {})
+      .catch(() => {
+        if (isActive) setMeetings(prependMockStandupMeetings([]));
+      })
       .finally(() => {
         if (isActive) setIsLoading(false);
       });
@@ -86,7 +94,7 @@ export function HomePageContent() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.25 }}
-                className="flex min-h-0 flex-1 flex-col"
+                className="flex min-h-0 flex-1 flex-col overflow-y-auto scrollbar-none"
               >
                 <HomeDashboard
                   meetings={filteredMeetings}
