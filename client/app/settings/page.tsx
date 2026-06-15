@@ -36,7 +36,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4 lg:p-6">
+    <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6">
       <div>
         <h1 className="font-heading text-2xl font-semibold text-foreground">
           {heading.title}

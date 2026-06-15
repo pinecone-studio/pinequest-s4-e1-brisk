@@ -4,6 +4,7 @@ import { RecentActivityFeed } from "@/components/home/recent-activity-feed";
 import { StandupStorySection } from "@/components/home/standup-story-section";
 import { WelcomeHeader } from "@/components/home/welcome-header";
 import { TEXT_MUTED, TEXT_PRIMARY } from "@/lib/ui/design-tokens";
+import { isMockStandupMeeting } from "@/lib/meetings/mock-standup-story";
 import { cn } from "@/lib/utils";
 
 type HomeDashboardProps = {
@@ -25,7 +26,7 @@ export function HomeDashboard({
   const recentMeetings = meetings.filter((meeting) => !isMockStandupMeeting(meeting.id));
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-5 overflow-hidden">
+    <div className="flex flex-col gap-5">
       <WelcomeHeader todayLabel={todayLabel} />
       <QuickActions />
 

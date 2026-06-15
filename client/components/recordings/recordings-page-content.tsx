@@ -86,7 +86,7 @@ export function RecordingsPageContent() {
   }, [loadRecordings]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4 lg:p-6">
+    <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6">
       {error ? (
         <p className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
           {displayUserError(error)}

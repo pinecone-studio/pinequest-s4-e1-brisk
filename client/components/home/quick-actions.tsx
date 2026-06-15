@@ -5,7 +5,8 @@ import { slugifyRoomName } from "@/app/meeting/utils/slugify-room-name";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
-import { BTN_PRIMARY, CARD_STANDARD, TEXT_MUTED, TEXT_PRIMARY } from "@/lib/ui/design-tokens";
+import { BTN_PRIMARY, CARD_STANDARD, TEXT_MUTED } from "@/lib/ui/design-tokens";
+import { getClerkPrimaryEmail } from "@/lib/meetings/get-clerk-display-name";
 import { cn } from "@/lib/utils";
 import { useUser } from "@clerk/nextjs";
 import {
@@ -132,15 +133,13 @@ export function QuickActions() {
                 className="h-11 w-full rounded-xl border-zinc-200 bg-transparent pl-11 pr-4 text-sm dark:border-zinc-800"
               />
             </div>
-            <div className="relative flex-1">
-              <MailIcon className="absolute top-1/2 left-4 size-4 -translate-y-1/2 text-zinc-400" />
-              <Input
-                value={inviteEmails}
-                onChange={(e) => setInviteEmails(e.target.value)}
-                placeholder="Invite teammates by email (optional)"
-                className="h-11 w-full rounded-xl border-zinc-200 bg-transparent pl-11 pr-4 text-sm dark:border-zinc-800"
-              />
-            </div>
+            <InviteEmailList
+              emails={inviteEmails}
+              onEmailsChange={setInviteEmails}
+              layout="inline"
+              placeholder="Invite teammates by email (optional)"
+              className="min-w-0 flex-1"
+            />
             <Button
               type="submit"
               className={cn(
@@ -157,32 +156,24 @@ export function QuickActions() {
         {activeTab === "recording" && (
           <div className="flex flex-col items-stretch gap-4 md:flex-row">
             <Button
-              onClick={() => setIsRecording(!isRecording)}
+              onClick={() => goToRecordings("record")}
               className={cn(
                 BTN_PRIMARY,
-                "h-11 flex-1 gap-2",
-                isRecording
-                  ? "bg-red-500 text-white hover:bg-red-600"
-                  : "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-700",
+                "h-11 flex-1 gap-2 bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-700",
               )}
             >
-              <span
-                className={cn(
-                  "size-2 rounded-full bg-red-400",
-                  isRecording && "animate-ping",
-                )}
-              />
-              {isRecording ? "Stop Recording" : "Start instant recording"}
+              <span className="size-2 rounded-full bg-red-400" />
+              Start instant recording
             </Button>
 
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="flex h-11 flex-[1.5] cursor-pointer items-center justify-center gap-3 rounded-xl border-2 border-dashed border-zinc-200 transition-all hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800/50"
+            <Button
+              variant="outline"
+              onClick={() => goToRecordings("upload")}
+              className="flex h-11 flex-[1.5] items-center justify-center gap-3 rounded-xl border-2 border-dashed border-zinc-200 transition-all hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800/50"
             >
-              <input ref={fileInputRef} type="file" className="hidden" />
               <UploadCloudIcon className={cn("size-5", TEXT_MUTED)} />
               <span className={cn("text-sm font-medium", TEXT_MUTED)}>Upload recording</span>
-            </div>
+            </Button>
           </div>
         )}
 
@@ -237,13 +228,12 @@ export function QuickActions() {
             </div>
 
             <div className="flex flex-col gap-4 md:flex-row">
-              <div className="relative flex-1">
-                <MailIcon className="absolute top-1/2 left-4 size-4 -translate-y-1/2 text-zinc-400" />
-                <Input
-                  value={scheduleInvites}
-                  onChange={(e) => setScheduleInvites(e.target.value)}
+              <div className="flex-1">
+                <InviteEmailList
+                  emails={scheduleInvites}
+                  onEmailsChange={setScheduleInvites}
+                  layout="stacked"
                   placeholder="Invitees (comma separated emails)"
-                  className="h-11 w-full rounded-xl border-zinc-200 bg-transparent pl-11 pr-4 text-sm dark:border-zinc-800"
                 />
               </div>
               <Button

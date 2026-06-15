@@ -37,16 +37,22 @@ export function ActivityCard({ meeting }: ActivityCardProps) {
   const participants = getMeetingParticipants(meeting);
 
   return (
-    <article className={cn(CARD_STANDARD, "transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md")}>
+    <article
+      className={cn(
+        CARD_STANDARD,
+        "transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md",
+      )}
+    >
       <div className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
-          <Link href={`/meetings/${meeting.id}`} className="min-w-0 hover:underline">
+          <Link href={`/meetings/${meeting.id}`} className="min-w-0 flex-1 hover:underline">
             <h3 className={cn("truncate font-heading text-base font-semibold", TEXT_PRIMARY)}>
               {meeting.title}
             </h3>
+          </Link>
 
-            <div className="flex shrink-0 items-center gap-2">
-              <Badge className={cn("gap-1", status.className)}>{status.label}</Badge>
+          <div className="flex shrink-0 items-center gap-2">
+            <Badge className={cn("gap-1", status.className)}>{status.label}</Badge>
 
             <DropdownMenu>
               <DropdownMenuTrigger
@@ -62,6 +68,7 @@ export function ActivityCard({ meeting }: ActivityCardProps) {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+        </div>
 
         <div className={cn("flex flex-wrap items-center gap-3 text-sm", TEXT_MUTED)}>
           <span className="flex items-center gap-1.5">
