@@ -5,9 +5,11 @@ import { GoogleAgendaProvider } from "@/lib/home/google-agenda-context";
 export function DashboardScheduleSidebar() {
   return (
     <GoogleAgendaProvider>
-      <aside className="relative z-10 hidden h-full w-80 shrink-0 flex-col gap-6 overflow-x-visible overflow-y-auto border-l border-border bg-card/40 p-6 backdrop-blur-sm scrollbar-none xl:flex">
+      <aside className="relative z-20 hidden h-full w-80 shrink-0 flex-col gap-6 overflow-visible border-l border-border bg-card/40 p-6 backdrop-blur-sm xl:flex">
         <CalendarWidget />
-        <AgendaPanel />
+        <div className="min-h-0 flex-1 overflow-y-auto scrollbar-none">
+          <AgendaPanel />
+        </div>
       </aside>
     </GoogleAgendaProvider>
   );

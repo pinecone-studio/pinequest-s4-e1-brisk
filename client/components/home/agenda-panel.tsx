@@ -7,9 +7,8 @@ import {
   disconnectGoogleWorkspace,
   startGoogleWorkspaceConnect,
 } from "@/lib/api/google-workspace";
-import { groupEventsByDate, formatDayHeading } from "@/lib/home/google-agenda-utils";
+import { formatDayHeading, parseDateKey } from "@/lib/home/google-agenda-utils";
 import { useGoogleAgenda } from "@/lib/home/use-google-agenda";
-import { AGENDA_DAYS_AHEAD } from "@/lib/home/agenda-types";
 import { filterAgendaEventsBySearch } from "@/lib/search/filter-agenda-events";
 import { buildAgendaSearchSuggestions } from "@/lib/search/build-search-suggestions";
 import { useDashboardSearch } from "@/lib/search/dashboard-search-context";
@@ -18,19 +17,35 @@ import { Loader2Icon } from "lucide-react";
 import { useMemo, useState } from "react";
 
 export function AgendaPanel() {
-  const { events, connected, isLoading, error, reload } = useGoogleAgenda();
+  const {
+    events,
+    connected,
+    isLoading,
+    error,
+    reload,
+    selectedDateKey,
+    getEventsForDate,
+  } = useGoogleAgenda();
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const { query } = useDashboardSearch();
-  const filteredEvents = useMemo(
-    () => filterAgendaEventsBySearch(events, query),
-    [events, query],
+
+  const selectedDate = useMemo(
+    () => parseDateKey(selectedDateKey),
+    [selectedDateKey],
+  );
+  const dayEvents = useMemo(
+    () => getEventsForDate(selectedDate),
+    [getEventsForDate, selectedDate],
+  );
+  const filteredDayEvents = useMemo(
+    () => filterAgendaEventsBySearch(dayEvents, query),
+    [dayEvents, query],
   );
   const agendaSuggestions = useMemo(
     () => buildAgendaSearchSuggestions(events),
     [events],
   );
   useRegisterSearchSuggestions("agenda", agendaSuggestions);
-  const groupedEvents = groupEventsByDate(filteredEvents);
 
   const handleDisconnect = async () => {
     setIsDisconnecting(true);
@@ -46,7 +61,7 @@ export function AgendaPanel() {
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
         <p className="font-heading text-sm font-semibold text-foreground">
-          Next {AGENDA_DAYS_AHEAD} days
+          {formatDayHeading(selectedDateKey)}
         </p>
         {connected ? (
           <Button
@@ -81,27 +96,18 @@ export function AgendaPanel() {
         </div>
       ) : connected === false ? (
         <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-          Connect Google Workspace to see your upcoming meetings here.
+          Connect Google Workspace to see your events here.
         </div>
-      ) : events.length === 0 ? (
+      ) : dayEvents.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-          No upcoming events in the next {AGENDA_DAYS_AHEAD} days.
+          No events on this day.
         </div>
-      ) : filteredEvents.length === 0 ? (
+      ) : filteredDayEvents.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
           No calendar events match your search.
         </div>
       ) : (
-        <div className="flex flex-col gap-4">
-          {groupedEvents.map(({ dateKey, events: dayEvents }) => (
-            <div key={dateKey} className="flex flex-col gap-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {formatDayHeading(dateKey)}
-              </p>
-              <AgendaEventCards events={dayEvents} compact />
-            </div>
-          ))}
-        </div>
+        <AgendaEventCards events={filteredDayEvents} compact />
       )}
     </div>
   );

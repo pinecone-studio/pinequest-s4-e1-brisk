@@ -18,4 +18,17 @@ export type GoogleAgendaResponse = {
   events: AgendaEvent[];
 };
 
+export type CreateCalendarEventInput = {
+  summary: string;
+  startDateTime: string;
+  endDateTime: string;
+  timeZone: string;
+  attendeeEmails?: string[];
+};
+
+export type CreateCalendarEventResponse = {
+  connected: boolean;
+  event: AgendaEvent;
+};
+
 export const AGENDA_DAYS_AHEAD = 7;

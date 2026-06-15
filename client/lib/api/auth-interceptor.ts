@@ -7,9 +7,11 @@ import { clientApi } from "@/app/lib/client-api";
 let interceptorId: number | null = null;
 
 export function useClientApiAuth() {
-  const { getToken } = useAuth();
+  const { getToken, isLoaded } = useAuth();
 
   useEffect(() => {
+    if (!isLoaded) return;
+
     if (interceptorId !== null) {
       clientApi.interceptors.request.eject(interceptorId);
     }
@@ -32,5 +34,5 @@ export function useClientApiAuth() {
         interceptorId = null;
       }
     };
-  }, [getToken]);
+  }, [getToken, isLoaded]);
 }

@@ -26,6 +26,32 @@ export function getUpcomingWeekBounds() {
   };
 }
 
+export function getMonthGridBounds(year: number, month: number) {
+  const firstOfMonth = new Date(year, month, 1);
+  const startOffset = firstOfMonth.getDay();
+  const gridStart = new Date(year, month, 1 - startOffset);
+  gridStart.setHours(0, 0, 0, 0);
+
+  const gridEnd = new Date(gridStart);
+  gridEnd.setDate(gridStart.getDate() + 41);
+  gridEnd.setHours(23, 59, 59, 999);
+
+  return {
+    timeMin: gridStart.toISOString(),
+    timeMax: gridEnd.toISOString(),
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  };
+}
+
+export function filterEventsWithinWeek(events: AgendaEvent[]) {
+  const { timeMax } = getUpcomingWeekBounds();
+  const weekEndMs = new Date(timeMax).getTime();
+
+  return filterUpcomingEvents(events).filter(
+    (event) => new Date(event.startAt).getTime() <= weekEndMs,
+  );
+}
+
 export function enrichAgendaEvent(
   event: Omit<AgendaEvent, "dateKey"> & { dateKey?: string },
 ): AgendaEvent {
