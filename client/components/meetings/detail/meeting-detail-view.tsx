@@ -24,6 +24,7 @@ import { isMockStandupMeeting } from "@/lib/meetings/mock-standup-story";
 import { MeetingContentTabs } from "./meeting-content-tabs";
 import { MeetingDetailTopbar } from "./meeting-detail-topbar";
 import { MeetingInsightsSidebar } from "./meeting-insights-sidebar";
+import { MeetingProcessingSummaryView } from "./meeting-processing-summary-view";
 import { MeetingReplayPlayer } from "./meeting-replay-player";
 import { MockStandupMeetingDetailView } from "./mock-summary-meeting-detail-view";
 
@@ -101,6 +102,23 @@ const MeetingDetailViewContent = ({ meetingId }: MeetingDetailViewProps) => {
       .catch(() => {});
   }, [status, details, meetingId]);
 
+  // Once a meeting has ended, the processing queue generates the Google Doc
+  // summary asynchronously. Poll until `googleDocUrl` shows up so the page
+  // updates without a manual refresh.
+  useEffect(() => {
+    if (details?.meeting.status !== "completed" || details.meeting.googleDocUrl) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      fetchMeetingAnalysisDetails(meetingId)
+        .then(setDetails)
+        .catch(() => {});
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [details, meetingId]);
+
   const detailSuggestions = useMemo(() => {
     if (!details) return [];
 
@@ -161,6 +179,18 @@ const MeetingDetailViewContent = ({ meetingId }: MeetingDetailViewProps) => {
     summaryContent?.keyDecisions ?? details.summary?.keyPoints ?? [];
   const actionItems =
     summaryContent?.actionItems ?? details.summary?.actionItems ?? [];
+
+  if (details.meeting.status === "completed") {
+    return (
+      <MeetingProcessingSummaryView
+        title={meetingListItem.title}
+        createdDate={createdDate}
+        durationLabel={durationLabel}
+        googleDocUrl={details.meeting.googleDocUrl}
+        attendees={details.attendees}
+      />
+    );
+  }
 
   const isFinished = transcription?.status === "done";
 

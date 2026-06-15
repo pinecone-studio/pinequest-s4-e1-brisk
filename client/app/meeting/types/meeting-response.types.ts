@@ -93,15 +93,32 @@ export type GetMeetingsResponse = {
   meetings: MeetingListItem[];
 };
 
+export type MeetingProcessingStatus = "active" | "completed";
+
+export type MeetingAttendee = {
+  id: string;
+  meetingId: string;
+  email: string;
+  name: string;
+  createdAt: string | null;
+};
+
 export type GetMeetingAnalysisDetailsResponse = {
   meeting: {
     id: string;
     userId: string;
     title: string;
+    status: MeetingProcessingStatus;
+    googleDocUrl: string | null;
     createdAt: string | null;
     updatedAt: string | null;
   };
   transcription: GetMeetingTranscriptResponse | null;
   summary: MeetingDetailsSummary | null;
   transcriptSegments: MeetingTranscriptSegment[];
+  attendees: MeetingAttendee[];
+};
+
+export type EndMeetingResponse = {
+  status: "completed";
 };

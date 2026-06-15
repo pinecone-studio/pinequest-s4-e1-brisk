@@ -7,8 +7,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, Copy, Link2 } from "lucide-react";
+import { BTN_PRIMARY, TEXT_MUTED, TEXT_PRIMARY } from "@/lib/ui/design-tokens";
 import { displayUserError } from "@/lib/errors/format-user-error";
+import { cn } from "@/lib/utils";
+import { ChevronDown, Copy, Link2 } from "lucide-react";
 import { useState } from "react";
 
 const COPY_FEEDBACK_DURATION_MS = 1500;
@@ -54,19 +56,20 @@ export function LobbyEntryPanel({
   };
 
   return (
-    <div className="flex w-full max-w-sm flex-col items-center justify-center space-y-6 text-center md:items-start md:text-center">
-      <div className="space-y-2 w-full">
-        <h2 className="text-3xl font-medium tracking-tight text-foreground text-center">
+    <div className="flex w-full max-w-sm flex-col items-center justify-center space-y-6 text-center md:items-start md:text-left">
+      <div className="w-full space-y-2">
+        <h2 className={cn("text-3xl font-medium tracking-tight", TEXT_PRIMARY)}>
           {title}
         </h2>
-        <p className="text-base text-muted-foreground text-center">
-          {occupancySubtitle}
-        </p>
+        <p className={cn("text-base", TEXT_MUTED)}>{occupancySubtitle}</p>
       </div>
 
       <div className="w-full space-y-3">
         <Button
-          className="h-12 w-full rounded-full text-base font-medium shadow-sm transition-all hover:opacity-90 active:scale-[0.98]"
+          className={cn(
+            BTN_PRIMARY,
+            "h-11 w-full bg-emerald-600 text-white hover:bg-emerald-500 dark:bg-emerald-500 dark:hover:bg-emerald-400",
+          )}
           disabled={!canJoin || isJoining}
           onClick={onJoin}
           type="button"
@@ -81,10 +84,13 @@ export function LobbyEntryPanel({
         ) : null}
       </div>
 
-      <div className="dropdown-container rounded-2xl w-full">
+      <div className="w-full">
         <DropdownMenu>
           <DropdownMenuTrigger
-            className="inline-flex w-1/2 items-center justify-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-sm font-medium text-primary shadow-sm transition-colors hover:bg-muted"
+            className={cn(
+              BTN_PRIMARY,
+              "inline-flex w-full items-center justify-center gap-2 border border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:hover:bg-zinc-800",
+            )}
             type="button"
           >
             Other ways to join

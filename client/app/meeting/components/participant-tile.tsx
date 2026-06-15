@@ -1,11 +1,13 @@
 "use client";
 
+import { useUser } from "@clerk/nextjs";
 import {
   ParticipantEvent,
   Track,
   type Participant,
   type RemoteParticipant,
 } from "livekit-client";
+import { Mic, MicOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { useParticipantTrackVersion } from "../hooks/use-participant-version";
@@ -48,6 +50,7 @@ export const ParticipantTile = ({
   showMicStatus = true,
   variant = "compact",
 }: ParticipantTileProps) => {
+  const { user } = useUser();
   const [isSpeaking, setIsSpeaking] = useState(participant.isSpeaking);
   const audioVersion = useParticipantTrackVersion(
     participant,
@@ -94,7 +97,7 @@ export const ParticipantTile = ({
         onClick &&
           "cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
         isFocused && "border-primary/40 ring-1 ring-primary/30",
-        isActive ? "min-h-[360px]" : "aspect-video min-h-[150px]",
+        isActive ? "h-full min-h-0" : "aspect-video min-h-[150px]",
         className,
       )}
     >
@@ -117,7 +120,7 @@ export const ParticipantTile = ({
           <div className="flex h-full flex-col items-center justify-center gap-3 px-5 text-center">
             <div
               className={cn(
-                "flex shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary ring-1 ring-primary/20 transition-[box-shadow]",
+                "flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 font-semibold text-primary ring-1 ring-primary/20 transition-[box-shadow]",
                 isActivelySpeaking &&
                   "shadow-[0_0_0_2px_rgba(242,101,74,0.58),0_0_24px_rgba(242,101,74,0.3)]",
                 isActive
@@ -125,7 +128,15 @@ export const ParticipantTile = ({
                   : "size-14 text-xl",
               )}
             >
-              {(displayName ?? "U").slice(0, 1).toUpperCase()}
+              {participant.isLocal && user?.imageUrl ? (
+                <img
+                  alt={user?.fullName || "User profile"}
+                  className="size-full rounded-full object-cover"
+                  src={user.imageUrl}
+                />
+              ) : (
+                (displayName ?? "U").slice(0, 1).toUpperCase()
+              )}
             </div>
             <p
               className={cn(
@@ -162,19 +173,30 @@ export const ParticipantTile = ({
         )}
       >
         {hasVideo ? (
-          <span className="max-w-[70%] truncate rounded-full bg-background/70 px-3 py-1 text-sm font-medium text-foreground backdrop-blur">
-            {displayName}
-          </span>
+          participant.isLocal ? (
+            <span className="rounded-md bg-black/40 px-2 py-0.5 text-[11px] font-medium lowercase tracking-wide text-white/90 backdrop-blur-sm">
+              me
+            </span>
+          ) : (
+            <span className="max-w-[70%] truncate rounded-full bg-background/70 px-3 py-1 text-sm font-medium text-foreground backdrop-blur">
+              {displayName}
+            </span>
+          )
         ) : null}
         {showMicStatus ? (
           <span
-            className={`w-20 shrink-0 rounded-full px-3 py-1 text-center text-xs font-medium backdrop-blur ${
+            className={cn(
+              "flex size-7 shrink-0 items-center justify-center rounded-full backdrop-blur",
               participant.isMicrophoneEnabled
                 ? "bg-primary/15 text-primary"
-                : "bg-destructive/15 text-destructive"
-            }`}
+                : "bg-destructive/15 text-destructive",
+            )}
           >
-            {participant.isMicrophoneEnabled ? "Mic on" : "Muted"}
+            {participant.isMicrophoneEnabled ? (
+              <Mic className="size-3.5" />
+            ) : (
+              <MicOff className="size-3.5" />
+            )}
           </span>
         ) : null}
       </div>

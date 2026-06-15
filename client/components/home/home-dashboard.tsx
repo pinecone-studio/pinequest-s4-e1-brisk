@@ -3,7 +3,8 @@ import { QuickActions } from "@/components/home/quick-actions";
 import { RecentActivityFeed } from "@/components/home/recent-activity-feed";
 import { StandupStorySection } from "@/components/home/standup-story-section";
 import { WelcomeHeader } from "@/components/home/welcome-header";
-import { isMockStandupMeeting } from "@/lib/meetings/mock-standup-story";
+import { TEXT_MUTED, TEXT_PRIMARY } from "@/lib/ui/design-tokens";
+import { cn } from "@/lib/utils";
 
 type HomeDashboardProps = {
   meetings: MeetingListItem[];
@@ -24,18 +25,14 @@ export function HomeDashboard({
   const recentMeetings = meetings.filter((meeting) => !isMockStandupMeeting(meeting.id));
 
   return (
-    <div className="flex flex-col gap-6 pb-2">
-      <div className="flex shrink-0 flex-col gap-6">
-        <WelcomeHeader todayLabel={todayLabel} />
-        <QuickActions />
-      </div>
+    <div className="flex h-full min-h-0 flex-col gap-5 overflow-hidden">
+      <WelcomeHeader todayLabel={todayLabel} />
+      <QuickActions />
 
       {showSearchEmpty ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border py-16 text-center">
-          <p className="font-medium text-foreground">No matching meetings</p>
-          <p className="text-sm text-muted-foreground">
-            Try a different search term.
-          </p>
+        <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-zinc-200 py-16 text-center dark:border-zinc-800">
+          <p className={cn("font-medium", TEXT_PRIMARY)}>No matching meetings</p>
+          <p className={cn("text-sm", TEXT_MUTED)}>Try a different search term.</p>
         </div>
       ) : (
         <>

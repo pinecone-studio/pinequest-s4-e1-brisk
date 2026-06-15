@@ -139,161 +139,130 @@ export default function MeetingsPage() {
   );
 
   return (
-    <div className="relative flex h-full min-h-0 w-full flex-1 overflow-hidden">
-      <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden px-8 py-6">
-        <div className="flex shrink-0 items-center justify-between gap-3">
-          <h2 className="font-heading text-2xl font-bold text-foreground">{SCOPE_TITLES[scope]}</h2>
+    <div className="relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden px-6 py-6 lg:px-8">
+      <div className="flex shrink-0 items-center justify-between gap-3">
+        <h2 className="font-heading text-2xl font-bold text-zinc-900 dark:text-zinc-50">{SCOPE_TITLES[scope]}</h2>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setViewMode((mode) => (mode === "list" ? "grid" : "list"))}
-              className="flex size-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
-              aria-label="Toggle layout"
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setViewMode((mode) => (mode === "list" ? "grid" : "list"))}
+            className="flex h-11 w-11 min-w-[44px] items-center justify-center rounded-xl border border-zinc-200 text-zinc-500 transition-colors duration-200 hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+            aria-label="Toggle layout"
+          >
+            {viewMode === "list" ? (
+              <LayoutGridIcon className="size-4" />
+            ) : (
+              <ListIcon className="size-4" />
+            )}
+          </button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              className="flex h-11 w-11 min-w-[44px] items-center justify-center rounded-xl border border-zinc-200 text-zinc-500 transition-colors duration-200 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+              aria-label="Filter and sort"
             >
-              {viewMode === "list" ? (
-                <LayoutGridIcon className="size-4" />
-              ) : (
-                <ListIcon className="size-4" />
-              )}
-            </button>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                className="flex size-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-                aria-label="Filter and sort"
-              >
-                <SlidersHorizontalIcon className="size-4" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {STATUS_FILTERS.map((item) => (
-                  <DropdownMenuItem
-                    key={item.value}
-                    onClick={() => setStatusFilter(item.value)}
-                    className={cn(
-                      statusFilter === item.value && "bg-accent text-accent-foreground",
-                    )}
-                  >
-                    {item.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <Dialog open={joinDialogOpen} onOpenChange={setJoinDialogOpen}>
-              <DialogTrigger
-                render={
-                  <Button className="h-9 gap-2 rounded-lg bg-primary px-4 text-sm text-primary-foreground hover:bg-primary/80" />
-                }
-              >
-                <VideoIcon className="size-4" />
-                Enter a meeting
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Enter a meeting</DialogTitle>
-                  <DialogDescription>
-                    Paste a meeting link or enter a room code to join.
-                  </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleJoinWithCode} className="flex flex-col gap-2">
-                  <Input
-                    value={joinCode}
-                    onChange={(event) => {
-                      setJoinCode(event.target.value);
-                      setJoinError(false);
-                    }}
-                    placeholder="Room code or meeting link"
-                    className="h-10 rounded-xl bg-transparent px-3.5 focus-visible:ring-primary/50"
-                    aria-invalid={joinError}
-                    autoFocus
-                  />
-                  {joinError ? (
-                    <p className="text-sm text-destructive">
-                      Enter a valid room code or meeting link.
-                    </p>
-                  ) : null}
-                  <DialogFooter className="-mx-0 -mb-0 mt-1 rounded-b-none border-t-0 bg-transparent p-0">
-                    <Button
-                      type="submit"
-                      disabled={!joinCode.trim()}
-                      className="h-10 w-full gap-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/80 disabled:opacity-50 sm:w-auto"
-                    >
-                      Join meeting
-                      <ArrowRightIcon className="size-4" />
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
-
-        <div className="mt-4 flex min-h-0 flex-1 flex-col overflow-y-auto scrollbar-none">
-          {isLoading ? (
-            <div className="flex flex-col gap-4">
-              {[0, 1, 2].map((key) => (
-                <div key={key} className="h-40 animate-pulse rounded-xl bg-muted" />
-              ))}
-            </div>
-          ) : scope !== "shared" ? (
-            <div className="flex flex-col gap-6 pb-4">
-              <StandupStorySection />
-              {listMeetings.length > 0 ? (
-                <div
+              <SlidersHorizontalIcon className="size-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {STATUS_FILTERS.map((item) => (
+                <DropdownMenuItem
+                  key={item.value}
+                  onClick={() => setStatusFilter(item.value)}
                   className={cn(
-                    viewMode === "list" ? "flex flex-col gap-4" : "grid gap-4 md:grid-cols-2",
+                    statusFilter === item.value && "bg-accent text-accent-foreground",
                   )}
                 >
-                  {listMeetings.map((meeting) => (
-                    <MeetingActivityCard key={meeting.id} meeting={meeting} />
-                  ))}
-                </div>
-              ) : filteredMeetings.length === 0 ? (
-                <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border py-16 text-center">
-                  <CalendarXIcon className="size-8 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium text-foreground">No meetings here</p>
-                    <p className="text-sm text-muted-foreground">
-                      {meetings.length === 0
-                        ? "Start a meeting to see it appear here."
-                        : query.trim()
-                          ? "No meetings match your search."
-                          : "Try a different filter."}
-                    </p>
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          ) : filteredMeetings.length > 0 ? (
-            <div
-              className={cn(
-                "pb-4",
-                viewMode === "list" ? "flex flex-col gap-4" : "grid gap-4 md:grid-cols-2",
-              )}
-            >
-              {filteredMeetings.map((meeting) => (
-                <MeetingActivityCard key={meeting.id} meeting={meeting} />
+                  {item.label}
+                </DropdownMenuItem>
               ))}
-            </div>
-          ) : (
-            <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border py-16 text-center">
-              <CalendarXIcon className="size-8 text-muted-foreground" />
-              <div>
-                <p className="font-medium text-foreground">No meetings here</p>
-                <p className="text-sm text-muted-foreground">
-                  {scope === "shared"
-                    ? "Nobody has shared a meeting with you yet."
-                    : meetings.length === 0
-                      ? "Start a meeting to see it appear here."
-                      : query.trim()
-                        ? "No meetings match your search."
-                        : "Try a different filter."}
-                </p>
-              </div>
-            </div>
-          )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Dialog open={joinDialogOpen} onOpenChange={setJoinDialogOpen}>
+            <DialogTrigger
+              render={
+                <Button className="h-11 gap-2 rounded-xl bg-emerald-600 px-6 text-sm font-medium text-white hover:bg-emerald-500 dark:bg-emerald-500 dark:hover:bg-emerald-400" />
+              }
+            >
+              <VideoIcon className="size-4" />
+              Enter a meeting
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Enter a meeting</DialogTitle>
+                <DialogDescription>
+                  Paste a meeting link or enter a room code to join.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleJoinWithCode} className="flex flex-col gap-2">
+                <Input
+                  value={joinCode}
+                  onChange={(event) => {
+                    setJoinCode(event.target.value);
+                    setJoinError(false);
+                  }}
+                  placeholder="Room code or meeting link"
+                  className="h-10 rounded-xl bg-transparent px-3.5 focus-visible:ring-primary/50"
+                  aria-invalid={joinError}
+                  autoFocus
+                />
+                {joinError ? (
+                  <p className="text-sm text-destructive">
+                    Enter a valid room code or meeting link.
+                  </p>
+                ) : null}
+                <DialogFooter className="-mx-0 -mb-0 mt-1 rounded-b-none border-t-0 bg-transparent p-0">
+                  <Button
+                    type="submit"
+                    disabled={!joinCode.trim()}
+                    className="h-10 w-full gap-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/80 disabled:opacity-50 sm:w-auto"
+                  >
+                    Join meeting
+                    <ArrowRightIcon className="size-4" />
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
+      </div>
+
+      <div className="mt-4 flex min-h-0 flex-1 flex-col overflow-y-auto scrollbar-none">
+        {isLoading ? (
+          <div className="flex flex-col gap-4">
+            {[0, 1, 2].map((key) => (
+              <div key={key} className="h-40 animate-pulse rounded-xl bg-muted" />
+            ))}
+          </div>
+        ) : filteredMeetings.length > 0 ? (
+          <div
+            className={cn(
+              "pb-4",
+              viewMode === "list" ? "flex flex-col gap-4" : "grid gap-4 md:grid-cols-2",
+            )}
+          >
+            {filteredMeetings.map((meeting) => (
+              <MeetingActivityCard key={meeting.id} meeting={meeting} />
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border py-16 text-center">
+            <CalendarXIcon className="size-8 text-muted-foreground" />
+            <div>
+              <p className="font-medium text-foreground">No meetings here</p>
+              <p className="text-sm text-muted-foreground">
+                {scope === "shared"
+                  ? "Nobody has shared a meeting with you yet."
+                  : meetings.length === 0
+                    ? "Start a meeting to see it appear here."
+                    : query.trim()
+                      ? "No meetings match your search."
+                      : "Try a different filter."}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

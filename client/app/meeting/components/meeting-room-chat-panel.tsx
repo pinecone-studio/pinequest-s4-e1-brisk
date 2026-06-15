@@ -1,5 +1,6 @@
 "use client";
 
+import { useUser } from "@clerk/nextjs";
 import {
   ConnectionState,
   RoomEvent,
@@ -8,6 +9,7 @@ import {
 } from "livekit-client";
 import { Mic, MicOff, Send, Smile } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { CHAT_PANEL, TEXT_MUTED, TEXT_PRIMARY } from "@/lib/ui/design-tokens";
 import { cn } from "@/lib/utils";
 import type { MeetingSessionParticipant } from "./meeting-session-provider";
 import { getParticipantDisplayName } from "./participant-tile";
@@ -40,39 +42,14 @@ type ChatTab = "room" | "participants";
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 
-const AVATAR_GRADIENTS = [
-  "from-emerald-400 to-emerald-600",
-  "from-sky-400 to-sky-600",
-  "from-violet-400 to-violet-600",
-  "from-amber-400 to-amber-600",
-  "from-rose-400 to-rose-600",
-  "from-cyan-400 to-cyan-600",
-];
-
 const createMessageId = () =>
   `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-
-const getInitials = (name: string) =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "U";
 
 const formatMessageTime = (timestamp: number) =>
   new Intl.DateTimeFormat(undefined, {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(timestamp));
-
-const getAvatarGradient = (identity: string) => {
-  let hash = 0;
-  for (let index = 0; index < identity.length; index += 1) {
-    hash = (hash * 31 + identity.charCodeAt(index)) >>> 0;
-  }
-  return AVATAR_GRADIENTS[hash % AVATAR_GRADIENTS.length];
-};
 
 const parseChatPayload = (payload: Uint8Array): MeetingChatPayload | null => {
   try {
@@ -115,6 +92,7 @@ export const MeetingRoomChatPanel = ({
   participants,
   room,
 }: MeetingRoomChatPanelProps) => {
+  const { user } = useUser();
   const [activeTab, setActiveTab] = useState<ChatTab>("room");
   const [messages, setMessages] = useState<MeetingChatMessage[]>([]);
   const [draft, setDraft] = useState("");
@@ -176,7 +154,7 @@ export const MeetingRoomChatPanel = ({
 
     const message: MeetingChatMessage = {
       id: createMessageId(),
-      senderAvatarUrl: localMeetingParticipant?.avatarUrl,
+      senderAvatarUrl: localMeetingParticipant?.avatarUrl ?? user?.imageUrl ?? undefined,
       senderIdentity: localParticipant.identity,
       senderName: getParticipantDisplayName(localParticipant),
       text: text.slice(0, MAX_MESSAGE_LENGTH),
@@ -205,22 +183,26 @@ export const MeetingRoomChatPanel = ({
 
       setMessages((current) => [...current, message]);
       setDraft("");
-    } catch (caughtError) {
-      console.warn("[meeting] Chat message failed to send", caughtError);
+    } catch {
       setSendError("Message could not be sent.");
     }
-  }, [draft, isConnected, localMeetingParticipant?.avatarUrl, localParticipant, room]);
+  }, [draft, isConnected, localMeetingParticipant?.avatarUrl, localParticipant, room, user?.imageUrl]);
+
+  const resolveParticipantAvatar = (participant: MeetingSessionParticipant) => {
+    if (participant.isLocal && user?.imageUrl) return user.imageUrl;
+    return participant.avatarUrl;
+  };
 
   return (
-    <section className="relative flex h-full w-full flex-1 flex-col overflow-hidden rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm transition-colors duration-300 dark:border-zinc-800 dark:bg-zinc-900">
+    <section className={cn(CHAT_PANEL, "flex-1")}>
       <div className="shrink-0 pb-3">
-        <div className="flex rounded-full bg-zinc-100 p-1 dark:bg-zinc-800">
+        <div className="flex rounded-full bg-zinc-100 p-1.5 dark:bg-zinc-800">
           <button
             className={cn(
               "flex-1 rounded-full py-1.5 text-sm font-medium transition-all duration-200",
               activeTab === "room"
-                ? "bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900"
-                : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50",
+                ? "bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-zinc-50"
+                : cn(TEXT_MUTED, "hover:text-zinc-900 dark:hover:text-zinc-50"),
             )}
             onClick={() => setActiveTab("room")}
             type="button"
@@ -231,8 +213,8 @@ export const MeetingRoomChatPanel = ({
             className={cn(
               "flex-1 rounded-full py-1.5 text-sm font-medium transition-all duration-200",
               activeTab === "participants"
-                ? "bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900"
-                : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50",
+                ? "bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-zinc-50"
+                : cn(TEXT_MUTED, "hover:text-zinc-900 dark:hover:text-zinc-50"),
             )}
             onClick={() => setActiveTab("participants")}
             type="button"
@@ -251,7 +233,7 @@ export const MeetingRoomChatPanel = ({
                   className={cn("flex flex-col gap-1", message.isLocal && "items-end")}
                   key={message.id}
                 >
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                  <span className={cn("text-xs", TEXT_MUTED)}>
                     {message.isLocal ? "You" : message.senderName} ·{" "}
                     {formatMessageTime(message.timestamp)}
                   </span>
@@ -259,7 +241,7 @@ export const MeetingRoomChatPanel = ({
                     className={cn(
                       "max-w-[85%] whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-sm leading-relaxed",
                       message.isLocal
-                        ? "bg-emerald-50 text-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-300"
+                        ? "bg-emerald-600 text-white dark:bg-emerald-500"
                         : "bg-zinc-100 text-zinc-800 dark:bg-zinc-800/60 dark:text-zinc-200",
                     )}
                   >
@@ -268,7 +250,7 @@ export const MeetingRoomChatPanel = ({
                 </div>
               ))
             ) : (
-              <div className="flex h-full min-h-40 items-center justify-center text-center text-sm text-zinc-500 dark:text-zinc-400">
+              <div className={cn("flex h-full min-h-40 items-center justify-center text-center text-sm", TEXT_MUTED)}>
                 No messages yet
               </div>
             )}
@@ -276,7 +258,7 @@ export const MeetingRoomChatPanel = ({
           </div>
 
           <form
-            className="flex shrink-0 flex-col gap-2 border-t border-zinc-200 pt-3 transition-colors duration-300 dark:border-zinc-800"
+            className="flex shrink-0 flex-col gap-2 border-t border-zinc-200 pt-3 dark:border-zinc-800"
             onSubmit={(event) => {
               event.preventDefault();
               void sendMessage();
@@ -290,13 +272,13 @@ export const MeetingRoomChatPanel = ({
             <div className="flex items-center gap-2">
               <button
                 aria-label="Add emoji"
-                className="flex size-9 shrink-0 items-center justify-center rounded-full text-zinc-500 transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+                className="flex h-11 w-11 min-w-[44px] items-center justify-center rounded-xl text-zinc-500 transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
                 type="button"
               >
                 <Smile className="size-4" />
               </button>
               <input
-                className="min-w-0 flex-1 rounded-full border border-zinc-200 bg-zinc-50 px-4 py-2 text-sm text-zinc-900 placeholder-zinc-400 outline-none transition-all duration-200 focus:ring-2 focus:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50"
+                className="min-w-0 flex-1 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm text-zinc-900 placeholder:text-zinc-500 outline-none transition-all duration-200 focus:ring-2 focus:ring-emerald-500/30 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 dark:placeholder:text-zinc-400"
                 disabled={!isConnected}
                 maxLength={MAX_MESSAGE_LENGTH}
                 onChange={(event) => setDraft(event.target.value)}
@@ -305,7 +287,7 @@ export const MeetingRoomChatPanel = ({
               />
               <button
                 aria-label="Send message"
-                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white transition-all duration-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                className="flex h-11 w-11 min-w-[44px] items-center justify-center rounded-xl bg-emerald-600 text-white transition-all duration-200 hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-emerald-500 dark:hover:bg-emerald-400"
                 disabled={!isConnected || !draft.trim()}
                 type="submit"
               >
@@ -316,31 +298,39 @@ export const MeetingRoomChatPanel = ({
         </>
       ) : (
         <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto pb-2">
-          {participants.map((participant) => (
-            <div
-              className="flex items-center gap-3 rounded-2xl px-3 py-2 transition-all duration-200 hover:bg-zinc-50 dark:hover:bg-zinc-800/60"
-              key={participant.identity}
-            >
+          {participants.map((participant) => {
+            const avatarUrl = resolveParticipantAvatar(participant);
+            return (
               <div
-                className={cn(
-                  "flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-sm font-semibold text-white",
-                  getAvatarGradient(participant.identity),
-                )}
+                className="flex items-center gap-3 rounded-xl px-3 py-2 transition-all duration-200 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
+                key={participant.identity}
               >
-                {getInitials(participant.displayName)}
+                <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+                  {avatarUrl ? (
+                    <img
+                      alt={participant.displayName}
+                      className="size-full rounded-full object-cover"
+                      src={avatarUrl}
+                    />
+                  ) : (
+                    <span className={cn("text-sm font-semibold", TEXT_MUTED)}>
+                      {participant.displayName.slice(0, 1).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <span className={cn("min-w-0 flex-1 truncate text-sm font-medium", TEXT_PRIMARY)}>
+                  {participant.isLocal ? "You" : participant.displayName}
+                </span>
+                {participant.isMicrophoneEnabled ? (
+                  <Mic className="size-4 text-emerald-600 dark:text-emerald-400" />
+                ) : (
+                  <MicOff className={cn("size-4", TEXT_MUTED)} />
+                )}
               </div>
-              <span className="min-w-0 flex-1 truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
-                {participant.isLocal ? "You" : participant.displayName}
-              </span>
-              {participant.isMicrophoneEnabled ? (
-                <Mic className="size-4 text-emerald-600 dark:text-emerald-400" />
-              ) : (
-                <MicOff className="size-4 text-zinc-400 dark:text-zinc-500" />
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </section>
   );
-};
+}

@@ -19,7 +19,7 @@ export const MeetingPageContent = ({
   useClientApiAuth();
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
+    <main className="flex h-screen flex-col overflow-hidden bg-zinc-950 text-zinc-50">
       <MeetingRoomForm
         autoRecord={autoRecord}
         selectedRoom={selectedRoom}

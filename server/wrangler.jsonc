@@ -29,6 +29,10 @@
         "queue": "recording-transcription-jobs",
         "binding": "TRANSCRIPTION_QUEUE",
       },
+      {
+        "queue": "meeting-processing-queue",
+        "binding": "MEETING_PROCESSING_QUEUE",
+      },
     ],
     "consumers": [
       {
@@ -38,6 +42,11 @@
       },
       {
         "queue": "recording-transcription-jobs",
+        "max_retries": 3,
+        "max_batch_size": 1,
+      },
+      {
+        "queue": "meeting-processing-queue",
         "max_retries": 3,
         "max_batch_size": 1,
       },
@@ -83,6 +92,10 @@
             "queue": "recording-transcription-jobs",
             "binding": "TRANSCRIPTION_QUEUE",
           },
+          {
+            "queue": "meeting-processing-queue",
+            "binding": "MEETING_PROCESSING_QUEUE",
+          },
         ],
         "consumers": [
           {
@@ -92,6 +105,11 @@
           },
           {
             "queue": "recording-transcription-jobs",
+            "max_retries": 3,
+            "max_batch_size": 1,
+          },
+          {
+            "queue": "meeting-processing-queue",
             "max_retries": 3,
             "max_batch_size": 1,
           },

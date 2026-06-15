@@ -1,7 +1,8 @@
+import type { MessageBatch } from "@cloudflare/workers-types";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 
-import type { Bindings } from "./lib/common/types";
+import type { Bindings, TranscriptionQueueJob } from "./lib/common/types";
 import meetingRoomRouter from "./routes/meetingRoom/meeting-room.routes";
 import meetingsRouter from "./routes/meetings/meetings.routes";
 import meetingTranscriptionRouter from "./routes/meetingTranscription/meeting-transcription.routes";
@@ -12,6 +13,7 @@ import notificationsRouter from "./routes/notifications/notifications.routes";
 import summaryRouter from "./routes/summary/summary.routes";
 import webhookRoutes from "./routes/webhooks/webhook.routes";
 import { handleTranscriptionQueue } from "./queues/transcription-queue";
+import { handleMeetingProcessingQueue } from "./queues/meeting-processing-queue";
 
 const app = new Hono<{ Bindings: Bindings }>();
 const DEPLOYED_CLIENT_ORIGIN =
@@ -58,7 +60,22 @@ app.route("/api/notifications", notificationsRouter);
 app.route("/api/google", googleRoutes);
 app.route("/api/webhooks", webhookRoutes);
 
+const queue = async (
+  batch: MessageBatch<TranscriptionQueueJob | { meetingId: string }>,
+  env: Bindings,
+) => {
+  if (batch.queue === "meeting-processing-queue") {
+    await handleMeetingProcessingQueue(
+      batch as MessageBatch<{ meetingId: string }>,
+      env,
+    );
+    return;
+  }
+
+  await handleTranscriptionQueue(batch as MessageBatch<TranscriptionQueueJob>, env);
+};
+
 export default {
   fetch: app.fetch,
-  queue: handleTranscriptionQueue,
+  queue,
 };

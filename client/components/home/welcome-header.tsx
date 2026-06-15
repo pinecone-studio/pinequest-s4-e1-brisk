@@ -1,10 +1,8 @@
 "use client";
 
 import SplitText from "@/components/SplitText";
-import {
-  getClerkDefaultDisplayName,
-  getClerkPrimaryEmail,
-} from "@/lib/meetings/get-clerk-display-name";
+import { TEXT_MUTED, TEXT_PRIMARY } from "@/lib/ui/design-tokens";
+import { cn } from "@/lib/utils";
 import { useUser } from "@clerk/nextjs";
 
 type WelcomeHeaderProps = {
@@ -13,19 +11,12 @@ type WelcomeHeaderProps = {
 
 export function WelcomeHeader({ todayLabel }: WelcomeHeaderProps) {
   const { user } = useUser();
-
-  const email = getClerkPrimaryEmail(user);
-  const displayName = getClerkDefaultDisplayName(user);
-  const greetingTarget =
-    user?.firstName?.trim() ||
-    (email ? email.split("@")[0] : "") ||
-    displayName.split("@")[0] ||
-    "there";
-  const greetingText = `Hello, ${greetingTarget}!`;
+  const name = user?.firstName || user?.fullName?.split(" ")[0] || "there";
+  const greetingText = `Welcome back, ${name}`;
 
   return (
-    <div className="flex flex-col gap-1">
-      <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+    <div className="flex shrink-0 flex-col gap-1">
+      <h1 className={cn("font-heading text-3xl font-semibold tracking-tight sm:text-4xl", TEXT_PRIMARY)}>
         <SplitText
           text={greetingText}
           className="inline-block"
@@ -39,9 +30,7 @@ export function WelcomeHeader({ todayLabel }: WelcomeHeaderProps) {
           rootMargin="-100px"
         />
       </h1>
-      <p className="text-sm text-muted-foreground">
-        Welcome to Brisk, your personal meeting assistant · {todayLabel}
-      </p>
+      <p className={cn("text-sm", TEXT_MUTED)}>{todayLabel}</p>
     </div>
   );
 }

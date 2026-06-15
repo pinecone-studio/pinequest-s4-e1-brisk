@@ -1,3 +1,5 @@
+import { TEXT_PRIMARY } from "@/lib/ui/design-tokens";
+import { cn } from "@/lib/utils";
 import type { MeetingListItem } from "@/app/meeting";
 import { ActivityCard } from "@/components/home/activity-card";
 import { Button } from "@/components/ui/button";
@@ -13,7 +15,7 @@ export function RecentActivityFeed({ meetings }: RecentActivityFeedProps) {
   return (
     <section className="flex shrink-0 flex-col gap-3">
       <div className="flex shrink-0 items-center justify-between">
-        <h2 className="font-heading text-lg font-semibold text-foreground">
+        <h2 className={cn("font-heading text-lg font-semibold", TEXT_PRIMARY)}>
           Recent meetings
         </h2>
         <Button variant="ghost" size="sm" className="gap-1" render={<Link href="/meetings" />}>

@@ -19,6 +19,13 @@ export type TranscriptionQueueJob =
   | MeetingTranscriptionJob
   | StandaloneRecordingJob;
 
+// Published by POST /api/meetings/:id/end once a meeting is marked
+// `completed`. Consumed by the meeting-processing queue, which generates the
+// summary doc and emails attendees.
+export type MeetingProcessingJob = {
+  meetingId: string;
+};
+
 export interface Bindings {
   DB: D1Database;
   ENVIRONMENT?: string;
@@ -52,6 +59,7 @@ export interface Bindings {
   R2_BUCKET: R2Bucket;
   MEETING_TRANSCRIPTION_QUEUE: Queue<MeetingTranscriptionJob>;
   TRANSCRIPTION_QUEUE: Queue<StandaloneRecordingJob>;
+  MEETING_PROCESSING_QUEUE: Queue<MeetingProcessingJob>;
   FRONTEND_URL?: string;
   GEMINI_API_KEY?: string;
   GOOGLE_CLIENT_ID?: string;
@@ -60,6 +68,7 @@ export interface Bindings {
   EMAIL?: SendEmail;
   EMAIL_FROM_ADDRESS?: string;
   EMAIL_FROM_NAME?: string;
+  RESEND_API_KEY?: string;
 }
 
 export interface Variables {
