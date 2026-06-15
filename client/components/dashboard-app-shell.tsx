@@ -8,6 +8,7 @@ import { GoogleOAuthRedirectCleanup } from "@/components/google-oauth-redirect-c
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { Topbar } from "@/components/dashboard/topbar";
 import { DashboardSearchProvider } from "@/lib/search/dashboard-search-context";
+import { AMBIENT_ORB } from "@/lib/ui/design-tokens";
 import { Suspense } from "react";
 
 export function DashboardAppShell({ children }: { children: React.ReactNode }) {
@@ -17,7 +18,8 @@ export function DashboardAppShell({ children }: { children: React.ReactNode }) {
         <Suspense fallback={null}>
           <GoogleOAuthRedirectCleanup />
         </Suspense>
-        <div className="dashboard-shell flex h-screen flex-col overflow-hidden lg:grid lg:grid-cols-[16rem_minmax(0,1fr)] lg:grid-rows-[4rem_minmax(0,1fr)]">
+        <div className="dashboard-shell relative flex h-screen flex-col overflow-hidden lg:grid lg:grid-cols-[16rem_minmax(0,1fr)] lg:grid-rows-[4rem_minmax(0,1fr)]">
+          <div className={AMBIENT_ORB} aria-hidden />
           <ClientAuthSetup />
           <Topbar />
           <Sidebar />

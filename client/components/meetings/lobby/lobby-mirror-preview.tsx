@@ -7,6 +7,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { TEXT_MUTED } from "@/lib/ui/design-tokens";
 import { cn } from "@/lib/utils";
 import {
   EllipsisVertical,
@@ -39,14 +40,12 @@ type LobbyMirrorPreviewProps = {
   videoRef: RefObject<HTMLVideoElement | null>;
 };
 
-const hudButtonClass = (isActive: boolean, isHighlighted?: boolean) =>
+const hudButtonClass = (isActive: boolean) =>
   cn(
-    "flex size-12 items-center justify-center rounded-full transition-colors",
-    !isActive && "bg-red-500 text-white hover:bg-red-600",
-    isActive && !isHighlighted && "bg-white text-zinc-700 hover:bg-zinc-100",
-    isActive &&
-      isHighlighted &&
-      "bg-primary text-primary-foreground hover:bg-primary/90",
+    "flex h-12 w-12 items-center justify-center rounded-full border border-white/20 text-white backdrop-blur-md transition-colors duration-200",
+    isActive
+      ? "bg-white/20 hover:bg-white/30 dark:bg-black/40 dark:hover:bg-black/50"
+      : "bg-red-500 hover:bg-red-600",
   );
 
 export function LobbyMirrorPreview({
@@ -59,7 +58,6 @@ export function LobbyMirrorPreview({
   isMicActive,
   isMirrored,
   microphoneError,
-  onSetBackgroundEffect,
   onToggleCamera,
   onToggleMicrophone,
   onToggleMirror,
@@ -72,11 +70,11 @@ export function LobbyMirrorPreview({
   const isBackgroundBlurred = backgroundEffect === "blur";
 
   return (
-    <div className="relative flex aspect-video w-full max-w-xl flex-col items-center justify-center overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+    <div className="relative aspect-video w-full max-w-xl overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-950 shadow-sm dark:border-zinc-800">
       <video
         autoPlay
         className={cn(
-          "h-full w-full bg-card object-cover transition-opacity duration-200",
+          "h-full w-full object-cover transition-opacity duration-200",
           isCamActive ? "opacity-100" : "opacity-0",
         )}
         muted
@@ -89,16 +87,14 @@ export function LobbyMirrorPreview({
       />
 
       {!isCamActive ? (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-card">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-zinc-950">
           <Avatar className="size-24" size="lg">
             <AvatarImage alt={displayName} src={avatarUrl} />
-            <AvatarFallback className="bg-elevated text-2xl text-muted-foreground">
+            <AvatarFallback className="bg-zinc-800 text-2xl text-zinc-300">
               {initial}
             </AvatarFallback>
           </Avatar>
-          <p className="text-sm font-medium text-muted-foreground">
-            Camera is turned off
-          </p>
+          <p className={cn("text-sm font-medium", TEXT_MUTED)}>Camera is turned off</p>
         </div>
       ) : null}
 
@@ -109,16 +105,13 @@ export function LobbyMirrorPreview({
       <DropdownMenu>
         <DropdownMenuTrigger
           aria-label="More options"
-          className="absolute top-2 right-2 flex size-9 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+          className="absolute top-2 right-2 flex h-11 w-11 items-center justify-center rounded-xl text-white/80 transition-colors hover:bg-white/10 hover:text-white"
           type="button"
         >
           <EllipsisVertical className="size-[18px]" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" side="bottom">
-          <DropdownMenuCheckboxItem
-            checked={isMirrored}
-            onCheckedChange={onToggleMirror}
-          >
+          <DropdownMenuCheckboxItem checked={isMirrored} onCheckedChange={onToggleMirror}>
             <FlipHorizontal2 className="size-4" />
             Mirror my video
           </DropdownMenuCheckboxItem>
@@ -132,7 +125,7 @@ export function LobbyMirrorPreview({
       ) : null}
 
       <div className="absolute inset-x-0 bottom-6 flex items-center justify-center">
-        <div className="flex items-center gap-3 rounded-full bg-card/50 px-3 py-2 ring-1 ring-white/10 backdrop-blur-md">
+        <div className="flex items-center gap-3">
           <button
             aria-label={isMicActive ? "Mute microphone" : "Unmute microphone"}
             aria-pressed={!isMicActive}
@@ -143,11 +136,7 @@ export function LobbyMirrorPreview({
             onClick={onToggleMicrophone}
             type="button"
           >
-            {isMicActive ? (
-              <Mic className="size-[18px]" />
-            ) : (
-              <MicOff className="size-[18px]" />
-            )}
+            {isMicActive ? <Mic className="size-[18px]" /> : <MicOff className="size-[18px]" />}
           </button>
 
           <button
@@ -157,41 +146,10 @@ export function LobbyMirrorPreview({
             onClick={onToggleCamera}
             type="button"
           >
-            {isCamActive ? (
-              <Video className="size-[18px]" />
-            ) : (
-              <VideoOff className="size-[18px]" />
-            )}
+            {isCamActive ? <Video className="size-[18px]" /> : <VideoOff className="size-[18px]" />}
           </button>
-
-          {/* <button
-            aria-label={
-              isBackgroundBlurred
-                ? "Turn off background blur"
-                : "Turn on background blur"
-            }
-            aria-pressed={isBackgroundBlurred}
-            className={hudButtonClass(true, isBackgroundBlurred)}
-            onClick={() =>
-              onSetBackgroundEffect(isBackgroundBlurred ? "none" : "blur")
-            }
-            type="button"
-          >
-            <Grid3x3 className="size-[18px]" />
-          </button> */}
         </div>
       </div>
-
-      {/* <div
-        className={cn(
-          "absolute bottom-4 left-4 flex size-10 items-center justify-center rounded-full transition-colors",
-          isMicLevelActive
-            ? "bg-primary/25 text-primary"
-            : "bg-primary/10 text-primary/70",
-        )}
-      >
-        <AudioLines className="size-[18px]" />
-      </div> */}
     </div>
   );
 }

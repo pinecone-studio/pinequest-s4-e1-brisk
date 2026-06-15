@@ -303,25 +303,7 @@
 @layer components {
   .dashboard-shell,
   .lobby-canvas {
-    background-color: var(--background);
-    background-image:
-      radial-gradient(
-        ellipse 90% 70% at 88% -10%,
-        color-mix(in oklch, var(--lavender) 42%, transparent),
-        transparent 68%
-      ),
-      radial-gradient(
-        ellipse 70% 55% at 18% 38%,
-        color-mix(in oklch, var(--forest) 10%, transparent),
-        transparent 72%
-      ),
-      linear-gradient(155deg, #f3f0ff 0%, #faf9fc 46%, #ffffff 100%);
-  }
-
-  .dark .dashboard-shell,
-  .dark .lobby-canvas {
-    background-color: var(--background);
-    background-image: none;
+    @apply bg-zinc-50 transition-colors duration-300 dark:bg-zinc-950;
   }
 
   .local-video-unmirrored,

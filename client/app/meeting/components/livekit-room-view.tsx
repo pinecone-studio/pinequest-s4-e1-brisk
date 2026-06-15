@@ -8,9 +8,10 @@ import {
   type Participant,
 } from "livekit-client";
 import { useEffect, useMemo, useState } from "react";
-import { displayUserError } from "@/lib/errors/format-user-error";
 import { buildParticipantContacts } from "@/lib/meeting/build-participant-contacts";
 import { useMediaToggleShortcuts } from "@/hooks/use-media-toggle-shortcuts";
+import { APP_CANVAS, LIVE_MEETING_SHELL } from "@/lib/ui/design-tokens";
+import { cn } from "@/lib/utils";
 import type { TranscriptLanguage } from "../utils/transcript-language";
 import { MeetingParticipantFilmstrip } from "./meeting-participant-filmstrip";
 import { MeetingRoomChatPanel } from "./meeting-room-chat-panel";
@@ -95,8 +96,6 @@ export const LivekitRoomView = ({
     }
   }, [allParticipants, focusedParticipantIdentity]);
 
-  // LiveKit mutates localParticipant in place — subscribe to track events so
-  // the control bar re-renders when mic/camera state actually changes.
   const [, setLocalVersion] = useState(0);
   const [pendingMediaToggle, setPendingMediaToggle] = useState<
     "camera" | "microphone" | "screen" | null
@@ -126,7 +125,6 @@ export const LivekitRoomView = ({
 
   const toggleMicrophone = async () => {
     if (!localParticipant || pendingMediaToggle) return;
-
     setPendingMediaToggle("microphone");
     try {
       await localParticipant.setMicrophoneEnabled(
@@ -140,7 +138,6 @@ export const LivekitRoomView = ({
 
   const toggleCamera = async () => {
     if (!localParticipant || pendingMediaToggle) return;
-
     setPendingMediaToggle("camera");
     try {
       await localParticipant.setCameraEnabled(!localParticipant.isCameraEnabled);
@@ -157,15 +154,13 @@ export const LivekitRoomView = ({
 
   const toggleScreenShare = async () => {
     if (!room || !localParticipant || pendingMediaToggle) return;
-
     setPendingMediaToggle("screen");
     try {
       await room.localParticipant.setScreenShareEnabled(
         !localParticipant.isScreenShareEnabled,
       );
       setLocalVersion((v) => v + 1);
-    } catch (caughtError) {
-      console.warn("[meeting] Screen share toggle failed", caughtError);
+    } catch {
       setLocalVersion((v) => v + 1);
     } finally {
       setPendingMediaToggle(null);
@@ -198,72 +193,73 @@ export const LivekitRoomView = ({
   );
 
   return (
-    <section
-      className="flex size-full flex-col gap-4 rounded-[32px] border border-zinc-200 bg-white p-6 shadow-xl transition-colors duration-300 dark:border-zinc-800 dark:bg-zinc-900/90 dark:shadow-2xl/40"
-      data-transcript-language={transcriptLanguage}
-    >
-      <MeetingRoomHeader
-        meetingId={meetingId}
-        meetingLinkPath={activeSessionHref}
-        room={room}
-        roomName={roomName}
-      />
-
-      <RecordingControls
-        autoStart={autoRecord}
-        meetingId={meetingId}
-        onStatusChange={setRecordingStatus}
-        participantNames={participants.map((participant) => participant.displayName)}
-        participants={participantContacts}
-        roomName={livekitRoomName}
-      />
-
-      {isConnecting ? (
-        <p className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-500 transition-colors duration-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
-          Connecting...
-        </p>
-      ) : null}
-      {error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-400">
-          {error}
-        </div>
-      ) : null}
-
-      <div className="flex min-h-0 flex-1 gap-4">
-        <div className="flex min-h-0 flex-1 flex-col gap-4">
-          <MeetingVideoStage
-            isCameraEnabled={Boolean(localParticipant?.isCameraEnabled)}
-            isMicrophoneEnabled={Boolean(localParticipant?.isMicrophoneEnabled)}
-            isScreenSharing={Boolean(localParticipant?.isScreenShareEnabled)}
-            localDisplayName={
-              localParticipant ? getParticipantDisplayName(localParticipant) : "You"
-            }
-            mediaSource={mediaSource}
-            onLeave={() => void handleLeave()}
-            onToggleCamera={() => void toggleCamera()}
-            onToggleMicrophone={() => void toggleMicrophone()}
-            onToggleScreenShare={() => void toggleScreenShare()}
-            pendingMediaToggle={pendingMediaToggle}
-            recordingStatus={recordingStatus}
-            stageLabel={stageLabel}
-            stageParticipant={stageParticipant}
-          />
-          <MeetingParticipantFilmstrip
-            focusedIdentity={focusedFilmstripIdentity}
-            getParticipantLabel={getParticipantLabel}
-            onSelectParticipant={(identity) => setFocusedParticipantIdentity(identity)}
-            participants={filmstripParticipants}
-          />
-        </div>
-
-        <aside className="flex h-full w-[360px] min-w-[360px] flex-col">
-          <MeetingRoomChatPanel
-            connectionState={connectionState}
-            participants={participants}
+    <div className={cn("flex h-full min-h-0 w-full flex-col overflow-hidden", APP_CANVAS)}>
+      <section
+        className={LIVE_MEETING_SHELL}
+        data-transcript-language={transcriptLanguage}
+      >
+        <div className="shrink-0 border-b border-zinc-800 px-5 py-4 lg:px-6">
+          <MeetingRoomHeader
+            meetingId={meetingId}
+            meetingLinkPath={activeSessionHref}
             room={room}
+            roomName={roomName}
           />
-        </aside>
-      </div>
-    </section>
+
+          <RecordingControls
+            autoStart={autoRecord}
+            meetingId={meetingId}
+            onStatusChange={setRecordingStatus}
+            participantNames={participants.map((participant) => participant.displayName)}
+            participants={participantContacts}
+            roomName={livekitRoomName}
+          />
+
+          {isConnecting ? (
+            <p className="mt-3 rounded-xl border border-zinc-800 bg-zinc-900 p-3 text-sm text-zinc-400">
+              Connecting...
+            </p>
+          ) : null}
+          {error ? (
+            <div className="mt-3 rounded-xl border border-red-900/40 bg-red-950/40 p-3 text-sm text-red-400">
+              {error}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="flex min-h-0 flex-1 gap-5 overflow-hidden p-5 lg:gap-6 lg:p-6">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4">
+            <MeetingVideoStage
+              isCameraEnabled={Boolean(localParticipant?.isCameraEnabled)}
+              isMicrophoneEnabled={Boolean(localParticipant?.isMicrophoneEnabled)}
+              isScreenSharing={Boolean(localParticipant?.isScreenShareEnabled)}
+              mediaSource={mediaSource}
+              onLeave={() => void handleLeave()}
+              onToggleCamera={() => void toggleCamera()}
+              onToggleMicrophone={() => void toggleMicrophone()}
+              onToggleScreenShare={() => void toggleScreenShare()}
+              pendingMediaToggle={pendingMediaToggle}
+              recordingStatus={recordingStatus}
+              stageLabel={stageLabel}
+              stageParticipant={stageParticipant}
+            />
+            <MeetingParticipantFilmstrip
+              focusedIdentity={focusedFilmstripIdentity}
+              getParticipantLabel={getParticipantLabel}
+              onSelectParticipant={(identity) => setFocusedParticipantIdentity(identity)}
+              participants={filmstripParticipants}
+            />
+          </div>
+
+          <aside className="flex h-full w-[min(100%,380px)] shrink-0 flex-col lg:w-[380px]">
+            <MeetingRoomChatPanel
+              connectionState={connectionState}
+              participants={participants}
+              room={room}
+            />
+          </aside>
+        </div>
+      </section>
+    </div>
   );
 };

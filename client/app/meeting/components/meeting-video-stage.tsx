@@ -10,6 +10,8 @@ import {
   Video,
   VideoOff,
 } from "lucide-react";
+import { ICON_TRIGGER, VIDEO_STAGE } from "@/lib/ui/design-tokens";
+import { cn } from "@/lib/utils";
 import { ParticipantTile } from "./participant-tile";
 import type { RecordingStatus } from "./recording-controls";
 
@@ -17,7 +19,6 @@ type MeetingVideoStageProps = {
   isCameraEnabled: boolean;
   isMicrophoneEnabled: boolean;
   isScreenSharing: boolean;
-  localDisplayName: string;
   mediaSource: Track.Source.Camera | Track.Source.ScreenShare;
   onLeave: () => void;
   onToggleCamera: () => void;
@@ -30,16 +31,15 @@ type MeetingVideoStageProps = {
 };
 
 const hudButtonClass =
-  "flex size-12 shrink-0 items-center justify-center rounded-full border border-white/10 bg-black/20 text-white backdrop-blur-md transition-all duration-200 hover:bg-black/40 disabled:cursor-not-allowed disabled:opacity-50";
+  "flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/20 text-white backdrop-blur-md transition-all duration-200 hover:bg-white/30 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-black/40 dark:hover:bg-black/50";
 
 const hudButtonOffClass =
-  "flex size-12 shrink-0 items-center justify-center rounded-full border border-transparent bg-red-500/90 text-white backdrop-blur-md transition-all duration-200 hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50";
+  "flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-transparent bg-red-500 text-white backdrop-blur-md transition-all duration-200 hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50";
 
 export const MeetingVideoStage = ({
   isCameraEnabled,
   isMicrophoneEnabled,
   isScreenSharing,
-  localDisplayName,
   mediaSource,
   onLeave,
   onToggleCamera,
@@ -50,13 +50,11 @@ export const MeetingVideoStage = ({
   stageLabel,
   stageParticipant,
 }: MeetingVideoStageProps) => {
-  const localInitial = (localDisplayName || "U").slice(0, 1).toUpperCase();
-
   return (
-    <div className="relative w-full aspect-video max-h-[58vh] xl:max-h-[60vh] overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-950 shadow-sm dark:border-zinc-800">
+    <div className={cn(VIDEO_STAGE, "flex flex-col")}>
       {stageParticipant ? (
         <ParticipantTile
-          className="absolute inset-0 size-full rounded-none border-0 shadow-none"
+          className="absolute inset-0 size-full rounded-none border-0 shadow-none [&_video]:object-cover"
           isFocused
           key={`${stageParticipant.identity}-${mediaSource}-stage`}
           label={stageLabel}
@@ -71,13 +69,6 @@ export const MeetingVideoStage = ({
           Waiting for video...
         </div>
       )}
-
-      <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-md transition-all duration-200">
-        <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-          {localInitial}
-        </span>
-        You
-      </div>
 
       {recordingStatus === "active" ? (
         <div className="absolute right-4 top-4 flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-md transition-all duration-200">
@@ -97,11 +88,7 @@ export const MeetingVideoStage = ({
           onClick={onToggleMicrophone}
           type="button"
         >
-          {isMicrophoneEnabled ? (
-            <Mic className="size-5" />
-          ) : (
-            <MicOff className="size-5" />
-          )}
+          {isMicrophoneEnabled ? <Mic className="size-5" /> : <MicOff className="size-5" />}
         </button>
         <button
           aria-label={isCameraEnabled ? "Turn camera off" : "Turn camera on"}
@@ -110,11 +97,7 @@ export const MeetingVideoStage = ({
           onClick={onToggleCamera}
           type="button"
         >
-          {isCameraEnabled ? (
-            <Video className="size-5" />
-          ) : (
-            <VideoOff className="size-5" />
-          )}
+          {isCameraEnabled ? <Video className="size-5" /> : <VideoOff className="size-5" />}
         </button>
         <button
           aria-label={isScreenSharing ? "Stop screen sharing" : "Share screen"}
@@ -123,15 +106,11 @@ export const MeetingVideoStage = ({
           onClick={onToggleScreenShare}
           type="button"
         >
-          {isScreenSharing ? (
-            <ScreenShareOff className="size-5" />
-          ) : (
-            <ScreenShare className="size-5" />
-          )}
+          {isScreenSharing ? <ScreenShareOff className="size-5" /> : <ScreenShare className="size-5" />}
         </button>
         <button
           aria-label="End call"
-          className="flex h-12 w-16 shrink-0 items-center justify-center rounded-3xl bg-red-500 text-white transition-all duration-200 hover:bg-red-600"
+          className={cn(ICON_TRIGGER, "h-12 w-16 shrink-0 rounded-3xl bg-red-500 text-white hover:bg-red-600")}
           onClick={onLeave}
           type="button"
         >

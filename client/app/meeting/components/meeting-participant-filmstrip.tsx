@@ -19,10 +19,10 @@ export const MeetingParticipantFilmstrip = ({
   if (!participants.length) return null;
 
   return (
-    <div className="w-full h-[120px] min-h-[120px] flex items-center gap-4 overflow-x-auto pt-2 pb-1 scroll-smooth scrollbar-none">
+    <div className="flex h-[120px] min-h-[120px] w-full shrink-0 items-center gap-4 overflow-x-auto scroll-smooth pb-1 scrollbar-none">
       {participants.map((participant) => (
         <ParticipantTile
-          className="w-[180px] min-w-[180px] h-full min-h-0 aspect-auto shrink-0 rounded-xl overflow-hidden relative bg-zinc-900 border border-zinc-100 dark:bg-zinc-950 dark:border-zinc-800"
+          className="relative h-full min-h-0 w-[180px] min-w-[180px] shrink-0 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950"
           isFocused={focusedIdentity === participant.identity}
           key={`${participant.identity}-filmstrip`}
           label={getParticipantLabel(participant)}

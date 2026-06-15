@@ -2,12 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { AMBIENT_ORB, APP_CANVAS, LIVE_MEETING_SHELL } from "@/lib/ui/design-tokens";
+import { cn } from "@/lib/utils";
 import { ChatPanel } from "./components/chat-panel";
 import { ParticipantFilmstrip } from "./components/participant-filmstrip";
 import { PrimaryStage } from "./components/primary-stage";
 import { RoomHeader } from "./components/room-header";
-import { SummaryCard } from "./components/summary-card";
-import { TaskListCard } from "./components/task-list-card";
 import { getRoomMockData } from "./mock-data";
 import type { ChatMessage, RecordingState } from "./types";
 
@@ -28,8 +28,8 @@ type RoomViewProps = {
 };
 
 export const RoomView = ({
-  initialCameraOn = true,
-  initialMicOn = true,
+  initialCameraOn = false,
+  initialMicOn = false,
   initialName,
   roomId,
 }: RoomViewProps) => {
@@ -49,7 +49,6 @@ export const RoomView = ({
     data.pendingParticipant,
   );
   const [messages, setMessages] = useState<ChatMessage[]>(data.messages);
-  const [tasks, setTasks] = useState(data.tasks);
   const [captionIndex, setCaptionIndex] = useState(0);
   const [isMicOn, setIsMicOn] = useState(initialMicOn);
   const [isCameraOn, setIsCameraOn] = useState(initialCameraOn);
@@ -96,14 +95,6 @@ export const RoomView = ({
       [next[0], next[targetIndex]] = [next[targetIndex], next[0]];
       return next;
     });
-  };
-
-  const handleToggleTask = (taskId: string) => {
-    setTasks((current) =>
-      current.map((task) =>
-        task.id === taskId ? { ...task, completed: !task.completed } : task,
-      ),
-    );
   };
 
   const handleSendMessage = (text: string) => {
@@ -154,20 +145,19 @@ export const RoomView = ({
   const activeCaption = data.captions[captionIndex];
 
   return (
-    <div className="relative flex h-full w-full flex-col overflow-hidden bg-[#f5f4f1] p-4 sm:p-6">
-      <div className="pointer-events-none absolute -top-24 -right-24 size-80 rounded-full bg-emerald-200/40 blur-[120px]" />
-      <div className="pointer-events-none absolute bottom-0 left-1/4 size-96 rounded-full bg-violet-200/40 blur-[120px]" />
+    <div className={cn("relative flex h-screen w-full flex-col items-center justify-center overflow-hidden p-4 sm:p-6", APP_CANVAS)}>
+      <div className={AMBIENT_ORB} aria-hidden />
 
-      <RoomHeader
-        locationLabel={data.locationLabel}
-        onApproveParticipant={handleApproveParticipant}
-        onRejectParticipant={handleRejectParticipant}
-        pendingParticipant={pendingParticipant}
-        roomName={data.roomName}
-      />
-
-      <div className="relative z-10 flex h-[calc(100vh-80px)] min-h-0 gap-4 overflow-hidden">
+      <section className={LIVE_MEETING_SHELL}>
         <div className="flex min-h-0 flex-1 flex-col gap-4">
+          <RoomHeader
+            locationLabel={data.locationLabel}
+            onApproveParticipant={handleApproveParticipant}
+            onRejectParticipant={handleRejectParticipant}
+            pendingParticipant={pendingParticipant}
+            roomName={data.roomName}
+          />
+
           <PrimaryStage
             activeParticipant={activeParticipant}
             captionLine={activeCaption}
@@ -190,16 +180,14 @@ export const RoomView = ({
           />
         </div>
 
-        <aside className="flex w-[360px] shrink-0 flex-col gap-4 overflow-y-auto pl-2">
-          <SummaryCard summary={data.summary} />
-          <TaskListCard onToggleTask={handleToggleTask} tasks={tasks} />
+        <aside className="flex h-full w-full flex-col lg:w-[360px] lg:min-w-[360px]">
           <ChatPanel
             messages={messages}
             onSendMessage={handleSendMessage}
             participants={participants}
           />
         </aside>
-      </div>
+      </section>
     </div>
   );
 };

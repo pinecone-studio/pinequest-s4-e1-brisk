@@ -1,6 +1,5 @@
 "use client";
 
-import { AuthThemeToggle } from "@/components/auth/auth-theme-toggle";
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
@@ -18,10 +17,6 @@ export function AuthShell({
 }: AuthShellProps) {
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center bg-background px-5 py-12">
-      <div className="absolute top-6 right-6 w-[168px]">
-        <AuthThemeToggle />
-      </div>
-
       {variant === "card" ? (
         <div
           className={cn(

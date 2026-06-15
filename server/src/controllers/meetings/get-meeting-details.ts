@@ -3,6 +3,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { useDB } from "../../lib/db/db";
 import { getAuthenticatedUserId } from "../../lib/auth/clerk";
 import {
+  attendees,
   meetings,
   meetingSummaries,
   meetingTranscriptSegments,
@@ -41,7 +42,7 @@ export const getMeetingDetails = async (
       return c.json({ error: PUBLIC_ERRORS.notFound }, 404);
     }
 
-    const [transcription, summary, transcriptSegments] = await Promise.all([
+    const [transcription, summary, transcriptSegments, meetingAttendees] = await Promise.all([
       db
         .select()
         .from(meetingTranscriptions)
@@ -59,6 +60,11 @@ export const getMeetingDetails = async (
         .where(eq(meetingTranscriptSegments.meetingId, meetingId))
         .orderBy(meetingTranscriptSegments.timestamp)
         .all(),
+      db
+        .select()
+        .from(attendees)
+        .where(eq(attendees.meetingId, meetingId))
+        .all(),
     ]);
 
     return c.json(
@@ -67,6 +73,7 @@ export const getMeetingDetails = async (
         transcription: transcription ? sanitizeTranscriptForClient(transcription) : null,
         summary: summary ?? null,
         transcriptSegments,
+        attendees: meetingAttendees,
       },
       200,
     );

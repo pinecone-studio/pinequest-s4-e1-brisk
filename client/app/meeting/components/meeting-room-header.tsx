@@ -74,30 +74,30 @@ export const MeetingRoomHeader = ({
   const activeNotification = joinNotifications[0] ?? null;
 
   return (
-    <header className="flex shrink-0 items-center justify-between gap-4">
-      <div className="flex min-w-0 items-center gap-3">
+    <header className="flex shrink-0 items-center justify-between gap-6">
+      <div className="flex min-w-0 items-center gap-4">
         <Link
-          className="flex size-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-900 shadow-sm transition-all duration-200 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:hover:bg-zinc-800"
+          className="flex h-11 w-11 min-w-[44px] shrink-0 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-900 text-zinc-50 transition-all duration-200 hover:bg-zinc-800 active:scale-[0.98]"
           href="/meetings"
         >
           <ArrowLeft className="size-4" />
         </Link>
-        <div className="min-w-0">
-          <h1 className="truncate text-lg font-semibold text-zinc-900 dark:text-zinc-50">{roomName}</h1>
-          <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">Meeting ID · {meetingId}</p>
+        <div className="min-w-0 space-y-0.5">
+          <h1 className="truncate text-lg font-semibold text-zinc-50">{roomName}</h1>
+          <p className="truncate text-xs text-zinc-400">Meeting ID · {meetingId}</p>
         </div>
       </div>
 
       <div className="flex min-w-0 flex-1 items-center justify-center">
         {activeNotification ? (
-          <div className="flex items-center gap-3 rounded-full border border-zinc-200 bg-white/80 py-1.5 pl-4 pr-2 shadow-sm backdrop-blur transition-all duration-200 dark:border-zinc-800 dark:bg-zinc-900/80">
-            <span className="truncate text-sm text-zinc-900 dark:text-zinc-50">
+          <div className="flex items-center gap-3 rounded-full border border-border bg-card/80 py-1.5 pl-4 pr-2 shadow-sm backdrop-blur transition-all duration-200">
+            <span className="truncate text-sm text-foreground">
               <span className="font-semibold">{activeNotification.name}</span> joined the
               meeting
             </span>
             <button
               aria-label="Dismiss notification"
-              className="flex size-7 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-500 transition-all duration-200 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-950/60"
+              className="flex size-7 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive transition-all duration-200 hover:bg-destructive/20"
               onClick={() => dismissNotification(activeNotification.identity)}
               type="button"
             >
@@ -105,7 +105,7 @@ export const MeetingRoomHeader = ({
             </button>
             <button
               aria-label="Acknowledge notification"
-              className="flex size-7 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white transition-all duration-200 hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+              className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-all duration-200 hover:bg-primary/90"
               onClick={() => dismissNotification(activeNotification.identity)}
               type="button"
             >
@@ -117,7 +117,7 @@ export const MeetingRoomHeader = ({
 
       <div className="relative flex shrink-0 items-center gap-2">
         <button
-          className="inline-flex h-10 items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-900 shadow-sm transition-all duration-200 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:hover:bg-zinc-800"
+          className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-emerald-600 px-5 text-sm font-medium text-white transition-all duration-200 hover:bg-emerald-500 active:scale-[0.98] dark:bg-emerald-500 dark:hover:bg-emerald-400"
           onClick={() => void handleCopyLink()}
           type="button"
         >
@@ -125,7 +125,7 @@ export const MeetingRoomHeader = ({
           Copy Meeting Link
         </button>
         {isLinkCopied ? (
-          <span className="absolute -bottom-8 right-0 whitespace-nowrap rounded-full bg-zinc-900 px-3 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 dark:bg-zinc-50 dark:text-zinc-900">
+          <span className="absolute -bottom-8 right-0 whitespace-nowrap rounded-full bg-foreground px-3 py-1 text-xs font-medium text-background shadow-sm transition-all duration-200">
             Link copied
           </span>
         ) : null}

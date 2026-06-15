@@ -9,6 +9,7 @@ import { formatUserError } from "@/lib/errors/format-user-error";
 import { LobbyCanvas } from "@/components/meetings/lobby/lobby-canvas";
 import {
   createMeetingRoom,
+  endMeeting,
   joinMeetingRoom,
 } from "../index";
 import type { MeetingRoomListItem } from "../types/meeting-room.types";
@@ -147,16 +148,19 @@ export const MeetingRoomForm = ({
 
   if (activeSession && (!selectedRoom || selectedRoomKey === activeSessionRoomKey)) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-100 p-6">
-        <div className="flex h-[92vh] w-full max-w-7xl flex-col">
-          <ConnectedMeetingPanel
-            autoRecord={autoRecord}
-            meetingId={activeSession.meetingId}
-            onLeave={() => undefined}
-            response={activeSession.response}
-            transcriptLanguage={transcriptLanguage}
-          />
-        </div>
+      <div className="flex h-full min-h-0 w-full flex-col overflow-hidden">
+        <ConnectedMeetingPanel
+          autoRecord={autoRecord}
+          meetingId={activeSession.meetingId}
+          onLeave={() => {
+            const meetingId = activeSession.meetingId;
+            void endMeeting(meetingId)
+              .catch(() => undefined)
+              .finally(() => router.push(`/meetings/${meetingId}`));
+          }}
+          response={activeSession.response}
+          transcriptLanguage={transcriptLanguage}
+        />
       </div>
     );
   }
