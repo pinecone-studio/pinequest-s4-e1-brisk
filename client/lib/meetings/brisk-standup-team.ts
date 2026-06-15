@@ -8,6 +8,8 @@ export type BriskStandupTeamMember = {
   email: string;
   initials: string;
   role: string;
+  /** Optional override when email lookup does not return the right photo. */
+  avatarUrl?: string;
 };
 
 export const BRISK_STANDUP_TEAM: BriskStandupTeamMember[] = [
@@ -68,7 +70,7 @@ export function toStandupParticipant(member: BriskStandupTeamMember): SummaryPar
     id: member.id,
     name: member.name,
     initials: member.initials,
-    avatarUrl: getEmailAvatarUrl(member.email),
+    avatarUrl: member.avatarUrl ?? getEmailAvatarUrl(member.email),
   };
 }
 
@@ -81,7 +83,8 @@ export function getBriskStandupParticipants(): SummaryParticipant[] {
         id: profile.clerkId,
         name: member.name,
         initials: member.initials,
-        avatarUrl: profile.avatarUrl ?? getEmailAvatarUrl(member.email),
+        avatarUrl:
+          profile.avatarUrl ?? member.avatarUrl ?? getEmailAvatarUrl(member.email),
       };
     }
 
