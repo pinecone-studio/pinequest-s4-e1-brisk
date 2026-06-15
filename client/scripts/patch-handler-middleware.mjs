@@ -1,15 +1,28 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const clientRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const handlerPath = path.join(
+// OpenNext nests the build output under the monorepo packagePath ("client").
+const packagePath = path.relative(path.dirname(clientRoot), clientRoot);
+const serverFnDir = path.join(
   clientRoot,
-  ".open-next/server-functions/default/handler.mjs",
+  ".open-next/server-functions/default",
 );
+// The Next server class (with getMiddlewareManifest) lives in the nested
+// packagePath handler; older flat builds kept it at the root. Pick whichever
+// exists.
+const handlerPath = [
+  path.join(serverFnDir, packagePath, "handler.mjs"),
+  path.join(serverFnDir, "handler.mjs"),
+].find(existsSync);
+if (!handlerPath) {
+  throw new Error("Could not find OpenNext server handler.mjs");
+}
 const manifestPath = path.join(
-  clientRoot,
-  ".open-next/server-functions/default/.next/server/middleware-manifest.json",
+  serverFnDir,
+  packagePath,
+  ".next/server/middleware-manifest.json",
 );
 
 const manifest = readFileSync(manifestPath, "utf8");

@@ -2,6 +2,7 @@
 
 import { fetchMeetings, type MeetingListItem, type MeetingTranscriptionStatus } from "@/app/meeting";
 import { parseRoomCodeInput } from "@/app/meeting/utils/parse-room-code";
+import { StandupStorySection } from "@/components/home/standup-story-section";
 import { MeetingActivityCard } from "@/components/meetings/meeting-activity-card";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,8 +32,12 @@ import {
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { prependMockSummaryMeeting } from "@/lib/meetings/mock-summary-meeting";
+import {
+  isMockStandupMeeting,
+  prependMockStandupMeetings,
+} from "@/lib/meetings/mock-standup-story";
 import { filterMeetingsBySearch } from "@/lib/search/filter-meetings";
+import { buildStandupStorySearchSuggestions } from "@/lib/meetings/mock-standup-story";
 import { buildMeetingSearchSuggestions } from "@/lib/search/build-search-suggestions";
 import { useDashboardSearch } from "@/lib/search/dashboard-search-context";
 import { useRegisterSearchSuggestions } from "@/lib/search/use-register-search-suggestions";
@@ -69,10 +74,13 @@ export default function MeetingsPage() {
   const [joinDialogOpen, setJoinDialogOpen] = useState(false);
   const { query } = useDashboardSearch();
 
-  const meetingSuggestions = useMemo(
-    () => buildMeetingSearchSuggestions(meetings),
-    [meetings],
-  );
+  const meetingSuggestions = useMemo(() => {
+    const fromMeetings = buildMeetingSearchSuggestions(meetings);
+    const fromStory = buildStandupStorySearchSuggestions().filter(
+      (suggestion) => suggestion.category !== "Meeting",
+    );
+    return [...fromStory, ...fromMeetings];
+  }, [meetings]);
   useRegisterSearchSuggestions("meetings-list", meetingSuggestions);
 
   const handleJoinWithCode = (event: FormEvent<HTMLFormElement>) => {
@@ -101,9 +109,11 @@ export default function MeetingsPage() {
 
     fetchMeetings()
       .then((response) => {
-        if (isActive) setMeetings(prependMockSummaryMeeting(response.meetings));
+        if (isActive) setMeetings(prependMockStandupMeetings(response.meetings));
       })
-      .catch(() => {})
+      .catch(() => {
+        if (isActive) setMeetings(prependMockStandupMeetings([]));
+      })
       .finally(() => {
         if (isActive) setIsLoading(false);
       });
@@ -122,6 +132,11 @@ export default function MeetingsPage() {
 
     return filterMeetingsBySearch(scopedMeetings, query);
   }, [meetings, scope, statusFilter, query]);
+
+  const listMeetings = useMemo(
+    () => filteredMeetings.filter((meeting) => !isMockStandupMeeting(meeting.id)),
+    [filteredMeetings],
+  );
 
   return (
     <div className="relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden px-6 py-6 lg:px-8">

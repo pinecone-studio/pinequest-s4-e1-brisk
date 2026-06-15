@@ -12,6 +12,7 @@ import { formatMeetingDateLong } from "@/lib/meetings/format-meeting-date";
 import { getMeetingDurationLabel } from "@/lib/meetings/meeting-duration";
 import { getMeetingFolder } from "@/lib/meetings/meeting-folders";
 import { getMeetingParticipants } from "@/lib/meetings/meeting-participants";
+import { isMockStandupMeeting } from "@/lib/meetings/mock-standup-story";
 import { TRANSCRIPTION_STATUS_STYLES } from "@/lib/meetings/transcription-status";
 import { cn } from "@/lib/utils";
 import {
@@ -22,7 +23,6 @@ import {
   RadioIcon,
   SparklesIcon,
   UsersIcon,
-  VideoIcon,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -33,11 +33,10 @@ type MeetingActivityCardProps = {
 export function MeetingActivityCard({ meeting }: MeetingActivityCardProps) {
   const status = TRANSCRIPTION_STATUS_STYLES[meeting.transcriptionStatus ?? "none"];
   const isRecording = meeting.title === "Instant Meeting";
-  const SourceIcon = isRecording ? RadioIcon : VideoIcon;
-  const sourceLabel = isRecording ? "Recording" : "Video meeting";
   const durationLabel = getMeetingDurationLabel(meeting);
   const folder = getMeetingFolder(meeting);
   const participants = getMeetingParticipants(meeting);
+  const isMock = isMockStandupMeeting(meeting.id);
 
   return (
     <article className={cn(CARD_STANDARD, "transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md")}>
@@ -47,7 +46,6 @@ export function MeetingActivityCard({ meeting }: MeetingActivityCardProps) {
             <h3 className={cn("truncate font-heading text-base font-semibold", TEXT_PRIMARY)}>
               {meeting.title}
             </h3>
-          </Link>
 
           <div className="flex shrink-0 items-center gap-2">
             <Badge variant="outline" className="gap-1 border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
@@ -69,7 +67,6 @@ export function MeetingActivityCard({ meeting }: MeetingActivityCardProps) {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        </div>
 
         <div className={cn("flex flex-wrap items-center gap-3 text-sm", TEXT_MUTED)}>
           <span className="flex items-center gap-1.5">
@@ -82,10 +79,12 @@ export function MeetingActivityCard({ meeting }: MeetingActivityCardProps) {
               {durationLabel}
             </span>
           ) : null}
-          <span className="flex items-center gap-1.5">
-            <SourceIcon className="size-3.5" />
-            {sourceLabel}
-          </span>
+          {isRecording ? (
+            <span className="flex items-center gap-1.5">
+              <RadioIcon className="size-3.5" />
+              Recording
+            </span>
+          ) : null}
           <Badge className={cn("gap-1", status.className)}>{status.label}</Badge>
         </div>
 

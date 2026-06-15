@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { formatUserError } from "@/lib/errors/format-user-error";
+import { getMockStandupRecordingById } from "@/lib/meetings/mock-standup-story";
 import { getRecording } from "../api/recordings-api";
 import type {
   StandaloneRecording,
@@ -23,6 +24,13 @@ export const useRecordingStatus = (
 
   const refresh = useCallback(async () => {
     if (!recordingId) return;
+
+    const mockRecording = getMockStandupRecordingById(recordingId);
+    if (mockRecording) {
+      setRecording(mockRecording);
+      setError("");
+      return;
+    }
 
     try {
       setRecording(await getRecording(recordingId));

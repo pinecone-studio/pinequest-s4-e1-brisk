@@ -9,6 +9,8 @@ import meetingTranscriptionRouter from "./routes/meetingTranscription/meeting-tr
 import recordingsRouter from "./routes/recordings/recordings.routes";
 import userRoutes from "./routes/users/user.routes";
 import googleRoutes from "./routes/google/google.routes";
+import notificationsRouter from "./routes/notifications/notifications.routes";
+import summaryRouter from "./routes/summary/summary.routes";
 import webhookRoutes from "./routes/webhooks/webhook.routes";
 import { handleTranscriptionQueue } from "./queues/transcription-queue";
 import { handleMeetingProcessingQueue } from "./queues/meeting-processing-queue";
@@ -53,6 +55,8 @@ app.route("/api/meeting-transcription", meetingTranscriptionRouter);
 app.route("/api/meeting-room", meetingRoomRouter);
 app.route("/api/meetings", meetingsRouter);
 app.route("/api/recordings", recordingsRouter);
+app.route("/api/summary", summaryRouter);
+app.route("/api/notifications", notificationsRouter);
 app.route("/api/google", googleRoutes);
 app.route("/api/webhooks", webhookRoutes);
 

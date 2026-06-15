@@ -7,6 +7,7 @@ import {
 } from "@/lib/api/google-workspace";
 import { isGoogleDemoShared } from "@/lib/google/demo-google";
 import { useClientApiAuth } from "@/lib/api/auth-interceptor";
+import { buildStandupAgendaEvents } from "@/lib/meetings/mock-standup-story";
 import type {
   AgendaEvent,
   CreateCalendarEventInput,
@@ -45,7 +46,7 @@ const GoogleAgendaContext = createContext<GoogleAgendaContextValue | null>(null)
 
 export function GoogleAgendaProvider({ children }: { children: ReactNode }) {
   useClientApiAuth();
-  const { isLoaded } = useAuth();
+  const { isLoaded, userId } = useAuth();
 
   const [events, setEvents] = useState<AgendaEvent[]>([]);
   const [connected, setConnected] = useState<boolean | null>(null);
@@ -69,32 +70,34 @@ export function GoogleAgendaProvider({ children }: { children: ReactNode }) {
 
     try {
       const bounds = getMonthGridBounds(year, month);
+      const standupEvents = buildStandupAgendaEvents();
       let response = await getGoogleCalendarAgenda(bounds);
 
       if (!response.connected && !isGoogleDemoShared()) {
         const { ensureGoogleWorkspaceConnection } = await import(
           "@/lib/api/google-workspace"
         );
-        const connected = await ensureGoogleWorkspaceConnection();
-        if (connected) {
+        const connectedNow = await ensureGoogleWorkspaceConnection();
+        if (connectedNow) {
           response = await getGoogleCalendarAgenda(bounds);
         }
       }
 
-      setConnected(response.connected);
-      setEvents(
-        filterUpcomingEvents(
-          response.events.map((event) => enrichAgendaEvent(event)),
-        ),
+      const googleEvents = filterUpcomingEvents(
+        response.events.map((event) => enrichAgendaEvent(event)),
       );
+
+      setConnected(response.connected || standupEvents.length > 0);
+      setEvents([...standupEvents, ...googleEvents]);
     } catch (caughtError) {
+      const standupEvents = buildStandupAgendaEvents();
       setError(formatGoogleWorkspaceError(caughtError));
-      setConnected(false);
-      setEvents([]);
+      setConnected(standupEvents.length > 0);
+      setEvents(standupEvents);
     } finally {
       setIsLoading(false);
     }
-  }, [isLoaded]);
+  }, [isLoaded, userId]);
 
   const reloadForMonth = useCallback(
     async (year: number, month: number) => {

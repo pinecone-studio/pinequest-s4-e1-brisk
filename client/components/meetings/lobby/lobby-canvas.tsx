@@ -5,6 +5,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 type LobbyCanvasProps = {
+  backHref?: string;
+  backLabel?: string;
   children: ReactNode;
   className?: string;
   showBackLink?: boolean;

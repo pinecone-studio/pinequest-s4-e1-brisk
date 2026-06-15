@@ -1,6 +1,7 @@
 import type { MeetingListItem } from "@/app/meeting";
 import { QuickActions } from "@/components/home/quick-actions";
 import { RecentActivityFeed } from "@/components/home/recent-activity-feed";
+import { StandupStorySection } from "@/components/home/standup-story-section";
 import { WelcomeHeader } from "@/components/home/welcome-header";
 import { TEXT_MUTED, TEXT_PRIMARY } from "@/lib/ui/design-tokens";
 import { cn } from "@/lib/utils";
@@ -21,6 +22,8 @@ export function HomeDashboard({
   const hasSearch = Boolean(searchQuery.trim());
   const showSearchEmpty = hasSearch && meetings.length === 0 && totalMeetings > 0;
 
+  const recentMeetings = meetings.filter((meeting) => !isMockStandupMeeting(meeting.id));
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-5 overflow-hidden">
       <WelcomeHeader todayLabel={todayLabel} />
@@ -32,7 +35,10 @@ export function HomeDashboard({
           <p className={cn("text-sm", TEXT_MUTED)}>Try a different search term.</p>
         </div>
       ) : (
-        <RecentActivityFeed meetings={meetings} />
+        <>
+          <StandupStorySection />
+          <RecentActivityFeed meetings={recentMeetings} />
+        </>
       )}
     </div>
   );

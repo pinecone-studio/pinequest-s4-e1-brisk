@@ -44,10 +44,9 @@ export function ActivityCard({ meeting }: ActivityCardProps) {
             <h3 className={cn("truncate font-heading text-base font-semibold", TEXT_PRIMARY)}>
               {meeting.title}
             </h3>
-          </Link>
 
-          <div className="flex shrink-0 items-center gap-2">
-            <Badge className={cn("gap-1", status.className)}>{status.label}</Badge>
+            <div className="flex shrink-0 items-center gap-2">
+              <Badge className={cn("gap-1", status.className)}>{status.label}</Badge>
 
             <DropdownMenu>
               <DropdownMenuTrigger
@@ -63,7 +62,6 @@ export function ActivityCard({ meeting }: ActivityCardProps) {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        </div>
 
         <div className={cn("flex flex-wrap items-center gap-3 text-sm", TEXT_MUTED)}>
           <span className="flex items-center gap-1.5">

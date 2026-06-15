@@ -13,7 +13,7 @@ type RecentActivityFeedProps = {
 
 export function RecentActivityFeed({ meetings }: RecentActivityFeedProps) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
+    <section className="flex shrink-0 flex-col gap-3">
       <div className="flex shrink-0 items-center justify-between">
         <h2 className={cn("font-heading text-lg font-semibold", TEXT_PRIMARY)}>
           Recent meetings
@@ -24,7 +24,7 @@ export function RecentActivityFeed({ meetings }: RecentActivityFeedProps) {
         </Button>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto scrollbar-none pb-1">
+      <div className="flex flex-col gap-3 pb-1">
         <AnimatePresence initial={false}>
           {meetings.slice(0, 6).map((meeting, index) => (
             <motion.div
@@ -39,6 +39,6 @@ export function RecentActivityFeed({ meetings }: RecentActivityFeedProps) {
           ))}
         </AnimatePresence>
       </div>
-    </div>
+    </section>
   );
 }

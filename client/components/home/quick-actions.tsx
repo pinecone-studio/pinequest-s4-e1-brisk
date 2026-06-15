@@ -1,17 +1,18 @@
 "use client";
 
+import { InviteEmailList } from "@/components/home/invite-email-list";
 import { slugifyRoomName } from "@/app/meeting/utils/slugify-room-name";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { BTN_PRIMARY, CARD_STANDARD, TEXT_MUTED, TEXT_PRIMARY } from "@/lib/ui/design-tokens";
 import { cn } from "@/lib/utils";
+import { useUser } from "@clerk/nextjs";
 import {
   CalendarDaysIcon,
   CalendarIcon,
   ClockIcon,
   KeyboardIcon,
-  MailIcon,
   Radio,
   TypeIcon,
   UploadCloudIcon,
@@ -19,7 +20,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 type ActionTab = "meeting" | "recording" | "schedule";
 
@@ -32,25 +33,41 @@ const TABS: { id: ActionTab; label: string; icon: LucideIcon }[] = [
 export function QuickActions() {
   const router = useRouter();
   const toast = useToast();
+  const { user, isLoaded } = useUser();
+  const seededInviteEmailRef = useRef(false);
   const [activeTab, setActiveTab] = useState<ActionTab>("meeting");
 
   const [meetingName, setMeetingName] = useState("");
-  const [inviteEmails, setInviteEmails] = useState("");
+  const [inviteEmails, setInviteEmails] = useState<string[]>([]);
 
   const [scheduleTitle, setScheduleTitle] = useState("");
-  const [scheduleInvites, setScheduleInvites] = useState("");
+  const [scheduleInvites, setScheduleInvites] = useState<string[]>([]);
   const [scheduleDate, setScheduleDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
 
-  const [isRecording, setIsRecording] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!isLoaded || !user || seededInviteEmailRef.current) return;
+
+    const email = getClerkPrimaryEmail(user).toLowerCase();
+    if (!email) return;
+
+    seededInviteEmailRef.current = true;
+    setInviteEmails((current) => (current.includes(email) ? current : [email]));
+    setScheduleInvites((current) => (current.includes(email) ? current : [email]));
+  }, [isLoaded, user]);
+
+  const goToRecordings = (action?: "record" | "upload") => {
+    router.push(action ? `/recordings?action=${action}` : "/recordings");
+  };
 
   const handleScheduleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     toast.add({
       title: "Meeting Scheduled",
-      description: `${scheduleTitle} set for ${scheduleDate} from ${startTime} to ${endTime}`,
+      description: `${scheduleTitle} set for ${scheduleDate} from ${startTime} to ${endTime}${
+        scheduleInvites.length ? ` · ${scheduleInvites.length} invite(s) queued` : ""
+      }`,
       type: "success",
     });
   };
@@ -58,6 +75,13 @@ export function QuickActions() {
   const handleStartCapture = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const meetingId = slugifyRoomName(meetingName) || `instant-${Date.now()}`;
+    if (inviteEmails.length > 0) {
+      toast.add({
+        title: "Invites queued",
+        description: `${inviteEmails.length} teammate${inviteEmails.length === 1 ? "" : "s"} will be invited when the room opens.`,
+        type: "success",
+      });
+    }
     router.push(
       `/meeting?meetingId=${meetingId}&roomName=${meetingName || "Instant Meeting"}`,
     );
@@ -73,7 +97,12 @@ export function QuickActions() {
             <button
               key={tab.id}
               type="button"
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => {
+                setActiveTab(tab.id);
+                if (tab.id === "recording") {
+                  goToRecordings();
+                }
+              }}
               className={cn(
                 "flex min-w-[160px] flex-1 shrink-0 items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 md:min-w-0",
                 isActive

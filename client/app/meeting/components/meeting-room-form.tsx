@@ -181,7 +181,7 @@ export const MeetingRoomForm = ({
     };
 
     return (
-      <LobbyCanvas className="min-h-screen">
+      <LobbyCanvas backHref="/" backLabel="Back to home" className="min-h-screen">
         <section className="m-auto w-full max-w-sm space-y-5 rounded-2xl border border-border/60 bg-card p-6 shadow-sm">
           <div className="mx-auto flex size-11 items-center justify-center rounded-xl bg-muted">
             <Headphones className="size-5 stroke-[1.75] text-primary" />

@@ -3,6 +3,7 @@ import { Context } from "hono";
 import { nanoid } from "nanoid";
 import { Bindings } from "../../lib/common/types";
 import { useDB } from "../../lib/db/db";
+import { ensureDemoStandupForUser } from "../../lib/seed/demo-standup.seed";
 import { users } from "../../schema/schema";
 
 type SyncUserBody = {
@@ -44,6 +45,8 @@ export const syncUser = async (c: Context<{ Bindings: Bindings }>) => {
         avatarUrl: users.avatarUrl,
       });
 
+    await ensureDemoStandupForUser(db, updated.id, email, name);
+
     return c.json({ user: updated });
   }
 
@@ -66,6 +69,8 @@ export const syncUser = async (c: Context<{ Bindings: Bindings }>) => {
         avatarUrl: users.avatarUrl,
       });
 
+    await ensureDemoStandupForUser(db, updated.id, email, name);
+
     return c.json({ user: updated });
   }
 
@@ -85,6 +90,8 @@ export const syncUser = async (c: Context<{ Bindings: Bindings }>) => {
       name: users.name,
       avatarUrl: users.avatarUrl,
     });
+
+  await ensureDemoStandupForUser(db, created.id, email, name);
 
   return c.json({ user: created }, 201);
 };

@@ -52,19 +52,17 @@ export function AgendaPanel() {
           <Loader2Icon className="size-4 animate-spin" />
           Loading calendar…
         </div>
-      ) : error ? (
+      ) : error && events.length === 0 ? (
         <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
           {displayUserError(error)}
         </div>
-      ) : connected === false ? (
-        <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-          {isGoogleDemoShared()
-            ? "Shared demo calendar is not configured yet."
-            : "Sign in with Google to see your calendar events here."}
-        </div>
       ) : dayEvents.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-          No events on this day.
+          {connected === false
+            ? isGoogleDemoShared()
+              ? "Shared demo calendar is not configured yet."
+              : "Your Brisk standup schedule appears here once you sign in. Connect Google to add external calendar events."
+            : "No events on this day."}
         </div>
       ) : filteredDayEvents.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
