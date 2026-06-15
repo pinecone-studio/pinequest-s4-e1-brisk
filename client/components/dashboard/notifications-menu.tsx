@@ -40,7 +40,11 @@ const typeStyles: Record<
   system: { icon: InfoIcon, className: "bg-muted text-muted-foreground" },
 };
 
-export function NotificationsMenu() {
+type NotificationsMenuProps = {
+  triggerClassName?: string;
+};
+
+export function NotificationsMenu({ triggerClassName }: NotificationsMenuProps) {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [open, setOpen] = useState(false);
 
@@ -72,7 +76,15 @@ export function NotificationsMenu() {
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger
         render={
-          <Button variant="ghost" size="icon" className="relative rounded-full">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Notifications"
+            className={cn(
+              "relative text-muted-foreground hover:text-foreground",
+              triggerClassName,
+            )}
+          >
             <BellIcon className="size-4.5" />
             {unreadCount > 0 ? (
               <span className="absolute right-1.5 top-1.5 flex size-2 rounded-full bg-primary" />

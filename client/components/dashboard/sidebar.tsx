@@ -1,7 +1,5 @@
 "use client";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { currentUser } from "@/lib/mock-data";
 import { isNavItemActive, navItems } from "@/lib/nav-items";
 import { cn } from "@/lib/utils";
 import { ChevronDownIcon, SettingsIcon } from "lucide-react";
@@ -21,7 +19,7 @@ export function Sidebar() {
   const activeScope = searchParams.get("scope") ?? "mine";
 
   return (
-    <aside className="hidden h-full w-64 shrink-0 flex-col border-r border-border bg-card lg:flex">
+    <aside className="hidden h-full w-64 shrink-0 flex-col bg-transparent lg:flex">
       <div className="flex items-center gap-2 px-6 py-6">
         <span className={cn(grandHotel.className, "text-3xl text-foreground")}>
           Brisk
@@ -79,7 +77,7 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="space-y-1 border-t border-border p-4">
+      <div className="space-y-1 p-4">
         <Link
           href="/settings"
           className={cn(
@@ -91,28 +89,6 @@ export function Sidebar() {
         >
           <SettingsIcon className="size-4.5" />
           Settings
-        </Link>
-
-        <Link
-          href="/profile"
-          className={cn(
-            "flex items-center gap-3 rounded-xl px-3 py-2 transition-colors",
-            isNavItemActive(pathname, "/profile")
-              ? "bg-primary/10"
-              : "hover:bg-muted",
-          )}
-        >
-          <Avatar size="sm">
-            <AvatarFallback>{currentUser.initials}</AvatarFallback>
-          </Avatar>
-          <div className="flex min-w-0 flex-col">
-            <span className="truncate text-sm font-medium text-foreground">
-              {currentUser.name}
-            </span>
-            <span className="truncate text-xs text-muted-foreground">
-              {currentUser.role}
-            </span>
-          </div>
         </Link>
       </div>
     </aside>
