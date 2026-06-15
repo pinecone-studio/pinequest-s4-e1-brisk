@@ -212,15 +212,15 @@ export const MeetingRoomChatPanel = ({
   }, [draft, isConnected, localMeetingParticipant?.avatarUrl, localParticipant, room]);
 
   return (
-    <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white transition-all duration-200">
-      <div className="shrink-0 p-3">
-        <div className="flex rounded-full bg-zinc-100 p-1">
+    <section className="relative flex h-full w-full flex-1 flex-col overflow-hidden rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm transition-colors duration-300 dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="shrink-0 pb-3">
+        <div className="flex rounded-full bg-zinc-100 p-1 dark:bg-zinc-800">
           <button
             className={cn(
               "flex-1 rounded-full py-1.5 text-sm font-medium transition-all duration-200",
               activeTab === "room"
-                ? "bg-zinc-900 text-white"
-                : "text-zinc-500 hover:text-zinc-900",
+                ? "bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900"
+                : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50",
             )}
             onClick={() => setActiveTab("room")}
             type="button"
@@ -231,8 +231,8 @@ export const MeetingRoomChatPanel = ({
             className={cn(
               "flex-1 rounded-full py-1.5 text-sm font-medium transition-all duration-200",
               activeTab === "participants"
-                ? "bg-zinc-900 text-white"
-                : "text-zinc-500 hover:text-zinc-900",
+                ? "bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900"
+                : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50",
             )}
             onClick={() => setActiveTab("participants")}
             type="button"
@@ -244,14 +244,14 @@ export const MeetingRoomChatPanel = ({
 
       {activeTab === "room" ? (
         <>
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pb-24 pt-1">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-2">
             {messages.length ? (
               messages.map((message) => (
                 <div
                   className={cn("flex flex-col gap-1", message.isLocal && "items-end")}
                   key={message.id}
                 >
-                  <span className="text-xs text-zinc-400">
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400">
                     {message.isLocal ? "You" : message.senderName} ·{" "}
                     {formatMessageTime(message.timestamp)}
                   </span>
@@ -259,8 +259,8 @@ export const MeetingRoomChatPanel = ({
                     className={cn(
                       "max-w-[85%] whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-sm leading-relaxed",
                       message.isLocal
-                        ? "bg-emerald-50 text-emerald-900"
-                        : "bg-zinc-100 text-zinc-900",
+                        ? "bg-emerald-50 text-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-300"
+                        : "bg-zinc-100 text-zinc-800 dark:bg-zinc-800/60 dark:text-zinc-200",
                     )}
                   >
                     {message.text}
@@ -268,7 +268,7 @@ export const MeetingRoomChatPanel = ({
                 </div>
               ))
             ) : (
-              <div className="flex h-full min-h-40 items-center justify-center text-center text-sm text-zinc-400">
+              <div className="flex h-full min-h-40 items-center justify-center text-center text-sm text-zinc-500 dark:text-zinc-400">
                 No messages yet
               </div>
             )}
@@ -276,27 +276,27 @@ export const MeetingRoomChatPanel = ({
           </div>
 
           <form
-            className="absolute inset-x-0 bottom-0 flex flex-col gap-2 rounded-b-2xl border-t border-zinc-200 bg-white p-3"
+            className="flex shrink-0 flex-col gap-2 border-t border-zinc-200 pt-3 transition-colors duration-300 dark:border-zinc-800"
             onSubmit={(event) => {
               event.preventDefault();
               void sendMessage();
             }}
           >
             {sendError ? (
-              <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+              <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-400">
                 {sendError}
               </p>
             ) : null}
             <div className="flex items-center gap-2">
               <button
                 aria-label="Add emoji"
-                className="flex size-9 shrink-0 items-center justify-center rounded-full text-zinc-500 transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900"
+                className="flex size-9 shrink-0 items-center justify-center rounded-full text-zinc-500 transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
                 type="button"
               >
                 <Smile className="size-4" />
               </button>
               <input
-                className="min-w-0 flex-1 rounded-full border border-zinc-200 bg-zinc-100 px-4 py-2 text-sm text-zinc-900 outline-none transition-all duration-200 focus:ring-2 focus:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="min-w-0 flex-1 rounded-full border border-zinc-200 bg-zinc-50 px-4 py-2 text-sm text-zinc-900 placeholder-zinc-400 outline-none transition-all duration-200 focus:ring-2 focus:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50"
                 disabled={!isConnected}
                 maxLength={MAX_MESSAGE_LENGTH}
                 onChange={(event) => setDraft(event.target.value)}
@@ -305,7 +305,7 @@ export const MeetingRoomChatPanel = ({
               />
               <button
                 aria-label="Send message"
-                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white transition-all duration-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white transition-all duration-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
                 disabled={!isConnected || !draft.trim()}
                 type="submit"
               >
@@ -315,10 +315,10 @@ export const MeetingRoomChatPanel = ({
           </form>
         </>
       ) : (
-        <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto px-3 pb-4 pt-1">
+        <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto pb-2">
           {participants.map((participant) => (
             <div
-              className="flex items-center gap-3 rounded-2xl px-3 py-2 transition-all duration-200 hover:bg-zinc-50"
+              className="flex items-center gap-3 rounded-2xl px-3 py-2 transition-all duration-200 hover:bg-zinc-50 dark:hover:bg-zinc-800/60"
               key={participant.identity}
             >
               <div
@@ -329,13 +329,13 @@ export const MeetingRoomChatPanel = ({
               >
                 {getInitials(participant.displayName)}
               </div>
-              <span className="min-w-0 flex-1 truncate text-sm font-medium text-zinc-900">
+              <span className="min-w-0 flex-1 truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
                 {participant.isLocal ? "You" : participant.displayName}
               </span>
               {participant.isMicrophoneEnabled ? (
-                <Mic className="size-4 text-emerald-600" />
+                <Mic className="size-4 text-emerald-600 dark:text-emerald-400" />
               ) : (
-                <MicOff className="size-4 text-zinc-400" />
+                <MicOff className="size-4 text-zinc-400 dark:text-zinc-500" />
               )}
             </div>
           ))}

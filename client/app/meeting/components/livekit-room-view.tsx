@@ -8,15 +8,11 @@ import {
 } from "livekit-client";
 import { useEffect, useMemo, useState } from "react";
 import { useMediaToggleShortcuts } from "@/hooks/use-media-toggle-shortcuts";
-import { useLatestMeetingSummary } from "../hooks/use-latest-meeting-summary";
-import { useMeetingTasks } from "../hooks/use-meeting-tasks";
 import type { TranscriptLanguage } from "../utils/transcript-language";
 import { MeetingParticipantFilmstrip } from "./meeting-participant-filmstrip";
 import { MeetingRoomChatPanel } from "./meeting-room-chat-panel";
 import { MeetingRoomHeader } from "./meeting-room-header";
 import { useMeetingSession } from "./meeting-session-provider";
-import { MeetingSummarySidebarCard } from "./meeting-summary-sidebar-card";
-import { MeetingTasksCard } from "./meeting-tasks-card";
 import { MeetingVideoStage } from "./meeting-video-stage";
 import { getParticipantDisplayName } from "./participant-tile";
 import { RecordingControls, type RecordingStatus } from "./recording-controls";
@@ -62,8 +58,6 @@ export const LivekitRoomView = ({
   >(null);
   const [recordingStatus, setRecordingStatus] =
     useState<RecordingStatus>("not-started");
-  const { isLoading: isSummaryLoading, transcript } = useLatestMeetingSummary();
-  const { addTask, tasks, toggleTask } = useMeetingTasks({ connectionState, room });
 
   const focusedParticipant =
     allParticipants.find(
@@ -190,7 +184,7 @@ export const LivekitRoomView = ({
 
   return (
     <section
-      className="flex size-full flex-col gap-4 rounded-[32px] bg-white p-6 shadow-xl"
+      className="flex size-full flex-col gap-4 rounded-[32px] border border-zinc-200 bg-white p-6 shadow-xl transition-colors duration-300 dark:border-zinc-800 dark:bg-zinc-900/90 dark:shadow-2xl/40"
       data-transcript-language={transcriptLanguage}
     >
       <MeetingRoomHeader
@@ -209,18 +203,18 @@ export const LivekitRoomView = ({
       />
 
       {isConnecting ? (
-        <p className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-500">
+        <p className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-500 transition-colors duration-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
           Connecting...
         </p>
       ) : null}
       {error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-400">
           {error}
         </div>
       ) : null}
 
       <div className="flex min-h-0 flex-1 gap-4">
-        <div className="flex min-h-0 flex-1 flex-col">
+        <div className="flex min-h-0 flex-1 flex-col gap-4">
           <MeetingVideoStage
             isCameraEnabled={Boolean(localParticipant?.isCameraEnabled)}
             isMicrophoneEnabled={Boolean(localParticipant?.isMicrophoneEnabled)}
@@ -246,14 +240,7 @@ export const LivekitRoomView = ({
           />
         </div>
 
-        <aside className="flex min-h-0 w-[360px] shrink-0 flex-col gap-4">
-          <MeetingSummarySidebarCard isLoading={isSummaryLoading} summary={transcript?.summary} />
-          <MeetingTasksCard
-            onAddTask={(input) => void addTask(input)}
-            onToggleTask={(id) => void toggleTask(id)}
-            participants={participants}
-            tasks={tasks}
-          />
+        <aside className="flex h-full w-[360px] min-w-[360px] flex-col">
           <MeetingRoomChatPanel
             connectionState={connectionState}
             participants={participants}
