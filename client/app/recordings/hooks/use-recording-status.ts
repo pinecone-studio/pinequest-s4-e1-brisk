@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { formatUserError } from "@/lib/errors/format-user-error";
 import { getRecording } from "../api/recordings-api";
 import type {
   StandaloneRecording,
@@ -27,7 +28,7 @@ export const useRecordingStatus = (
       setRecording(await getRecording(recordingId));
       setError("");
     } catch (caughtError) {
-      setError((caughtError as Error).message);
+      setError(formatUserError(caughtError));
     }
   }, [recordingId]);
 

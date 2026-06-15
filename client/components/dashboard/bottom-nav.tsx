@@ -9,7 +9,7 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 flex h-16 items-center justify-around border-t border-border bg-card lg:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-40 flex h-16 items-center justify-around bg-transparent backdrop-blur-sm lg:hidden">
       {navItems.map((item) => {
         const active = isNavItemActive(pathname, item.href);
         const Icon = item.icon;

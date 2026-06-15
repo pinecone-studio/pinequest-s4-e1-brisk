@@ -1,4 +1,5 @@
 import { meetingApi } from "@/app/meeting/api/meeting-api";
+import { formatHttpError } from "@/lib/errors/format-user-error";
 import { RECORDING_ENDPOINTS } from "./recordings-endpoints";
 import type {
   ListRecordingsResponse,
@@ -25,13 +26,11 @@ const getClerkToken = async (): Promise<string | null> => {
 };
 
 const getErrorMessage = async (response: Response) => {
-  const fallback = `Recording API request failed with status ${response.status}.`;
-
   try {
     const data = (await response.json()) as { error?: string };
-    return data.error ?? fallback;
+    return formatHttpError(response.status, data.error);
   } catch {
-    return fallback;
+    return formatHttpError(response.status);
   }
 };
 
@@ -40,11 +39,15 @@ export const uploadRecording = async (
   blob: Blob,
   filename: string,
   title?: string,
+  durationSeconds?: number,
 ): Promise<UploadRecordingResponse> => {
   const token = await getClerkToken();
   const form = new FormData();
   form.append("file", blob, filename);
   if (title) form.append("title", title);
+  if (durationSeconds != null && durationSeconds > 0) {
+    form.append("durationSeconds", String(durationSeconds));
+  }
 
   const response = await fetch(RECORDING_ENDPOINTS.upload, {
     method: "POST",
@@ -65,6 +68,43 @@ export const listRecordings = () =>
 
 export const getRecording = (id: string) =>
   meetingApi<StandaloneRecording>(RECORDING_ENDPOINTS.recording(id));
+
+export const deleteRecording = async (id: string) => {
+  const token = await getClerkToken();
+
+  const response = await fetch(RECORDING_ENDPOINTS.recording(id), {
+    method: "DELETE",
+    credentials: "include",
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+
+  if (!response.ok) {
+    throw new Error(await getErrorMessage(response));
+  }
+
+  return (await response.json()) as { ok: true };
+};
+
+export const downloadRecording = async (id: string, filename: string) => {
+  const token = await getClerkToken();
+
+  const response = await fetch(RECORDING_ENDPOINTS.audio(id), {
+    credentials: "include",
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+
+  if (!response.ok) {
+    throw new Error(await getErrorMessage(response));
+  }
+
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = objectUrl;
+  anchor.download = filename.endsWith(".mp3") ? filename : `${filename}.mp3`;
+  anchor.click();
+  URL.revokeObjectURL(objectUrl);
+};
 
 // Fetches the recording's audio as an authenticated blob and returns an object
 // URL for an <audio> element. A bare <audio src> can't send the Clerk Bearer

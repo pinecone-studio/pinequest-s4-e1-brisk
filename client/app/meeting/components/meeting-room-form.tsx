@@ -5,6 +5,7 @@ import { Headphones } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { formatUserError } from "@/lib/errors/format-user-error";
 import { LobbyCanvas } from "@/components/meetings/lobby/lobby-canvas";
 import {
   createMeetingRoom,
@@ -135,7 +136,7 @@ export const MeetingRoomForm = ({
             },
           });
         } catch (caughtError) {
-          setError((caughtError as Error).message);
+          setError(formatUserError(caughtError));
         }
       } finally {
         setJoinStatus("idle");

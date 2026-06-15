@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { formatUserError } from "@/lib/errors/format-user-error";
 import {
   startMeetingEgress,
   stopMeetingEgress,
@@ -57,7 +58,7 @@ export const RecordingControls = ({
         const response = await startMeetingEgress({ meetingId, roomName });
         if (isActive) setRecording(response);
       } catch (caughtError) {
-        if (isActive) setError((caughtError as Error).message);
+        if (isActive) setError(formatUserError(caughtError));
       }
     };
 

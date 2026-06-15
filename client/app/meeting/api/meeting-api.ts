@@ -1,3 +1,5 @@
+import { formatHttpError } from "@/lib/errors/format-user-error";
+
 type MeetingApiOptions = {
   body?: unknown;
   method?: "DELETE" | "GET" | "POST";
@@ -14,14 +16,11 @@ type ClerkWindow = Window & {
 };
 
 const getErrorMessage = async (response: Response) => {
-  const fallback = `Meeting API request failed with status ${response.status}.`;
-
   try {
     const data = (await response.json()) as { error?: string };
-
-    return data.error ?? fallback;
+    return formatHttpError(response.status, data.error);
   } catch {
-    return fallback;
+    return formatHttpError(response.status);
   }
 };
 

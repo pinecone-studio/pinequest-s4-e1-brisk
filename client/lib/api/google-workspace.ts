@@ -61,12 +61,12 @@ export function formatGoogleWorkspaceError(error: unknown) {
       return "Google needs permission to create events. Reconnect Google and try again.";
     }
 
-    if (typeof message === "string" && message.trim()) {
-      return message;
-    }
-
     if (error.response?.status === 401) {
       return "Sign in to connect Google Workspace.";
+    }
+
+    if (typeof message === "string" && message.trim()) {
+      return message;
     }
   }
 

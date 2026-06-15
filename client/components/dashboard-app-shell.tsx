@@ -9,7 +9,7 @@ import { Topbar } from "@/components/dashboard/topbar";
 export function DashboardAppShell({ children }: { children: React.ReactNode }) {
   return (
     <MeetingProviders>
-      <div className="flex h-screen overflow-hidden bg-background">
+      <div className="dashboard-shell flex h-screen overflow-hidden">
         <ClientAuthSetup />
         <Sidebar />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
