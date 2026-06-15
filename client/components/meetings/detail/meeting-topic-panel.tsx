@@ -4,16 +4,25 @@ import { formatElapsedTime } from "@/lib/meetings/meeting-clock";
 type MeetingTopicPanelProps = {
   topics: string[];
   segments: MeetingTranscriptSegment[];
+  emptyMessage?: string;
 };
 
-export const MeetingTopicPanel = ({ topics, segments }: MeetingTopicPanelProps) => {
+export const MeetingTopicPanel = ({
+  topics,
+  segments,
+  emptyMessage,
+}: MeetingTopicPanelProps) => {
   if (topics.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-2 py-12 text-center">
-        <p className="text-sm font-medium text-foreground">No topics detected</p>
-        <p className="text-sm text-muted-foreground">
-          Topics will appear here once this meeting has been analyzed.
+        <p className="text-sm font-medium text-foreground">
+          {emptyMessage ?? "No topics detected"}
         </p>
+        {!emptyMessage ? (
+          <p className="text-sm text-muted-foreground">
+            Topics will appear here once this meeting has been analyzed.
+          </p>
+        ) : null}
       </div>
     );
   }

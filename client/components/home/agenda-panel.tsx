@@ -9,13 +9,27 @@ import {
 import { groupEventsByDate, formatDayHeading } from "@/lib/home/google-agenda-utils";
 import { useGoogleAgenda } from "@/lib/home/use-google-agenda";
 import { AGENDA_DAYS_AHEAD } from "@/lib/home/agenda-types";
+import { filterAgendaEventsBySearch } from "@/lib/search/filter-agenda-events";
+import { buildAgendaSearchSuggestions } from "@/lib/search/build-search-suggestions";
+import { useDashboardSearch } from "@/lib/search/dashboard-search-context";
+import { useRegisterSearchSuggestions } from "@/lib/search/use-register-search-suggestions";
 import { Loader2Icon } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 export function AgendaPanel() {
   const { events, connected, isLoading, error, reload } = useGoogleAgenda();
   const [isDisconnecting, setIsDisconnecting] = useState(false);
-  const groupedEvents = groupEventsByDate(events);
+  const { query } = useDashboardSearch();
+  const filteredEvents = useMemo(
+    () => filterAgendaEventsBySearch(events, query),
+    [events, query],
+  );
+  const agendaSuggestions = useMemo(
+    () => buildAgendaSearchSuggestions(events),
+    [events],
+  );
+  useRegisterSearchSuggestions("agenda", agendaSuggestions);
+  const groupedEvents = groupEventsByDate(filteredEvents);
 
   const handleDisconnect = async () => {
     setIsDisconnecting(true);
@@ -71,6 +85,10 @@ export function AgendaPanel() {
       ) : events.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
           No upcoming events in the next {AGENDA_DAYS_AHEAD} days.
+        </div>
+      ) : filteredEvents.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+          No calendar events match your search.
         </div>
       ) : (
         <div className="flex flex-col gap-4">

@@ -6,6 +6,7 @@ import type { AppUser } from "@/types";
 type MeetingTranscriptFeedProps = {
   segments: MeetingTranscriptSegment[];
   participants: AppUser[];
+  emptyMessage?: string;
 };
 
 const getInitials = (name: string) =>
@@ -17,14 +18,22 @@ const getInitials = (name: string) =>
     .join("")
     .toUpperCase();
 
-export const MeetingTranscriptFeed = ({ segments, participants }: MeetingTranscriptFeedProps) => {
+export const MeetingTranscriptFeed = ({
+  segments,
+  participants,
+  emptyMessage,
+}: MeetingTranscriptFeedProps) => {
   if (segments.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-2 py-12 text-center">
-        <p className="text-sm font-medium text-foreground">No transcript yet</p>
-        <p className="text-sm text-muted-foreground">
-          The transcript will appear here once this meeting has been processed.
+        <p className="text-sm font-medium text-foreground">
+          {emptyMessage ?? "No transcript yet"}
         </p>
+        {!emptyMessage ? (
+          <p className="text-sm text-muted-foreground">
+            The transcript will appear here once this meeting has been processed.
+          </p>
+        ) : null}
       </div>
     );
   }
