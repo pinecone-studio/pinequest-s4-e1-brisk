@@ -1,5 +1,6 @@
 "use client";
 
+import { useMediaToggleShortcuts } from "@/hooks/use-media-toggle-shortcuts";
 import {
   ConnectionState,
   ParticipantEvent,
@@ -7,17 +8,12 @@ import {
   type Participant,
 } from "livekit-client";
 import { useEffect, useMemo, useState } from "react";
-import { displayUserError } from "@/lib/errors/format-user-error";
-import { useMediaToggleShortcuts } from "@/hooks/use-media-toggle-shortcuts";
 import { useLatestMeetingSummary } from "../hooks/use-latest-meeting-summary";
-import { useMeetingTasks } from "../hooks/use-meeting-tasks";
 import type { TranscriptLanguage } from "../utils/transcript-language";
 import { MeetingParticipantFilmstrip } from "./meeting-participant-filmstrip";
 import { MeetingRoomChatPanel } from "./meeting-room-chat-panel";
 import { MeetingRoomHeader } from "./meeting-room-header";
 import { useMeetingSession } from "./meeting-session-provider";
-import { MeetingSummarySidebarCard } from "./meeting-summary-sidebar-card";
-import { MeetingTasksCard } from "./meeting-tasks-card";
 import { MeetingVideoStage } from "./meeting-video-stage";
 import { getParticipantDisplayName } from "./participant-tile";
 import { RecordingControls, type RecordingStatus } from "./recording-controls";
@@ -51,11 +47,15 @@ export const LivekitRoomView = ({
   } = useMeetingSession();
   const isConnecting = connectionState === ConnectionState.Connecting;
   const allParticipants = useMemo(
-    () => [...(localParticipant ? [localParticipant] : []), ...remoteParticipants],
+    () => [
+      ...(localParticipant ? [localParticipant] : []),
+      ...remoteParticipants,
+    ],
     [localParticipant, remoteParticipants],
   );
   const screenShareParticipants = useMemo(
-    () => allParticipants.filter((participant) => participant.isScreenShareEnabled),
+    () =>
+      allParticipants.filter((participant) => participant.isScreenShareEnabled),
     [allParticipants],
   );
   const [focusedParticipantIdentity, setFocusedParticipantIdentity] = useState<
@@ -64,7 +64,10 @@ export const LivekitRoomView = ({
   const [recordingStatus, setRecordingStatus] =
     useState<RecordingStatus>("not-started");
   const { isLoading: isSummaryLoading, transcript } = useLatestMeetingSummary();
-  const { addTask, tasks, toggleTask } = useMeetingTasks({ connectionState, room });
+  const { addTask, tasks, toggleTask } = useMeetingTasks({
+    connectionState,
+    room,
+  });
 
   const focusedParticipant =
     allParticipants.find(
@@ -85,7 +88,7 @@ export const LivekitRoomView = ({
           (participant) => participant.identity !== stageParticipant?.identity,
         );
   const focusedFilmstripIdentity =
-    stageMode === "camera" ? stageParticipant?.identity ?? null : null;
+    stageMode === "camera" ? (stageParticipant?.identity ?? null) : null;
 
   useEffect(() => {
     if (
@@ -146,7 +149,9 @@ export const LivekitRoomView = ({
 
     setPendingMediaToggle("camera");
     try {
-      await localParticipant.setCameraEnabled(!localParticipant.isCameraEnabled);
+      await localParticipant.setCameraEnabled(
+        !localParticipant.isCameraEnabled,
+      );
       setLocalVersion((v) => v + 1);
     } finally {
       setPendingMediaToggle(null);
@@ -205,7 +210,9 @@ export const LivekitRoomView = ({
         autoStart={autoRecord}
         meetingId={meetingId}
         onStatusChange={setRecordingStatus}
-        participantNames={participants.map((participant) => participant.displayName)}
+        participantNames={participants.map(
+          (participant) => participant.displayName,
+        )}
         roomName={livekitRoomName}
       />
 
@@ -227,7 +234,9 @@ export const LivekitRoomView = ({
             isMicrophoneEnabled={Boolean(localParticipant?.isMicrophoneEnabled)}
             isScreenSharing={Boolean(localParticipant?.isScreenShareEnabled)}
             localDisplayName={
-              localParticipant ? getParticipantDisplayName(localParticipant) : "You"
+              localParticipant
+                ? getParticipantDisplayName(localParticipant)
+                : "You"
             }
             mediaSource={mediaSource}
             onLeave={() => void handleLeave()}
@@ -242,13 +251,18 @@ export const LivekitRoomView = ({
           <MeetingParticipantFilmstrip
             focusedIdentity={focusedFilmstripIdentity}
             getParticipantLabel={getParticipantLabel}
-            onSelectParticipant={(identity) => setFocusedParticipantIdentity(identity)}
+            onSelectParticipant={(identity) =>
+              setFocusedParticipantIdentity(identity)
+            }
             participants={filmstripParticipants}
           />
         </div>
 
         <aside className="flex min-h-0 w-[360px] shrink-0 flex-col gap-4">
-          <MeetingSummarySidebarCard isLoading={isSummaryLoading} summary={transcript?.summary} />
+          <MeetingSummarySidebarCard
+            isLoading={isSummaryLoading}
+            summary={transcript?.summary}
+          />
           <MeetingTasksCard
             onAddTask={(input) => void addTask(input)}
             onToggleTask={(id) => void toggleTask(id)}
