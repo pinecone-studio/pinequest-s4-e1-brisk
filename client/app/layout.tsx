@@ -28,8 +28,15 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${plusJakartaSans.variable} dark h-full font-sans antialiased`}
+      className={`${plusJakartaSans.variable} h-full font-sans antialiased`}
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var s=localStorage.getItem("theme");var t=s==="light"||s==="dark"?s:(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.classList.toggle("dark",t==="dark");}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className="h-full font-sans">
         <ClerkProvider appearance={{ theme: shadcn }}>
           <ThemeProvider>

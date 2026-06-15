@@ -5,13 +5,29 @@ import type { StandaloneRecording } from "@/app/recordings/types";
 import { RecordingDropzone } from "@/components/recordings/recording-dropzone";
 import { RecordingResultCard } from "@/components/recordings/recording-result-card";
 import { VoiceRecorderCard } from "@/components/recordings/voice-recorder-card";
-import { formatUserError } from "@/lib/errors/format-user-error";
-import { useCallback, useEffect, useState } from "react";
+import { formatUserError, displayUserError } from "@/lib/errors/format-user-error";
+import { filterRecordingsBySearch } from "@/lib/search/filter-recordings";
+import { buildRecordingSearchSuggestions } from "@/lib/search/build-search-suggestions";
+import { useDashboardSearch } from "@/lib/search/dashboard-search-context";
+import { useRegisterSearchSuggestions } from "@/lib/search/use-register-search-suggestions";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 export default function RecordingsPage() {
   const [recordings, setRecordings] = useState<StandaloneRecording[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const { query } = useDashboardSearch();
+
+  const filteredRecordings = useMemo(
+    () => filterRecordingsBySearch(recordings, query),
+    [recordings, query],
+  );
+
+  const recordingSuggestions = useMemo(
+    () => buildRecordingSearchSuggestions(recordings),
+    [recordings],
+  );
+  useRegisterSearchSuggestions("recordings-list", recordingSuggestions);
 
   const loadRecordings = useCallback(async () => {
     try {
@@ -33,7 +49,7 @@ export default function RecordingsPage() {
     <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4 lg:p-6">
       {error ? (
         <p className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
+          {displayUserError(error)}
         </p>
       ) : null}
 
@@ -46,15 +62,24 @@ export default function RecordingsPage() {
       ) : recordings.length > 0 ? (
         <>
           <VoiceRecorderCard onUploaded={() => void loadRecordings()} />
-          <div className="flex flex-col gap-4">
-            {recordings.map((recording) => (
-              <RecordingResultCard
-                key={recording.id}
-                recording={recording}
-                onDeleted={() => void loadRecordings()}
-              />
-            ))}
-          </div>
+          {filteredRecordings.length > 0 ? (
+            <div className="flex flex-col gap-4">
+              {filteredRecordings.map((recording) => (
+                <RecordingResultCard
+                  key={recording.id}
+                  recording={recording}
+                  onDeleted={() => void loadRecordings()}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border py-16 text-center">
+              <p className="font-medium text-foreground">No matching recordings</p>
+              <p className="text-sm text-muted-foreground">
+                Try a different search term.
+              </p>
+            </div>
+          )}
         </>
       ) : (
         <RecordingDropzone onUploaded={() => void loadRecordings()} />

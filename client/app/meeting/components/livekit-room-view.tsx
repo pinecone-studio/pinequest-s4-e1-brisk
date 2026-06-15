@@ -7,6 +7,7 @@ import {
   type Participant,
 } from "livekit-client";
 import { useEffect, useMemo, useState } from "react";
+import { displayUserError } from "@/lib/errors/format-user-error";
 import { useMediaToggleShortcuts } from "@/hooks/use-media-toggle-shortcuts";
 import { useLatestMeetingSummary } from "../hooks/use-latest-meeting-summary";
 import { useMeetingTasks } from "../hooks/use-meeting-tasks";
@@ -215,7 +216,7 @@ export const LivekitRoomView = ({
       ) : null}
       {error ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-600">
-          {error}
+          {displayUserError(error)}
         </div>
       ) : null}
 

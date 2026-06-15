@@ -7,6 +7,7 @@ import {
 } from "./meeting-transcription.service";
 import { startRoomEgress } from "./livekit-egress.service";
 import type { Bindings } from "../../lib/common/types";
+import { PUBLIC_ERRORS, toPublicApiError } from "../../lib/errors/public-error";
 
 const getRuntimeLogContext = (env: Bindings) => ({
   database: env.D1_DATABASE_NAME ?? "unknown",
@@ -74,6 +75,6 @@ export const startEgress = async (c: Context<{ Bindings: Bindings }>) => {
       transcriptionId,
     });
 
-    return c.json({ error: errorMessage }, 500);
+    return c.json({ error: toPublicApiError(500) }, 500);
   }
 };

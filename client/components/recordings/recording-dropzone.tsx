@@ -5,6 +5,7 @@ import {
   formatElapsed,
   useRecordingUploader,
 } from "@/components/recordings/use-recording-uploader";
+import { displayUserError } from "@/lib/errors/format-user-error";
 import { cn } from "@/lib/utils";
 import { Loader2, Mic, Square, Upload, UploadCloud } from "lucide-react";
 import { useState } from "react";
@@ -109,13 +110,11 @@ export function RecordingDropzone({ onUploaded }: RecordingDropzoneProps) {
             </>
           )}
         </div>
-
-        <p className="text-xs text-muted-foreground">Maximum size 20MB</p>
       </div>
 
       {error ? (
         <p className="mt-4 w-full max-w-2xl rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-center text-sm text-destructive">
-          {error}
+          {displayUserError(error)}
         </p>
       ) : null}
     </div>

@@ -11,7 +11,10 @@ export function AuthThemeToggle({ className }: { className?: string }) {
 
   useEffect(() => setMounted(true), []);
 
-  const isDark = mounted ? resolvedTheme === "dark" : true;
+  const isDark = mounted
+    ? resolvedTheme === "dark"
+    : typeof document !== "undefined" &&
+      document.documentElement.classList.contains("dark");
 
   return (
     <div className={cn("flex rounded-full bg-muted p-1", className)}>

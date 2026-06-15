@@ -2,6 +2,7 @@ import { Context } from "hono";
 import { AccessToken, RoomServiceClient } from "livekit-server-sdk";
 import { getAuthenticatedUserId } from "../../lib/auth/clerk";
 import type { Bindings, Variables } from "../../lib/common/types";
+import { toPublicApiError } from "../../lib/errors/public-error";
 
 const getLiveKitApiUrl = (env: Bindings) => {
   const url = env.LIVEKIT_API_URL ?? env.LIVEKIT_URL;
@@ -65,6 +66,6 @@ export const postCreateRoom = async (
       201,
     );
   } catch (error) {
-    return c.json({ error: (error as Error).message }, 500);
+    return c.json({ error: toPublicApiError(500) }, 500);
   }
 };

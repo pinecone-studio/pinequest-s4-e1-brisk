@@ -5,16 +5,26 @@ type MeetingNotesPanelProps = {
   summaryText: string | null;
   keyPoints: string[];
   actionItems: MeetingDetailsActionItem[];
+  emptyMessage?: string;
 };
 
-export const MeetingNotesPanel = ({ summaryText, keyPoints, actionItems }: MeetingNotesPanelProps) => {
+export const MeetingNotesPanel = ({
+  summaryText,
+  keyPoints,
+  actionItems,
+  emptyMessage,
+}: MeetingNotesPanelProps) => {
   if (!summaryText && keyPoints.length === 0 && actionItems.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-2 py-12 text-center">
-        <p className="text-sm font-medium text-foreground">No notes yet</p>
-        <p className="text-sm text-muted-foreground">
-          Notes will appear here once this meeting has been summarized.
+        <p className="text-sm font-medium text-foreground">
+          {emptyMessage ?? "No notes yet"}
         </p>
+        {!emptyMessage ? (
+          <p className="text-sm text-muted-foreground">
+            Notes will appear here once this meeting has been summarized.
+          </p>
+        ) : null}
       </div>
     );
   }

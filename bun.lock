@@ -4,6 +4,9 @@
   "workspaces": {
     "": {
       "name": "pinequest-s4-e1-team-8",
+      "dependencies": {
+        "gsap": "^3.15.0",
+      },
       "devDependencies": {
         "@types/bun": "latest",
       },

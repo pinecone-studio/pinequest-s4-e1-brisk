@@ -3,16 +3,9 @@
 import { isNavItemActive, navItems } from "@/lib/nav-items";
 import { cn } from "@/lib/utils";
 import { ChevronDownIcon, SettingsIcon } from "lucide-react";
-import { Grand_Hotel } from "next/font/google";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-
-const grandHotel = Grand_Hotel({
-  weight: "400",
-  subsets: ["latin"],
-  display: "swap",
-});
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -57,14 +50,8 @@ export function Sidebar() {
   }, [pathname]);
 
   return (
-    <aside className="hidden h-full w-64 shrink-0 flex-col bg-transparent lg:flex">
-      <div className="flex items-center gap-2 px-6 py-6">
-        <span className={cn(grandHotel.className, "text-3xl text-foreground")}>
-          Brisk
-        </span>
-      </div>
-
-      <nav className="flex-1 space-y-1 px-4">
+    <aside className="hidden min-h-0 w-64 shrink-0 flex-col overflow-hidden bg-transparent lg:col-start-1 lg:row-start-2 lg:flex">
+      <nav className="flex-1 space-y-1 px-4 pt-2">
         {navItems.map((item) => {
           const active = isNavItemActive(pathname, item.href);
           const expanded = item.children ? isSubmenuExpanded(item.href) : false;

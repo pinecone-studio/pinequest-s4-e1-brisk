@@ -23,6 +23,7 @@ import {
 } from "@/lib/recordings/format-recording";
 import {
   formatBackendErrorMessage,
+  displayUserError,
   formatUserError,
 } from "@/lib/errors/format-user-error";
 import { cn } from "@/lib/utils";
@@ -207,7 +208,7 @@ export function RecordingResultCard({
         </div>
 
         {actionError ? (
-          <p className="text-xs text-destructive">{actionError}</p>
+          <p className="text-xs text-destructive">{displayUserError(actionError)}</p>
         ) : null}
       </CardContent>
     </Card>
