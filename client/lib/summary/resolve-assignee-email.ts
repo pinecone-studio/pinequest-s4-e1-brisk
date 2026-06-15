@@ -1,3 +1,4 @@
+import { findBriskTeamMemberByName } from "@/lib/meetings/brisk-standup-team";
 import { getClerkProfile } from "@/lib/meetings/clerk-profile";
 import { users } from "@/lib/mock-data";
 
@@ -21,6 +22,11 @@ export function resolveAssigneeEmail(assignee: string): string | null {
     ) {
       return profile.email.toLowerCase();
     }
+  }
+
+  const matchedTeamMember = findBriskTeamMemberByName(trimmed);
+  if (matchedTeamMember) {
+    return matchedTeamMember.email.toLowerCase();
   }
 
   const matchedUser = users.find(

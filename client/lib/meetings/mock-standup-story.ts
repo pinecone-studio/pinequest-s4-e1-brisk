@@ -2,13 +2,16 @@ import type { MeetingListItem } from "@/app/meeting";
 import type { StandaloneRecording } from "@/app/recordings/types";
 import type { AgendaEvent } from "@/lib/home/agenda-types";
 import { getDateKey } from "@/lib/home/google-agenda-utils";
+import {
+  BRISK_STANDUP_TEAM,
+  BRISK_STANDUP_TEAM_NAMES,
+  getBriskStandupParticipants,
+  toStandupParticipant,
+} from "@/lib/meetings/brisk-standup-team";
 import { getClerkProfile } from "@/lib/meetings/clerk-profile";
-import { getClerkInitials } from "@/lib/meetings/get-clerk-display-name";
-import { users } from "@/lib/mock-data";
 import type { SummaryNoteItem } from "@/lib/summary/summary-note.types";
 import type { SummaryParticipant } from "@/lib/summary/summary-participant.types";
 import type { SearchSuggestion } from "@/lib/search/search-suggestion.types";
-import { getEmailAvatarUrl } from "@/lib/user/email-avatar-url";
 
 /** Legacy id — resolves to day 4 for older links and search entries. */
 export const LEGACY_MOCK_SUMMARY_MEETING_ID = "mock-summary-meeting";
@@ -20,31 +23,14 @@ export const MOCK_STANDUP_STORY_INTRO = {
   tagline: "Бид Brisk-ийг өөрсдийн standup-д ашигласан.",
 };
 
-export const MOCK_STANDUP_PARTICIPANTS: SummaryParticipant[] = users.slice(0, 4).map(
-  (user) => ({
-    id: user.id,
-    name: user.name,
-    initials: user.initials,
-    avatarUrl: user.avatarUrl ?? getEmailAvatarUrl(user.email),
-  }),
-);
+export const MOCK_STANDUP_PARTICIPANTS: SummaryParticipant[] =
+  BRISK_STANDUP_TEAM.map(toStandupParticipant);
 
 export function getPersonalizedStandupParticipants(): SummaryParticipant[] {
-  const profile = getClerkProfile();
-  if (!profile) return MOCK_STANDUP_PARTICIPANTS;
-
-  const currentUser: SummaryParticipant = {
-    id: profile.clerkId,
-    name: profile.name || profile.email,
-    initials: getClerkInitials(profile.name || profile.email),
-    avatarUrl: profile.avatarUrl ?? getEmailAvatarUrl(profile.email),
-  };
-
-  return [
-    currentUser,
-    ...MOCK_STANDUP_PARTICIPANTS.filter((participant) => participant.id !== "u1").slice(0, 3),
-  ];
+  return getBriskStandupParticipants();
 }
+
+export { BRISK_STANDUP_TEAM, BRISK_STANDUP_TEAM_NAMES };
 
 const formatAgendaTime = (value: Date) =>
   value.toLocaleTimeString(undefined, {
@@ -53,8 +39,6 @@ const formatAgendaTime = (value: Date) =>
   });
 
 export function buildStandupAgendaEvents(): AgendaEvent[] {
-  const profile = getClerkProfile();
-
   return MOCK_STANDUP_DAYS.map((day) => {
     const start = new Date(day.listItem.createdAt ?? standupBaseDate.toISOString());
     const end = new Date(day.listItem.updatedAt ?? start.toISOString());
@@ -67,7 +51,7 @@ export function buildStandupAgendaEvents(): AgendaEvent[] {
       startAt: start.toISOString(),
       endAt: end.toISOString(),
       dateKey: getDateKey(start),
-      organizer: profile?.name || profile?.email || "You",
+      organizer: "Данни",
       isOwner: true,
       meetingUrl: `/meetings/${day.id}`,
       isNow: false,
@@ -100,30 +84,77 @@ const buildStandupTimes = (dayIndex: number, durationMinutes: number) => {
   };
 };
 
-export const MOCK_STANDUP_DAYS: MockStandupDay[] = [
+function buildStandupNoteDateTime(dayIndex: number, noteId: string, noteIndex: number) {
+  const date = new Date(standupBaseDate);
+  date.setUTCDate(date.getUTCDate() + dayIndex);
+  date.setUTCHours(0, 0, 0, 0);
+
+  let hash = (2166136261 ^ dayIndex) >>> 0;
+  for (const char of noteId) {
+    hash ^= char.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  hash = (hash ^ noteIndex * 2654435761) >>> 0;
+
+  const minuteOfDay = hash % (16 * 60);
+  const hour = Math.floor(minuteOfDay / 60);
+  const minute = minuteOfDay % 60;
+  const second = (hash >>> 16) % 60;
+
+  date.setUTCHours(hour, minute, second, 0);
+  return date.toISOString();
+}
+
+function withStandupNoteTimes(days: MockStandupDay[]): MockStandupDay[] {
+  return days.map((day) => ({
+    ...day,
+    notes: day.notes.map((note, noteIndex) => ({
+      ...note,
+      dateTime: buildStandupNoteDateTime(day.day - 1, note.id, noteIndex),
+    })),
+  }));
+}
+
+const MOCK_STANDUP_DAYS_RAW: MockStandupDay[] = [
   {
     day: 1,
     id: "mock-standup-day-1",
     dateLabel: "6 сарын 11",
     title: "Standup — 1-р өдөр: Аудио урсгал ба баазын бүтэц",
     meetingContent:
-      "Багийнхан Brisk платформын гол цөм болох LiveKit-ээр дамжуулж аудиог хэрхэн тасралтгүй авах, Cloudflare D1 өгөгдлийн санд уулзалтын мэдээллийг хэрхэн бүтэцжүүлж хадгалах, мөн Clerk ашиглан багуудын нэвтрэх хэсгийг хэлэлцсэн.",
+      "Данни 09:00-д standup нээхэд Сүх-Очир 5 минут хоцорч орсон — «Дараагийн удаа цагтаа орно уу, бид Brisk-ээр бичиж байгаа» гэж сануулав. Батбилэг LiveKit→D1 холболт дээр foreign key алдаа гарч блоклогдсон байгааг тайлбарлаж, шийдэл нь migration-ийг эхлээд Цолмонгэрэл review-д өгөх шаардлагатай болохыг хэлсэн. Амаржаргал Egress webhook 403 буцааж байгаа тул staging бичлэг бүрэн ажиллахгүй байна. Сүх-Очир Clerk metadata demo хийсэн ч микрофон эхний 2 минут дотроо ажиллаагүй.",
     briskRole:
-      'Багийн анхны уулзалтын аудиог Brisk өөрөө бичиж авснаар "LiveKit болон D1 холболтыг хэн хариуцах" даалгавруудыг автоматаар ялган тэмдэглэж, note хөтлөх цагийг хэмнэсэн.',
+      "Brisk багийн анхны standup-ийг бүрэн бичиж, «D1 migration review», «Egress 403 засах», «Clerk metadata» гэсэн blocker-уудыг action item болгон ялгаж, Данни note хөтлөхгүйгээр дараагийн алхмуудаа тодорхойлсон.",
     listItem: {
       id: "mock-standup-day-1",
       title: "Standup — 1-р өдөр: Аудио урсгал ба баазын бүтэц",
       ...buildStandupTimes(0, 22),
       transcriptionStatus: "done",
       summaryPreview:
-        "LiveKit аудио урсгал, Cloudflare D1 схем, Clerk нэвтрэлт — Brisk даалгавруудыг автоматаар action item болгосон.",
+        "Сүх-Очир хоцорсон, Батбилэг D1 blocker, Амаржаргал Egress 403 — Brisk бүгдийг action item болгосон.",
     },
-    topics: ["LiveKit аудио", "Cloudflare D1", "Clerk нэвтрэлт", "Egress бичлэг"],
+    topics: [
+      "LiveKit аудио",
+      "D1 migration blocker",
+      "Egress 403 алдаа",
+      "Standup цагийн дүрэм",
+    ],
     notes: [
       {
+        id: "standup-d1-n0",
+        title:
+          "Standup 09:00-д эхэлнэ — хоцрохгүй. Хоцорвол Brisk transcript-аар гүйцээж орох ёстой.",
+        assignee: "Данни",
+        dateTime: buildStandupTimes(0, 22).updatedAt,
+        meetingId: "mock-standup-day-1",
+        meetingTitle: "Standup — 1-р өдөр: Аудио урсгал ба баазын бүтэц",
+        source: "protocol",
+      },
+      {
         id: "standup-d1-n1",
-        title: "LiveKit болон D1 холболтын integration flow-ийг Temuulen хариуцна.",
-        assignee: "Temuulen Ganbat",
+        title:
+          "BLOCKER: D1 foreign key алдааг засаад LiveKit integration flow-ийг Батбилэг энэ долоо хоногт дуусгана.",
+        assignee: "Батбилэг",
         dateTime: buildStandupTimes(0, 22).updatedAt,
         meetingId: "mock-standup-day-1",
         meetingTitle: "Standup — 1-р өдөр: Аудио урсгал ба баазын бүтэц",
@@ -131,8 +162,8 @@ export const MOCK_STANDUP_DAYS: MockStandupDay[] = [
       },
       {
         id: "standup-d1-n2",
-        title: "Clerk SSO болон meeting token metadata-д email нэмэх ажлыг Anna эхлүүлнэ.",
-        assignee: "Anna Kim",
+        title: "Clerk SSO болон meeting token metadata-д email нэмэх ажлыг Сүх-Очир эхлүүлнэ.",
+        assignee: "Сүх-Очир",
         dateTime: buildStandupTimes(0, 22).updatedAt,
         meetingId: "mock-standup-day-1",
         meetingTitle: "Standup — 1-р өдөр: Аудио урсгал ба баазын бүтэц",
@@ -140,8 +171,8 @@ export const MOCK_STANDUP_DAYS: MockStandupDay[] = [
       },
       {
         id: "standup-d1-n3",
-        title: "D1 migration-ийн эхний хүснэгтүүдийг Wilson review хийнэ.",
-        assignee: "Wilson Reed",
+        title: "D1 migration schema-г Цолмонгэрэл багийн review-д бэлдэнэ.",
+        assignee: "Цолмонгэрэл",
         dateTime: buildStandupTimes(0, 22).updatedAt,
         meetingId: "mock-standup-day-1",
         meetingTitle: "Standup — 1-р өдөр: Аудио урсгал ба баазын бүтэц",
@@ -149,8 +180,28 @@ export const MOCK_STANDUP_DAYS: MockStandupDay[] = [
       },
       {
         id: "standup-d1-n4",
-        title: "Brisk анхны standup-ийг бүрэн бичиж, note хөтлөх шаардлагагүй болсон.",
-        assignee: "Баг",
+        title:
+          "BLOCKER: Egress webhook 403 алдааг Амаржаргал staging дээр засаж, бичлэг pipeline-ийг ногоон болгоно.",
+        assignee: "Амаржаргал",
+        dateTime: buildStandupTimes(0, 22).updatedAt,
+        meetingId: "mock-standup-day-1",
+        meetingTitle: "Standup — 1-р өдөр: Аудио урсгал ба баазын бүтэц",
+        source: "action",
+      },
+      {
+        id: "standup-d1-n5",
+        title:
+          "Сүх-Очир standup-д хоцорсон — дараагийн удаа 09:00-аас өмнө lobby-д бэлэн байна.",
+        assignee: "Сүх-Очир",
+        dateTime: buildStandupTimes(0, 22).updatedAt,
+        meetingId: "mock-standup-day-1",
+        meetingTitle: "Standup — 1-р өдөр: Аудио урсгал ба баазын бүтэц",
+        source: "protocol",
+      },
+      {
+        id: "standup-d1-n6",
+        title: "Данни Brisk-ээр standup-ийг бүрэн бичүүлж, баг note хөтлөхгүйгээр гарах боломжтой боллоо.",
+        assignee: "Данни",
         dateTime: buildStandupTimes(0, 22).updatedAt,
         meetingId: "mock-standup-day-1",
         meetingTitle: "Standup — 1-р өдөр: Аудио урсгал ба баазын бүтэц",
@@ -164,23 +215,33 @@ export const MOCK_STANDUP_DAYS: MockStandupDay[] = [
     dateLabel: "6 сарын 12",
     title: "Standup — 2-р өдөр: Chimege API интеграц",
     meetingContent:
-      "Chimege API-ийг системдээ холбож, уулзалтын явцад ярьж буй Монгол яриаг алдаагүй, шууд (live) бичвэр болгон буулгах логикийг хэлэлцсэн. Мөн фронтент талдаа уулзалтын түүх харагддаг үндсэн нүүр хуудасны бүтцийг Tailwind CSS болон shadcn/ui-аар босгохоор ярилцав.",
+      "Chimege live demo дээр 8 секундын latency гарч баг ичгүүртэй байсан — Амаржаргал «API тал дээр retry logic дутуу» гэж тайлбарлав. Цолмонгэрэл Home feed-ийн mock-ийг Батбилэгийн meeting list API-аас хараахан хүлээж байгааг хэлсэн. Сүх-Очир Safari дээр Chimege event stream огт ирэхгүй байгаа blocker-ийг өгсөн. Данни standup дунд side chat хийхгүй, асуудлаа товч хэлээд шийдлээ action item болгохыг сануулав.",
     briskRole:
-      "Уулзалтын үеэр гарсан Chimege API-ийн latency (хоцролт) болон аудио форматын асуудлыг шийдвэрлэх техникийн яриаг Brisk текст болгон хадгалж, дараагийн алхмуудыг тодорхойлсон.",
+      "Latency-ийн маргаан гарсан ч Brisk transcript-оор «8 секунд хүлээлт», «Safari event stream» гэсэн blocker-уудыг ялгаж, баг дахин давтахгүйгээр шийдвэрлэх замаа олсон.",
     listItem: {
       id: "mock-standup-day-2",
       title: "Standup — 2-р өдөр: Chimege API интеграц",
       ...buildStandupTimes(1, 25),
       transcriptionStatus: "done",
       summaryPreview:
-        "Chimege live транскрипц, latency шийдэл, Home page UI бүтэц — техникийн шийдвэрүүд Brisk-д хадгалагдсан.",
+        "Chimege 8 сек latency, Safari event stream blocker — баг ичгүүртэй байсан ч Brisk шийдвэрийг тодорхойлсон.",
     },
-    topics: ["Chimege API", "Live транскрипц", "Home page UI", "Latency"],
+    topics: ["Chimege latency", "Safari blocker", "Home feed dependency", "Standup дүрэм"],
     notes: [
       {
+        id: "standup-d2-n0",
+        title: "Standup дунд side chat хийхгүй — асуудлаа 1-2 минутад хэлж, шийдлийг action item болгоно.",
+        assignee: "Данни",
+        dateTime: buildStandupTimes(1, 25).updatedAt,
+        meetingId: "mock-standup-day-2",
+        meetingTitle: "Standup — 2-р өдөр: Chimege API интеграц",
+        source: "protocol",
+      },
+      {
         id: "standup-d2-n1",
-        title: "Chimege webhook latency-г 3 секундоос доош буулгах туршилт хийнэ.",
-        assignee: "Anna Kim",
+        title:
+          "BLOCKER: Chimege webhook latency-г 8 секундаас 3 секунд рүү буулгах туршилтыг Амаржаргал яаралтай хийнэ.",
+        assignee: "Амаржаргал",
         dateTime: buildStandupTimes(1, 25).updatedAt,
         meetingId: "mock-standup-day-2",
         meetingTitle: "Standup — 2-р өдөр: Chimege API интеграц",
@@ -188,8 +249,9 @@ export const MOCK_STANDUP_DAYS: MockStandupDay[] = [
       },
       {
         id: "standup-d2-n2",
-        title: "Home dashboard дээр recent meetings feed-ийг Saraa загварлана.",
-        assignee: "Saraa Batbold",
+        title:
+          "BLOCKER: Meeting list API бэлэн болмогц л Home feed-ийг Цолмонгэрэл mock-оос бодит data руу шилжүүлнэ.",
+        assignee: "Цолмонгэрэл",
         dateTime: buildStandupTimes(1, 25).updatedAt,
         meetingId: "mock-standup-day-2",
         meetingTitle: "Standup — 2-р өдөр: Chimege API интеграц",
@@ -197,8 +259,8 @@ export const MOCK_STANDUP_DAYS: MockStandupDay[] = [
       },
       {
         id: "standup-d2-n3",
-        title: "MP3 split + Chimege форматын pipeline-ийг server дээр баталгаажуулна.",
-        assignee: "Temuulen Ganbat",
+        title: "MP3 split + Chimege форматын pipeline-ийг Батбилэг server дээр баталгаажуулна.",
+        assignee: "Батбилэг",
         dateTime: buildStandupTimes(1, 25).updatedAt,
         meetingId: "mock-standup-day-2",
         meetingTitle: "Standup — 2-р өдөр: Chimege API интеграц",
@@ -206,8 +268,19 @@ export const MOCK_STANDUP_DAYS: MockStandupDay[] = [
       },
       {
         id: "standup-d2-n4",
-        title: "Latency болон форматын асуудлыг standup дунд Brisk transcript-оор буцаж шалгасан.",
-        assignee: "Баг",
+        title:
+          "BLOCKER: Safari дээр Chimege event stream ирэхгүй байгаа асуудлыг Сүх-Очир reproduce хийж засварлана.",
+        assignee: "Сүх-Очир",
+        dateTime: buildStandupTimes(1, 25).updatedAt,
+        meetingId: "mock-standup-day-2",
+        meetingTitle: "Standup — 2-р өдөр: Chimege API интеграц",
+        source: "action",
+      },
+      {
+        id: "standup-d2-n5",
+        title:
+          "Latency demo багад ичгүүртэй байсан — дараагийн standup-д demo-ээ бэлэн байлгаж, дахин алдаа гаргахгүй.",
+        assignee: "Амаржаргал",
         dateTime: buildStandupTimes(1, 25).updatedAt,
         meetingId: "mock-standup-day-2",
         meetingTitle: "Standup — 2-р өдөр: Chimege API интеграц",
@@ -221,23 +294,34 @@ export const MOCK_STANDUP_DAYS: MockStandupDay[] = [
     dateLabel: "6 сарын 13",
     title: "Standup — 3-р өдөр: Gemini AI хураангуй",
     meetingContent:
-      "Бичигдсэн Монгол бичвэрээс Gemini AI ашиглан уулзалтын гол санаа, хураангуй (Summary) болон хэн юу хийх ёстойг (Action Items) автоматаар ялгаж, спикерүүдийг таних промптыг эцэслэн тохирохоор уулзсан.",
+      "Батбилэг 12 минут хоцорч орсон — Данни «Хоёр дахь удаа хоцорлоо, pitch-ийн өмнө ийм байж болохгүй» гэж шууд хэлсэн. Gemini demo дээр action item-ийн assignee буруу нэр гарч байсныг Амаржаргал «prompt-д багийн нэрс байхгүй» гэж тайлбарлав. Speaker diarization Данни болон Батбилэгийн дуу хоёуланг нэг speaker болгож алдаатай байсан. Батбилэг Brisk transcript-аар өмнөх 12 минутыг уншиж ороод blocker-үүдийг давтан тайлбарлаж чадсан.",
     briskRole:
-      "Энэхүү хүнд сэдвийг хэлэлцэж байх үед уулзалтаас хоцорсон гишүүн Brisk-ийн архивыг нээж, өмнөх минутуудад юу яригдсаныг гүйцэж уншаад багтайгаа шууд нэгдсэн.",
+      "Хоцорсон ч Brisk архив ашиглан багт нэгдсэн — «don't be late, гэхдээ хоцорвол transcript-аар нөхнө» гэсэн бодит demo болсон.",
     listItem: {
       id: "mock-standup-day-3",
       title: "Standup — 3-р өдөр: Gemini AI хураангуй",
       ...buildStandupTimes(2, 28),
       transcriptionStatus: "done",
       summaryPreview:
-        "Gemini summary, action item ялгалт, speaker diarization — хоцорсон гишүүн transcript архиваар нэгдсэн.",
+        "Батбилэг 12 мин хоцорсон, Gemini буруу assignee, diarization алдаа — Brisk transcript тус болсон.",
     },
-    topics: ["Gemini AI", "Action items", "Speaker diarization", "Summary UI"],
+    topics: ["Хоцролт", "Gemini assignee алдаа", "Diarization", "Transcript catch-up"],
     notes: [
       {
+        id: "standup-d3-n0",
+        title:
+          "Pitch-ийн өмнө standup-д хоцрохгүй — хоёр дахь удаа хоцорвол demo rehearsal-д оролцохгүй.",
+        assignee: "Данни",
+        dateTime: buildStandupTimes(2, 28).updatedAt,
+        meetingId: "mock-standup-day-3",
+        meetingTitle: "Standup — 3-р өдөр: Gemini AI хураангуй",
+        source: "protocol",
+      },
+      {
         id: "standup-d3-n1",
-        title: "Gemini prompt-д монгол action item формат нэмж server дээр туршина.",
-        assignee: "Wilson Reed",
+        title:
+          "BLOCKER: Gemini prompt-д багийн нэрс (Данни, Батбилэг г.м.) нэмж assignee алдааг Данни засна.",
+        assignee: "Данни",
         dateTime: buildStandupTimes(2, 28).updatedAt,
         meetingId: "mock-standup-day-3",
         meetingTitle: "Standup — 3-р өдөр: Gemini AI хураангуй",
@@ -245,8 +329,8 @@ export const MOCK_STANDUP_DAYS: MockStandupDay[] = [
       },
       {
         id: "standup-d3-n2",
-        title: "Summary page дээр topic tracker болон note card UI-ийг Saraa дуусгана.",
-        assignee: "Saraa Batbold",
+        title: "Summary page дээр topic tracker болон note card UI-ийг Цолмонгэрэл дуусгана.",
+        assignee: "Цолмонгэрэл",
         dateTime: buildStandupTimes(2, 28).updatedAt,
         meetingId: "mock-standup-day-3",
         meetingTitle: "Standup — 3-р өдөр: Gemini AI хураангуй",
@@ -254,8 +338,8 @@ export const MOCK_STANDUP_DAYS: MockStandupDay[] = [
       },
       {
         id: "standup-d3-n3",
-        title: "Speaker stats-ийг summary participants хэсэгт холбоно.",
-        assignee: "Temuulen Ganbat",
+        title: "Speaker stats-ийг summary participants хэсэгт Сүх-Очир холбоно.",
+        assignee: "Сүх-Очир",
         dateTime: buildStandupTimes(2, 28).updatedAt,
         meetingId: "mock-standup-day-3",
         meetingTitle: "Standup — 3-р өдөр: Gemini AI хураангуй",
@@ -263,8 +347,28 @@ export const MOCK_STANDUP_DAYS: MockStandupDay[] = [
       },
       {
         id: "standup-d3-n4",
-        title: "Хоцорсон гишүүн transcript архиваар standup-д дахин нэгдсэн — Brisk-ийн гол үнэ цэн.",
-        assignee: "Баг",
+        title:
+          "BLOCKER: Speaker diarization Данни/Батбилэгийг нэг speaker болгож байгааг Амаржаргал prompt-оор засна.",
+        assignee: "Амаржаргал",
+        dateTime: buildStandupTimes(2, 28).updatedAt,
+        meetingId: "mock-standup-day-3",
+        meetingTitle: "Standup — 3-р өдөр: Gemini AI хураангуй",
+        source: "action",
+      },
+      {
+        id: "standup-d3-n5",
+        title:
+          "Батбилэг 12 минут хоцорсон — Brisk transcript уншиж ороод blocker-үүдийг давтан тайлбарласан.",
+        assignee: "Батбилэг",
+        dateTime: buildStandupTimes(2, 28).updatedAt,
+        meetingId: "mock-standup-day-3",
+        meetingTitle: "Standup — 3-р өдөр: Gemini AI хураангуй",
+        source: "protocol",
+      },
+      {
+        id: "standup-d3-n6",
+        title: "Дараагийн standup-уудад цагтаа орно — хоцорвол transcript-аар нөхөх ёстой.",
+        assignee: "Батбилэг",
         dateTime: buildStandupTimes(2, 28).updatedAt,
         meetingId: "mock-standup-day-3",
         meetingTitle: "Standup — 3-р өдөр: Gemini AI хураангуй",
@@ -278,23 +382,33 @@ export const MOCK_STANDUP_DAYS: MockStandupDay[] = [
     dateLabel: "6 сарын 14",
     title: "Standup — 4-р өдөр: Queue ба pitch бэлдэлт",
     meetingContent:
-      "Бичлэгийг ард талд (background) цarцаахгүйгээр боловсруулах Cloudflare Workers болон Queue (дараалал)-ийн холболтыг шалгах, Монгол хэлний кирилл үсгийн валидацийг Regex-ээр эцэслэн шалгаж, оройны 8 минутын бүтэн илтгэл (Pitch)-дээ бэлдэхээр ярилцсан.",
+      "Pitch маргааш байгаа тул баг напряжен байсан. Батбилэг Queue consumer staging дээр 3 удаа унаж transcription stuck болсон — «production demo эрсдэлтэй» гэж хэлэв. Сүх-Очир кирилл regex «Сүх-Очир» гэх мэт зураастай нэрийг invite list-ээс шүүж хаяж байсныг олж илрүүлсэн. Цолмонгэрэл Home storyboard бэлэн боловч mock data бодит багийн нэрстэй таарахгүй байгааг хэлсэн. Данни «Өнөөдөр blocker-ээ хэл, маргааш pitch-д зайлшгүй бэлэн бай» гэж standup-ийг төгсгөсөн.",
     briskRole:
-      "Уулзалт дуусмагц тэмдэглэл бичихэд зарцуулдаг байсан 30 минутыг 0 минут болгон хэмнэж, багийн гишүүдэд демо илтгэлдээ бүрэн анхаарлаа хандуулах боломжийг олгосон.",
+      "Pitch-ийн өмнөх сүүлийн standup-д blocker, хоцролт, regex алдаа бүгд Brisk summary-д тодорхой харагдаж, баг note хөтлөхгүйгээр rehearsal руу шилжсэн.",
     listItem: {
       id: "mock-standup-day-4",
       title: "Standup — 4-р өдөр: Queue ба pitch бэлдэлт",
       ...buildStandupTimes(3, 30),
       transcriptionStatus: "done",
       summaryPreview:
-        "Cloudflare Queue pipeline, кирилл regex validation, 8 минутын pitch demo script — 30 минут note хөтлөлт хэмнэгдсэн.",
+        "Queue consumer 3 удаа унасан, regex Сүх-Очир нэрийг шүүж байсан — pitch-ийн өмнө Brisk бүх blocker-ийг цуглуулсан.",
     },
-    topics: ["Cloudflare Queue", "Background processing", "Кирилл validation", "Pitch demo"],
+    topics: ["Queue failure", "Regex алдаа", "Pitch deadline", "Demo rehearsal"],
     notes: [
       {
+        id: "standup-d4-n0",
+        title: "Pitch маргааш — blocker-г өнөөдөр шийдэж, demo-д бэлэн бай. Хоцрох, side chat хориотой.",
+        assignee: "Данни",
+        dateTime: buildStandupTimes(3, 30).updatedAt,
+        meetingId: "mock-standup-day-4",
+        meetingTitle: "Standup — 4-р өдөр: Queue ба pitch бэлдэлт",
+        source: "protocol",
+      },
+      {
         id: "standup-d4-n1",
-        title: "Queue consumer + transcription retry логикийг production-д бэлдэнэ.",
-        assignee: "Anna Kim",
+        title:
+          "BLOCKER: Queue consumer + transcription retry-г Батбилэг staging дээр засаж production demo-г ногоон болгоно.",
+        assignee: "Батбилэг",
         dateTime: buildStandupTimes(3, 30).updatedAt,
         meetingId: "mock-standup-day-4",
         meetingTitle: "Standup — 4-р өдөр: Queue ба pitch бэлдэлт",
@@ -302,8 +416,8 @@ export const MOCK_STANDUP_DAYS: MockStandupDay[] = [
       },
       {
         id: "standup-d4-n2",
-        title: "Pitch demo script-ийг монголоор Wilson эцэслэн бичнэ.",
-        assignee: "Wilson Reed",
+        title: "Pitch demo script-ийг монголоор Данни эцэслэн бичнэ.",
+        assignee: "Данни",
         dateTime: buildStandupTimes(3, 30).updatedAt,
         meetingId: "mock-standup-day-4",
         meetingTitle: "Standup — 4-р өдөр: Queue ба pitch бэлдэлт",
@@ -311,8 +425,9 @@ export const MOCK_STANDUP_DAYS: MockStandupDay[] = [
       },
       {
         id: "standup-d4-n3",
-        title: "4 хоногийн standup түүхийг Home page дээр mock story болгон харуулна.",
-        assignee: "Saraa Batbold",
+        title:
+          "Mock story-г бодит багийн нэр (Данни, Батбилэг, Сүх-Очир, Цолмонгэрэл, Амаржаргал)-тай тааруулж Цолмонгэрэл Home page дээр шинэчилнэ.",
+        assignee: "Цолмонгэрэл",
         dateTime: buildStandupTimes(3, 30).updatedAt,
         meetingId: "mock-standup-day-4",
         meetingTitle: "Standup — 4-р өдөр: Queue ба pitch бэлдэлт",
@@ -320,8 +435,29 @@ export const MOCK_STANDUP_DAYS: MockStandupDay[] = [
       },
       {
         id: "standup-d4-n4",
-        title: "Уулзалт дуусмагц summary бэлэн — note хөтлөх 30 минут хэмнэгдсэн.",
-        assignee: "Баг",
+        title:
+          "BLOCKER: Кирилл regex зураастай нэр (Сүх-Очир) шүүж байгаа алдааг Сүх-Очир invite input-д засварлана.",
+        assignee: "Сүх-Очир",
+        dateTime: buildStandupTimes(3, 30).updatedAt,
+        meetingId: "mock-standup-day-4",
+        meetingTitle: "Standup — 4-р өдөр: Queue ба pitch бэлдэлт",
+        source: "action",
+      },
+      {
+        id: "standup-d4-n5",
+        title:
+          "Pitch rehearsal tech checklist — mic, recording, summary, queue status-ийг Амаржаргал маргааш өглөө баталгаажуулна.",
+        assignee: "Амаржаргал",
+        dateTime: buildStandupTimes(3, 30).updatedAt,
+        meetingId: "mock-standup-day-4",
+        meetingTitle: "Standup — 4-р өдөр: Queue ба pitch бэлдэлт",
+        source: "action",
+      },
+      {
+        id: "standup-d4-n6",
+        title:
+          "Standup дуусмагц summary бэлэн — pitch бэлдэхэд note хөтлөх 30 минут хэмнэгдсэн.",
+        assignee: "Данни",
         dateTime: buildStandupTimes(3, 30).updatedAt,
         meetingId: "mock-standup-day-4",
         meetingTitle: "Standup — 4-р өдөр: Queue ба pitch бэлдэлт",
@@ -330,6 +466,8 @@ export const MOCK_STANDUP_DAYS: MockStandupDay[] = [
     ],
   },
 ];
+
+export const MOCK_STANDUP_DAYS = withStandupNoteTimes(MOCK_STANDUP_DAYS_RAW);
 
 const standupDayById = new Map<string, MockStandupDay>(
   MOCK_STANDUP_DAYS.flatMap((day) => [

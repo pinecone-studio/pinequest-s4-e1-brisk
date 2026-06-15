@@ -8,10 +8,11 @@ import { useToast } from "@/components/ui/toast";
 import { sendActionItemEmail } from "@/lib/api/summary-actions";
 import { formatUserError } from "@/lib/errors/format-user-error";
 import { formatSummaryNoteDateTime } from "@/lib/summary/format-summary-note-date";
+import { noteMatchesTopic } from "@/lib/summary/match-note-to-topic";
 import { resolveAssigneeEmail } from "@/lib/summary/resolve-assignee-email";
 import type { SummaryNoteItem } from "@/lib/summary/summary-note.types";
 import { NotebookPenIcon } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 function SummaryNotesSkeleton() {
   return (
@@ -43,6 +44,7 @@ type SummaryNotesSectionProps = {
   notes: SummaryNoteItem[];
   onNotesChange: (notes: SummaryNoteItem[]) => void;
   topics?: string[];
+  activeTopic?: string | null;
   isLoading?: boolean;
 };
 
@@ -50,6 +52,7 @@ export function SummaryNotesSection({
   notes,
   onNotesChange,
   topics = [],
+  activeTopic = null,
   isLoading = false,
 }: SummaryNotesSectionProps) {
   const toast = useToast();
@@ -131,6 +134,18 @@ export function SummaryNotesSection({
 
   const pendingCount = notes.filter((note) => !approvedIds.has(note.id)).length;
 
+  const visibleNotes = useMemo(() => {
+    if (!activeTopic) return notes;
+    return notes.filter((note) => noteMatchesTopic(note, activeTopic));
+  }, [activeTopic, notes]);
+
+  useEffect(() => {
+    if (!activeTopic || visibleNotes.length === 0) return;
+
+    const firstMatch = document.getElementById(`summary-note-${visibleNotes[0]?.id}`);
+    firstMatch?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [activeTopic, visibleNotes]);
+
   return (
     <>
       <Card className="shadow-sm">
@@ -155,11 +170,19 @@ export function SummaryNotesSection({
                 Action items and protocols from this meeting will appear here as cards.
               </p>
             </div>
+          ) : visibleNotes.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border bg-muted/20 px-4 py-8 text-center">
+              <p className="text-sm font-medium text-foreground">No notes for this topic</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Try another topic chip or clear the selection.
+              </p>
+            </div>
           ) : (
-            notes.map((note) => (
+            visibleNotes.map((note) => (
               <SummaryNoteCard
                 key={note.id}
                 note={note}
+                highlighted={Boolean(activeTopic)}
                 approved={approvedIds.has(note.id)}
                 emailSent={sentEmailIds.has(note.id)}
                 isSendingEmail={sendingEmailId === note.id}
