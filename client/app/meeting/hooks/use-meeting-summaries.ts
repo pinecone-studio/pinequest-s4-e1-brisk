@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { formatUserError } from "@/lib/errors/format-user-error";
 import {
   deleteMeetingTranscript,
   getMeetingTranscripts,
@@ -26,7 +27,7 @@ export const useMeetingSummaries = () => {
         setTranscripts(response.transcripts);
       } catch (caughtError) {
         setTranscripts([]);
-        setError((caughtError as Error).message);
+        setError(formatUserError(caughtError));
       } finally {
         if (showLoading) setIsLoading(false);
       }
@@ -44,7 +45,7 @@ export const useMeetingSummaries = () => {
         current.filter((transcript) => transcript.id !== id),
       );
     } catch (caughtError) {
-      setError((caughtError as Error).message);
+      setError(formatUserError(caughtError));
     } finally {
       setDeletingId("");
     }

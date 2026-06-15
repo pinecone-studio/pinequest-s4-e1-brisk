@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { formatUserError } from "@/lib/errors/format-user-error";
 import {
   getMeetingTranscript,
   type GetMeetingTranscriptResponse,
@@ -24,7 +25,7 @@ export const useTranscriptionStatus = (transcriptionId?: string | null) => {
       setTranscription(await getMeetingTranscript({ id: transcriptionId }));
       setError("");
     } catch (caughtError) {
-      setError((caughtError as Error).message);
+      setError(formatUserError(caughtError));
     } finally {
       setIsLoading(false);
     }

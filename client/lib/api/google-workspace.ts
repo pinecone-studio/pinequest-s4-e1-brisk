@@ -25,11 +25,6 @@ export async function getGoogleCalendarAgenda(bounds?: {
 
 export function formatGoogleWorkspaceError(error: unknown) {
   if (axios.isAxiosError(error)) {
-    const message = error.response?.data?.error;
-    if (typeof message === "string" && message.trim()) {
-      return message;
-    }
-
     if (error.response?.status === 401) {
       return "Sign in to connect Google Workspace.";
     }

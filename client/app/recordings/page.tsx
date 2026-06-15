@@ -5,6 +5,7 @@ import type { StandaloneRecording } from "@/app/recordings/types";
 import { RecordingDropzone } from "@/components/recordings/recording-dropzone";
 import { RecordingResultCard } from "@/components/recordings/recording-result-card";
 import { VoiceRecorderCard } from "@/components/recordings/voice-recorder-card";
+import { formatUserError } from "@/lib/errors/format-user-error";
 import { useCallback, useEffect, useState } from "react";
 
 export default function RecordingsPage() {
@@ -18,7 +19,7 @@ export default function RecordingsPage() {
       setRecordings(response.recordings);
       setError("");
     } catch (caughtError) {
-      setError((caughtError as Error).message);
+      setError(formatUserError(caughtError));
     } finally {
       setIsLoading(false);
     }

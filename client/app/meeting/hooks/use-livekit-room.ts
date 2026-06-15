@@ -9,6 +9,7 @@ import {
   type RemoteParticipant,
 } from "livekit-client";
 import { useEffect, useRef, useState } from "react";
+import { formatUserError, USER_ERRORS } from "@/lib/errors/format-user-error";
 import {
   getLivekitErrorLogPayload,
   getLivekitRootError,
@@ -122,16 +123,14 @@ export const useLivekitRoom = ({
 
       if (!currentUrlDiagnostics.isValid) {
         hasActiveConnectRef.current = false;
-        setError(
-          `Invalid LiveKit URL: expected ws:// or wss://, received ${currentUrlDiagnostics.href}.`
-        );
+        setError(USER_ERRORS.client);
         recordState(ConnectionState.Disconnected);
         return;
       }
 
       if (!currentTokenDiagnostics.roomJoin) {
         hasActiveConnectRef.current = false;
-        setError("Invalid LiveKit token: roomJoin grant is missing.");
+        setError(USER_ERRORS.client);
         recordState(ConnectionState.Disconnected);
         return;
       }
@@ -165,7 +164,7 @@ export const useLivekitRoom = ({
             url: currentUrlDiagnostics,
           });
 
-          setError(rootError);
+          setError(formatUserError(rootError));
         }
 
         setConnectionState(activeRoom.state);
