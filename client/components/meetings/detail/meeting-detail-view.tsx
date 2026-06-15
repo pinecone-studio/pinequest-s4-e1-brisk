@@ -25,6 +25,7 @@ import { MeetingContentTabs } from "./meeting-content-tabs";
 import { MeetingDetailTopbar } from "./meeting-detail-topbar";
 import { MeetingInsightsSidebar } from "./meeting-insights-sidebar";
 import { MeetingProcessingSummaryView } from "./meeting-processing-summary-view";
+import { PostMeetingActionCardHost } from "../post-meeting-action-card-host";
 import { MeetingReplayPlayer } from "./meeting-replay-player";
 import { MockStandupMeetingDetailView } from "./mock-summary-meeting-detail-view";
 
@@ -180,15 +181,36 @@ const MeetingDetailViewContent = ({ meetingId }: MeetingDetailViewProps) => {
   const actionItems =
     summaryContent?.actionItems ?? details.summary?.actionItems ?? [];
 
+  const postMeetingReady =
+    transcription?.status === "done" ||
+    (details.meeting.status === "completed" && Boolean(details.meeting.googleDocUrl));
+
+  const postMeetingCard = (
+    <PostMeetingActionCardHost
+      meetingId={meetingListItem.id}
+      initialTitle={meetingListItem.title}
+      actionItems={actionItems}
+      isReady={postMeetingReady}
+      onSaved={() => {
+        fetchMeetingAnalysisDetails(meetingId)
+          .then(setDetails)
+          .catch(() => {});
+      }}
+    />
+  );
+
   if (details.meeting.status === "completed") {
     return (
-      <MeetingProcessingSummaryView
-        title={meetingListItem.title}
-        createdDate={createdDate}
-        durationLabel={durationLabel}
-        googleDocUrl={details.meeting.googleDocUrl}
-        attendees={details.attendees}
-      />
+      <>
+        <MeetingProcessingSummaryView
+          title={meetingListItem.title}
+          createdDate={createdDate}
+          durationLabel={durationLabel}
+          googleDocUrl={details.meeting.googleDocUrl}
+          attendees={details.attendees}
+        />
+        {postMeetingCard}
+      </>
     );
   }
 
@@ -199,15 +221,18 @@ const MeetingDetailViewContent = ({ meetingId }: MeetingDetailViewProps) => {
     const summaryNotes = buildSummaryNotesFromMeetings([details]);
 
     return (
-      <MeetingSummaryView
-        meetingId={meetingListItem.id}
-        initialTitle={meetingListItem.title}
-        createdDate={createdDate}
-        durationLabel={durationLabel}
-        participants={summaryParticipants}
-        initialTopics={topics}
-        initialNotes={summaryNotes}
-      />
+      <>
+        <MeetingSummaryView
+          meetingId={meetingListItem.id}
+          initialTitle={meetingListItem.title}
+          createdDate={createdDate}
+          durationLabel={durationLabel}
+          participants={summaryParticipants}
+          initialTopics={topics}
+          initialNotes={summaryNotes}
+        />
+        {postMeetingCard}
+      </>
     );
   }
 

@@ -1,20 +1,15 @@
 import { Context } from "hono";
-import { eq } from "drizzle-orm";
 import { useDB } from "../../lib/db/db";
 import { getAuthenticatedUserId } from "../../lib/auth/clerk";
-import { meetings } from "../../schema/meeting.model";
 import type { Bindings, Variables } from "../../lib/common/types";
 import { PUBLIC_ERRORS, toPublicApiError } from "../../lib/errors/public-error";
 import { ensureMeetingForUser } from "./ensure-meeting";
 
-type EndMeetingBody = {
+type StartMeetingBody = {
   title?: unknown;
 };
 
-// Marks a meeting `completed` and enqueues the post-meeting processing job
-// (Google Doc generation + attendee emails). The queue handler does the slow
-// work, so this responds as soon as the status is persisted.
-export const postEndMeeting = async (
+export const postStartMeeting = async (
   c: Context<{ Bindings: Bindings; Variables: Variables }>,
 ) => {
   try {
@@ -27,27 +22,24 @@ export const postEndMeeting = async (
     const meetingId = c.req.param("id");
     if (!meetingId) return c.json({ error: "id is required" }, 400);
 
-    const body = (await c.req.json().catch(() => null)) as EndMeetingBody | null;
+    const body = (await c.req.json().catch(() => null)) as StartMeetingBody | null;
     const title = typeof body?.title === "string" ? body.title : undefined;
 
     const db = useDB(c);
-
     const ensured = await ensureMeetingForUser(db, { meetingId, userId, title });
 
     if (!ensured.ok) {
       return c.json({ error: PUBLIC_ERRORS.notFound }, 404);
     }
 
-    if (ensured.meeting.status !== "completed") {
-      await db
-        .update(meetings)
-        .set({ status: "completed" })
-        .where(eq(meetings.id, meetingId));
-    }
-
-    await c.env.MEETING_PROCESSING_QUEUE.send({ meetingId });
-
-    return c.json({ status: "completed" }, 200);
+    return c.json(
+      {
+        id: ensured.meeting.id,
+        status: ensured.meeting.status,
+        created: ensured.created,
+      },
+      ensured.created ? 201 : 200,
+    );
   } catch (error) {
     return c.json({ error: toPublicApiError(500) }, 500);
   }

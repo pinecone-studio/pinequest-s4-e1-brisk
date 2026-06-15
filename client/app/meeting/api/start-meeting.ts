@@ -1,12 +1,12 @@
 import { MEETING_ENDPOINTS } from "./meeting-endpoints";
-import type { EndMeetingResponse } from "../types/meeting-response.types";
+import type { StartMeetingResponse } from "../types/meeting-response.types";
 import { meetingApi } from "./meeting-api";
 
-export const endMeeting = async (
+export const startMeeting = async (
   meetingId: string,
   options?: { title?: string },
 ) =>
-  meetingApi<EndMeetingResponse>(MEETING_ENDPOINTS.endMeeting(meetingId), {
+  meetingApi<StartMeetingResponse>(MEETING_ENDPOINTS.startMeeting(meetingId), {
     body: options?.title ? { title: options.title } : {},
     method: "POST",
   });

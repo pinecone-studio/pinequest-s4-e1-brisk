@@ -122,3 +122,9 @@ export type GetMeetingAnalysisDetailsResponse = {
 export type EndMeetingResponse = {
   status: "completed";
 };
+
+export type StartMeetingResponse = {
+  id: string;
+  status: MeetingProcessingStatus;
+  created: boolean;
+};

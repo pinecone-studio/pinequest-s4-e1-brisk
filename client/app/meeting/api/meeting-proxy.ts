@@ -6,7 +6,7 @@ import {
 
 type ProxyMeetingRequestOptions = {
   body?: unknown;
-  method: "DELETE" | "GET" | "POST";
+  method: "DELETE" | "GET" | "PATCH" | "POST";
   path: string;
   authorization?: string | null;
 };
@@ -233,3 +233,22 @@ export const proxyMeetingDeleteRequest = async (
     path,
     authorization: request.headers.get("Authorization"),
   });
+
+export const proxyMeetingPatchRequest = async (
+  request: Request,
+  path: string,
+) => {
+  try {
+    return proxyMeetingRequest({
+      body: await request.json(),
+      method: "PATCH",
+      path,
+      authorization: request.headers.get("Authorization"),
+    });
+  } catch {
+    return Response.json(
+      { error: USER_ERRORS.client },
+      { status: 400 },
+    );
+  }
+};

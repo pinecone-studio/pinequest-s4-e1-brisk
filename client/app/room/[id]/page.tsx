@@ -5,7 +5,10 @@ type RoomPageProps = {
   searchParams: Promise<{ cam?: string; mic?: string; name?: string }>;
 };
 
-export default async function RoomPage({ params, searchParams }: RoomPageProps) {
+export default async function RoomPage({
+  params,
+  searchParams,
+}: RoomPageProps) {
   const { id } = await params;
   const { cam, mic, name } = await searchParams;
 
