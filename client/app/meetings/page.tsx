@@ -139,7 +139,7 @@ export default function MeetingsPage() {
   );
 
   return (
-    <div className="relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden px-6 py-6 lg:px-8">
+    <div className="relative flex w-full flex-1 flex-col px-6 py-6 lg:px-8">
       <div className="flex shrink-0 items-center justify-between gap-3">
         <h2 className="font-heading text-2xl font-bold text-zinc-900 dark:text-zinc-50">{SCOPE_TITLES[scope]}</h2>
 
@@ -228,7 +228,7 @@ export default function MeetingsPage() {
         </div>
       </div>
 
-      <div className="mt-4 flex min-h-0 flex-1 flex-col overflow-y-auto scrollbar-none">
+      <div className="mt-4 flex flex-col">
         {isLoading ? (
           <div className="flex flex-col gap-4">
             {[0, 1, 2].map((key) => (

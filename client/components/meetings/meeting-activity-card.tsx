@@ -36,19 +36,27 @@ export function MeetingActivityCard({ meeting }: MeetingActivityCardProps) {
   const durationLabel = getMeetingDurationLabel(meeting);
   const folder = getMeetingFolder(meeting);
   const participants = getMeetingParticipants(meeting);
-  const isMock = isMockStandupMeeting(meeting.id);
 
   return (
-    <article className={cn(CARD_STANDARD, "transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md")}>
+    <article
+      className={cn(
+        CARD_STANDARD,
+        "transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md",
+      )}
+    >
       <div className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
-          <Link href={`/meetings/${meeting.id}`} className="min-w-0 hover:underline">
+          <Link href={`/meetings/${meeting.id}`} className="min-w-0 flex-1 hover:underline">
             <h3 className={cn("truncate font-heading text-base font-semibold", TEXT_PRIMARY)}>
               {meeting.title}
             </h3>
+          </Link>
 
           <div className="flex shrink-0 items-center gap-2">
-            <Badge variant="outline" className="gap-1 border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+            <Badge
+              variant="outline"
+              className="gap-1 border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400"
+            >
               <FolderIcon className="size-3" />
               {folder.label}
             </Badge>
@@ -67,6 +75,7 @@ export function MeetingActivityCard({ meeting }: MeetingActivityCardProps) {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+        </div>
 
         <div className={cn("flex flex-wrap items-center gap-3 text-sm", TEXT_MUTED)}>
           <span className="flex items-center gap-1.5">

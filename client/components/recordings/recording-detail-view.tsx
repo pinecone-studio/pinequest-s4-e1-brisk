@@ -142,7 +142,7 @@ export function RecordingDetailView({ recordingId }: RecordingDetailViewProps) {
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4 lg:p-6">
+    <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <CircleBackLink href="/recordings" label="Back to recordings" />
 

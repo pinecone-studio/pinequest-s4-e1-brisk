@@ -59,10 +59,10 @@ export function HomePageContent() {
   });
 
   return (
-    <div className="relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">
+    <div className="relative flex w-full flex-1 flex-col">
       <div className="pointer-events-none absolute -right-32 -top-32 size-[420px] rounded-full bg-purple-200/10 blur-[140px] dark:bg-indigo-500/5" aria-hidden />
       {isLoading ? (
-        <div className="relative z-10 flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-6 py-4 scrollbar-none lg:px-8 lg:py-6">
+        <div className="relative z-10 flex flex-col gap-6 px-6 py-4 lg:px-8 lg:py-6">
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             {[0, 1, 2, 3].map((key) => (
               <div key={key} className="h-36 animate-pulse rounded-xl bg-muted" />
@@ -75,7 +75,7 @@ export function HomePageContent() {
           </div>
         </div>
       ) : (
-        <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden px-6 py-4 lg:px-8 lg:py-6">
+        <div className="relative z-10 flex flex-col px-6 py-4 lg:px-8 lg:py-6">
           <AnimatePresence mode="wait">
             {meetings.length === 0 ? (
               <motion.div
@@ -84,7 +84,6 @@ export function HomePageContent() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.25 }}
-                className="flex min-h-0 flex-1 flex-col overflow-y-auto scrollbar-none"
               >
                 <EmptyState />
               </motion.div>
@@ -95,7 +94,6 @@ export function HomePageContent() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.25 }}
-                className="flex min-h-0 flex-1 flex-col overflow-y-auto scrollbar-none"
               >
                 <HomeDashboard
                   meetings={filteredMeetings}
@@ -114,8 +112,8 @@ export function HomePageContent() {
 
 export function HomePageFallback() {
   return (
-    <div className="relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">
-      <div className="relative z-10 flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-6 py-4 lg:px-8 lg:py-6">
+    <div className="relative flex w-full flex-1 flex-col">
+      <div className="relative z-10 flex flex-col gap-6 px-6 py-4 lg:px-8 lg:py-6">
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {[0, 1, 2, 3].map((key) => (
             <div key={key} className="h-36 animate-pulse rounded-xl bg-muted" />
