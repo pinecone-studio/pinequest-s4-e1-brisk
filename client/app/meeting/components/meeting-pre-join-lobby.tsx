@@ -1,7 +1,5 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
-import { useMediaToggleShortcuts } from "@/hooks/use-media-toggle-shortcuts";
 import { LobbyCanvas } from "@/components/meetings/lobby/lobby-canvas";
 import { LobbyDeviceSelectorRow } from "@/components/meetings/lobby/lobby-device-selector-row";
 import { LobbyEntryPanel } from "@/components/meetings/lobby/lobby-entry-panel";
@@ -11,7 +9,9 @@ import {
   getOccupancySubtitle,
   useRoomOccupancy,
 } from "@/components/meetings/lobby/use-room-occupancy";
+import { useMediaToggleShortcuts } from "@/hooks/use-media-toggle-shortcuts";
 import { getClerkDisplayName } from "@/lib/meetings/get-clerk-display-name";
+import { useUser } from "@clerk/nextjs";
 import { useEffect, useRef, useState } from "react";
 
 type MeetingPreJoinLobbyProps = {
@@ -103,7 +103,9 @@ export function MeetingPreJoinLobby({
           canJoin={Boolean(displayName.trim())}
           error={error}
           isJoining={isJoining}
-          occupancySubtitle={getOccupancySubtitle(occupancy.participants.length)}
+          occupancySubtitle={getOccupancySubtitle(
+            occupancy.participants.length,
+          )}
           onJoin={handleJoin}
           roomCode={roomName}
           title={roomName}

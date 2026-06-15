@@ -53,7 +53,7 @@ export const MeetingVideoStage = ({
   const localInitial = (localDisplayName || "U").slice(0, 1).toUpperCase();
 
   return (
-    <div className="relative flex-1 overflow-hidden rounded-2xl border border-zinc-100 bg-zinc-900">
+    <div className="relative w-full aspect-video max-h-[58vh] xl:max-h-[60vh] overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-950 shadow-sm dark:border-zinc-800">
       {stageParticipant ? (
         <ParticipantTile
           className="absolute inset-0 size-full rounded-none border-0 shadow-none"
