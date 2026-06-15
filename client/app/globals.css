@@ -79,11 +79,11 @@
   --verdigris: #3eb9a8;
   --forest: #5aa371;
 
-  --background: #f7f6f4;
+  --background: #faf9fc;
   --foreground: var(--jungle-dark);
   --card: #ffffff;
-  --elevated: #fbfaf8;
-  --inset: #f1efec;
+  --elevated: #ffffff;
+  --inset: #faf9fc;
   --card-foreground: var(--jungle-dark);
   --popover: #ffffff;
   --popover-foreground: var(--jungle-dark);
@@ -108,7 +108,7 @@
   --chart-5: var(--jungle-dark);
 
   --radius: 0.6rem;
-  --sidebar: #ffffff;
+  --sidebar: #faf9fc;
   --sidebar-foreground: var(--jungle-dark);
   --sidebar-primary: var(--forest);
   --sidebar-primary-foreground: #ffffff;
@@ -301,6 +301,27 @@
 }
 
 @layer components {
+  .dashboard-shell {
+    background-color: var(--background);
+    background-image:
+      radial-gradient(
+        ellipse 90% 70% at 88% -10%,
+        color-mix(in oklch, var(--lavender) 42%, transparent),
+        transparent 68%
+      ),
+      radial-gradient(
+        ellipse 70% 55% at 18% 38%,
+        color-mix(in oklch, var(--forest) 10%, transparent),
+        transparent 72%
+      ),
+      linear-gradient(155deg, #f3f0ff 0%, #faf9fc 46%, #ffffff 100%);
+  }
+
+  .dark .dashboard-shell {
+    background-color: var(--background);
+    background-image: none;
+  }
+
   .local-video-unmirrored,
   .local-video-unmirrored video {
     transform: scaleX(-1) !important;

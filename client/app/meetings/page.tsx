@@ -111,10 +111,7 @@ export default function MeetingsPage() {
   }, [meetings, scope, statusFilter]);
 
   return (
-    <div className="relative flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
-      <div className="pointer-events-none absolute -top-32 right-0 size-112 rounded-full bg-lavender/40 blur-[120px] dark:bg-lavender/10" />
-      <div className="pointer-events-none absolute top-1/3 left-1/4 size-96 rounded-full bg-primary/10 blur-[120px]" />
-
+    <div className="relative flex h-full min-h-0 w-full flex-1 overflow-hidden">
       <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden px-8 py-6">
         <div className="flex shrink-0 items-center justify-between gap-3">
           <h2 className="font-heading text-2xl font-bold text-foreground">{SCOPE_TITLES[scope]}</h2>
