@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { CreateCalendarEventInput } from "@/lib/home/agenda-types";
 import {
+  clearGoogleOAuthRedirectAttempt,
+  ensureGoogleWorkspaceOAuth,
   isGoogleScopeError,
-  reconnectGoogleWorkspace,
 } from "@/lib/api/google-workspace";
 import { formatDayHeading, getDateKey } from "@/lib/home/google-agenda-utils";
 import { cn } from "@/lib/utils";
@@ -54,7 +55,6 @@ export function CreateCalendarEventPanel({
   const [error, setError] = useState("");
   const [needsReconnect, setNeedsReconnect] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isReconnecting, setIsReconnecting] = useState(false);
 
   useEffect(() => {
     setTitle("");
@@ -64,6 +64,12 @@ export function CreateCalendarEventPanel({
     setError("");
     setNeedsReconnect(false);
   }, [date]);
+
+  useEffect(() => {
+    if (!needsReconnect) return;
+    clearGoogleOAuthRedirectAttempt();
+    ensureGoogleWorkspaceOAuth();
+  }, [needsReconnect]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -177,24 +183,7 @@ export function CreateCalendarEventPanel({
         </div>
 
         {error ? (
-          <div className="flex flex-col gap-2">
-            <p className="text-xs text-destructive">{error}</p>
-            {needsReconnect ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="w-fit"
-                disabled={isReconnecting}
-                onClick={() => {
-                  setIsReconnecting(true);
-                  void reconnectGoogleWorkspace("/home");
-                }}
-              >
-                {isReconnecting ? "Redirecting…" : "Reconnect Google"}
-              </Button>
-            ) : null}
-          </div>
+          <p className="text-xs text-destructive">{error}</p>
         ) : null}
 
         <div className="flex justify-end gap-2 pt-1">

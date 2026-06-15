@@ -4,7 +4,7 @@ import {
   createCalendarEvent,
   type CreateCalendarEventInput,
 } from "../../lib/google/google-calendar.service";
-import { getGoogleAccessToken } from "../../lib/google/google-token.service";
+import { ensureGoogleAccessToken } from "../../lib/google/google-token.service";
 import { useDB } from "../../lib/db/db";
 
 type HonoEnv = { Bindings: Bindings; Variables: Variables };
@@ -55,7 +55,7 @@ function parseCreateEventBody(body: unknown): CreateCalendarEventInput | null {
 export const postCreateCalendarEvent = async (c: Context<HonoEnv>) => {
   const userId = c.get("userId");
   const db = useDB(c);
-  const accessToken = await getGoogleAccessToken(db, userId, c.env);
+  const accessToken = await ensureGoogleAccessToken(db, userId, c.env);
 
   if (!accessToken) {
     return c.json({ error: "Google Workspace is not connected." }, 401);

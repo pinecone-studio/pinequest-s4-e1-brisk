@@ -1,7 +1,7 @@
 import type { Context } from "hono";
 import type { Bindings, Variables } from "../../lib/common/types";
 import { fetchCalendarAgenda } from "../../lib/google/google-calendar.service";
-import { getGoogleAccessToken } from "../../lib/google/google-token.service";
+import { ensureGoogleAccessToken } from "../../lib/google/google-token.service";
 import { useDB } from "../../lib/db/db";
 
 type HonoEnv = { Bindings: Bindings; Variables: Variables };
@@ -9,7 +9,7 @@ type HonoEnv = { Bindings: Bindings; Variables: Variables };
 export const getCalendarAgenda = async (c: Context<HonoEnv>) => {
   const userId = c.get("userId");
   const db = useDB(c);
-  const accessToken = await getGoogleAccessToken(db, userId, c.env);
+  const accessToken = await ensureGoogleAccessToken(db, userId, c.env);
 
   if (!accessToken) {
     return c.json({ connected: false, events: [] });
