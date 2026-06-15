@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { useDB } from "../../lib/db/db";
 import { meetingTranscriptions } from "../../schema/meetingTranscription/meeting-transcription.schema";
 import type { Bindings } from "../../lib/common/types";
+import { toPublicApiError } from "../../lib/errors/public-error";
 
 export const deleteMeetingTranscript = async (
   c: Context<{ Bindings: Bindings }>,
@@ -17,6 +18,6 @@ export const deleteMeetingTranscript = async (
 
     return c.json({ message: "Meeting summary deleted" }, 200);
   } catch (error) {
-    return c.json({ error: (error as Error).message }, 500);
+    return c.json({ error: toPublicApiError(500) }, 500);
   }
 };

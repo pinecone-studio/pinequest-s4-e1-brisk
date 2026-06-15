@@ -5,6 +5,7 @@ import { getAuthenticatedUserId } from "../../lib/auth/clerk";
 import { meetings, meetingSummaries } from "../../schema/meeting.model";
 import { meetingTranscriptions } from "../../schema/meetingTranscription/meeting-transcription.schema";
 import type { Bindings, Variables } from "../../lib/common/types";
+import { PUBLIC_ERRORS, toPublicApiError } from "../../lib/errors/public-error";
 
 const SUMMARY_PREVIEW_LENGTH = 160;
 
@@ -15,7 +16,7 @@ export const getMeetings = async (
     const userId = await getAuthenticatedUserId(c);
 
     if (!userId) {
-      return c.json({ error: "Unauthorized" }, 401);
+      return c.json({ error: PUBLIC_ERRORS.auth }, 401);
     }
 
     const db = useDB(c);
@@ -79,6 +80,6 @@ export const getMeetings = async (
 
     return c.json({ meetings: result }, 200);
   } catch (error) {
-    return c.json({ error: (error as Error).message }, 500);
+    return c.json({ error: toPublicApiError(500) }, 500);
   }
 };

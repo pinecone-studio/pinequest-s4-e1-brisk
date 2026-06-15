@@ -6,6 +6,7 @@ import {
   markFailed,
   transcribeRecording,
 } from "./meeting-transcription.service";
+import { PUBLIC_ERRORS, toPublicApiError } from "../../lib/errors/public-error";
 
 export const postMeetingSummary = async (
   c: Context<{ Bindings: Bindings }>,
@@ -60,6 +61,6 @@ export const postMeetingSummary = async (
       await markFailed(useDB(c), transcriptionId, errorMessage);
     }
 
-    return c.json({ error: errorMessage }, 500);
+    return c.json({ error: toPublicApiError(500) }, 500);
   }
 };

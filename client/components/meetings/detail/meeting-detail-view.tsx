@@ -7,15 +7,13 @@ import {
 } from "@/app/meeting";
 import { useTranscriptionStatus } from "@/app/meeting/hooks/use-transcription-status";
 import { parseMeetingSummary } from "@/app/meeting/utils/parse-meeting-summary";
-import { Button } from "@/components/ui/button";
+import { CircleBackLink } from "@/components/ui/circle-back-link";
 import { formatMeetingDateLong } from "@/lib/meetings/format-meeting-date";
 import { getMeetingDurationLabel } from "@/lib/meetings/meeting-duration";
 import { getMeetingParticipants } from "@/lib/meetings/meeting-participants";
 import { getMeetingSentiment } from "@/lib/meetings/meeting-sentiment";
 import { getSpeakerTalkTimeStats } from "@/lib/meetings/meeting-speaker-stats";
 import { getMeetingTopics } from "@/lib/meetings/meeting-topics";
-import { ArrowLeftIcon } from "lucide-react";
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { buildMeetingDetailSearchSuggestions } from "@/lib/search/build-search-suggestions";
 import { useRegisterSearchSuggestions } from "@/lib/search/use-register-search-suggestions";
@@ -45,10 +43,7 @@ const MeetingDetailNotFound = () => (
     <p className="text-sm text-muted-foreground">
       This meeting doesn&apos;t exist or you don&apos;t have access to it.
     </p>
-    <Button variant="outline" size="sm" render={<Link href="/meetings" />}>
-      <ArrowLeftIcon />
-      Back to meetings
-    </Button>
+    <CircleBackLink href="/meetings" label="Back to meetings" />
   </div>
 );
 

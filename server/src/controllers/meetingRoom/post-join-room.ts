@@ -2,6 +2,7 @@ import { Context } from "hono";
 import { AccessToken } from "livekit-server-sdk";
 import { getAuthenticatedUserId } from "../../lib/auth/clerk";
 import type { Bindings, Variables } from "../../lib/common/types";
+import { toPublicApiError } from "../../lib/errors/public-error";
 
 const getLiveKitFrontendUrl = (env: Bindings) => {
   return env.LIVEKIT_WS_URL ?? env.LIVEKIT_URL;
@@ -44,6 +45,6 @@ export const postJoinRoom = async (
       200,
     );
   } catch (error) {
-    return c.json({ error: (error as Error).message }, 500);
+    return c.json({ error: toPublicApiError(500) }, 500);
   }
 };

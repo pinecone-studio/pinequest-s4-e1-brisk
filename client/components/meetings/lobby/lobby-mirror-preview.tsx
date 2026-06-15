@@ -72,7 +72,7 @@ export function LobbyMirrorPreview({
   const isBackgroundBlurred = backgroundEffect === "blur";
 
   return (
-    <div className="dark relative aspect-video w-full max-w-xl overflow-hidden rounded-2xl border border-border bg-background shadow-sm flex flex-col items-center justify-center">
+    <div className="relative flex aspect-video w-full max-w-xl flex-col items-center justify-center overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
       <video
         autoPlay
         className={cn(
