@@ -129,10 +129,12 @@ export const MeetingDetailTopbar = ({
               {durationLabel}
             </span>
           ) : null}
-          <span className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-foreground">
-            {isRecording ? <RadioIcon className="size-3.5" /> : <VideoIcon className="size-3.5" />}
-            {isRecording ? "Recording" : "Google Meet"}
-          </span>
+          {isRecording ? (
+            <span className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-foreground">
+              <RadioIcon className="size-3.5" />
+              Recording
+            </span>
+          ) : null}
         </div>
       </div>
 

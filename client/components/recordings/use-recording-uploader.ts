@@ -1,10 +1,14 @@
 "use client";
 
 import { uploadRecording } from "@/app/recordings/api/recordings-api";
+import { openMicrophoneCapture } from "@/lib/audio/web-audio-noise-cancellation";
 import { formatUserError } from "@/lib/errors/format-user-error";
 import { useEffect, useRef, useState } from "react";
 
 export const MAX_RECORDING_BYTES = 20 * 1024 * 1024;
+export const RECORDING_HUB_ID = "recording-hub";
+export const RECORDING_UPLOAD_INPUT_ID = "recording-upload";
+export const RECORDING_DROPZONE_UPLOAD_INPUT_ID = "recording-dropzone-upload";
 
 const pickMimeType = () => {
   if (typeof MediaRecorder === "undefined") return "";
@@ -26,13 +30,11 @@ export function useRecordingUploader(onUploaded: (recordingId: string) => void) 
   const [isUploading, setIsUploading] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState("");
-  // Off = raw mic capture; on = browser noise/echo/gain cleanup. Lets you A/B
-  // the same voice with and without background noise cancellation.
   const [noiseCleanup, setNoiseCleanup] = useState(false);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  const streamRef = useRef<MediaStream | null>(null);
+  const disposeCaptureRef = useRef<(() => void) | null>(null);
   const timerRef = useRef<number | null>(null);
   const elapsedRef = useRef(0);
 
@@ -43,10 +45,16 @@ export function useRecordingUploader(onUploaded: (recordingId: string) => void) 
     }
   };
 
+  const disposeCapture = () => {
+    disposeCaptureRef.current?.();
+    disposeCaptureRef.current = null;
+  };
+
   useEffect(() => {
     return () => {
       stopTimer();
-      streamRef.current?.getTracks().forEach((track) => track.stop());
+      recorderRef.current?.stop();
+      disposeCapture();
     };
   }, []);
 
@@ -81,21 +89,18 @@ export function useRecordingUploader(onUploaded: (recordingId: string) => void) 
 
   const startRecording = async () => {
     setError("");
+    disposeCapture();
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          noiseSuppression: noiseCleanup,
-          echoCancellation: noiseCleanup,
-          autoGainControl: noiseCleanup,
-        },
+      const capture = await openMicrophoneCapture({
+        noiseCancellation: noiseCleanup,
       });
-      streamRef.current = stream;
+      disposeCaptureRef.current = capture.dispose;
       chunksRef.current = [];
 
       const mimeType = pickMimeType();
       const recorder = new MediaRecorder(
-        stream,
+        capture.stream,
         mimeType ? { mimeType } : undefined,
       );
       recorderRef.current = recorder;
@@ -106,13 +111,12 @@ export function useRecordingUploader(onUploaded: (recordingId: string) => void) 
 
       recorder.onstop = () => {
         stopTimer();
-        stream.getTracks().forEach((track) => track.stop());
-        streamRef.current = null;
+        disposeCapture();
 
         const type = recorder.mimeType || "audio/webm";
         const blob = new Blob(chunksRef.current, { type });
         const extension = type.includes("ogg") ? "ogg" : "webm";
-        const cleanupLabel = noiseCleanup ? "NC on" : "NC off";
+        const cleanupLabel = noiseCleanup ? "Web Audio NC on" : "NC off";
         const title = `Recording (${cleanupLabel}) - ${new Date().toLocaleTimeString(
           "en-CA",
         )}`;
@@ -136,6 +140,7 @@ export function useRecordingUploader(onUploaded: (recordingId: string) => void) 
         });
       }, 1000);
     } catch (caughtError) {
+      disposeCapture();
       setError(formatUserError(caughtError));
     }
   };

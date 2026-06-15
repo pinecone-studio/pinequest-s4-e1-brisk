@@ -16,6 +16,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { formatMeetingDateLong } from "@/lib/meetings/format-meeting-date";
+import {
+  getMockStandupDetailHref,
+  isMockStandupRecording,
+} from "@/lib/meetings/mock-standup-story";
 import { TRANSCRIPTION_STATUS_STYLES } from "@/lib/meetings/transcription-status";
 import {
   formatRecordingDuration,
@@ -78,6 +82,8 @@ export function RecordingResultCard({
   const [isDownloading, setIsDownloading] = useState(false);
 
   const current = recording ?? initialRecording;
+  const isMock = isMockStandupRecording(current.id);
+  const detailHref = getMockStandupDetailHref(current.id);
   const status = TRANSCRIPTION_STATUS_STYLES[current.status];
   const preview = getRecordingPreview(current);
   const hasSummary = Boolean(current.keyPoints && current.keyPoints.length > 0);
@@ -85,6 +91,7 @@ export function RecordingResultCard({
   const fileSizeLabel = formatRecordingFileSize(current.fileSizeBytes);
 
   const handleDownload = async () => {
+    if (isMock) return;
     setActionError("");
     setIsDownloading(true);
 
@@ -98,6 +105,7 @@ export function RecordingResultCard({
   };
 
   const handleDelete = async () => {
+    if (isMock) return;
     if (!window.confirm("Delete this recording? This cannot be undone.")) return;
 
     setActionError("");
@@ -113,52 +121,62 @@ export function RecordingResultCard({
   };
 
   return (
-    <Card className="ring-1 ring-foreground/10 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-      <CardContent className="flex flex-col gap-3">
-        <div className="flex items-start justify-between gap-3">
-          <Link
-            href={`/recordings/${current.id}`}
-            className="min-w-0 hover:underline"
-          >
-            <h3 className="truncate font-heading text-base font-semibold text-foreground">
+    <Link
+      href={detailHref}
+      className="group block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+    >
+      <Card className="cursor-pointer ring-1 ring-foreground/10 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-md">
+        <CardContent className="flex flex-col gap-3">
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="min-w-0 truncate font-heading text-base font-semibold text-foreground group-hover:text-primary">
               {current.title}
             </h3>
-          </Link>
 
-          <div className="flex shrink-0 items-center gap-2">
-            <Badge variant="outline" className="gap-1 bg-muted text-muted-foreground">
-              <FolderIcon className="size-3" />
-              Voice recordings
-            </Badge>
+            <div className="flex shrink-0 items-center gap-2">
+              <Badge variant="outline" className="gap-1 bg-muted text-muted-foreground">
+                <FolderIcon className="size-3" />
+                Voice recordings
+              </Badge>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                className="flex size-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-                aria-label="More options"
-                disabled={isDeleting || isDownloading}
-              >
-                <MoreVerticalIcon className="size-4" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem render={<Link href={`/recordings/${current.id}`} />}>
-                  View details
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => void handleDownload()}>
-                  <DownloadIcon />
-                  Download
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  variant="destructive"
-                  onClick={() => void handleDelete()}
-                >
-                  <Trash2Icon />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              {!isMock ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    className="flex size-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                    aria-label="More options"
+                    disabled={isDeleting || isDownloading}
+                    onClick={(event) => event.preventDefault()}
+                  >
+                    <MoreVerticalIcon className="size-4" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem render={<Link href={detailHref} />}>
+                      View details
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={(event) => {
+                        event.preventDefault();
+                        void handleDownload();
+                      }}
+                    >
+                      <DownloadIcon />
+                      Download
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        void handleDelete();
+                      }}
+                    >
+                      <Trash2Icon />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : null}
+            </div>
           </div>
-        </div>
 
         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
           <span className="flex items-center gap-1.5">
@@ -210,7 +228,8 @@ export function RecordingResultCard({
         {actionError ? (
           <p className="text-xs text-destructive">{displayUserError(actionError)}</p>
         ) : null}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }

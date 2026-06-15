@@ -17,3 +17,8 @@ export async function syncClerkUser(input: {
   const { data } = await clientApi.post<{ user: SyncedUser }>("/users/sync", input);
   return data.user;
 }
+
+export async function seedDemoStandupAccount(): Promise<{ seeded: boolean }> {
+  const { data } = await clientApi.post<{ seeded: boolean }>("/users/seed-demo");
+  return data;
+}

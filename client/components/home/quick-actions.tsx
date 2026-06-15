@@ -18,7 +18,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useRef, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 
 type ActionTab = "meeting" | "recording" | "schedule";
 
@@ -42,8 +42,9 @@ export function QuickActions() {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
 
-  const [isRecording, setIsRecording] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const goToRecordings = (action?: "record" | "upload") => {
+    router.push(action ? `/recordings?action=${action}` : "/recordings");
+  };
 
   const handleScheduleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -72,7 +73,12 @@ export function QuickActions() {
             <button
               key={tab.id}
               type="button"
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => {
+                setActiveTab(tab.id);
+                if (tab.id === "recording") {
+                  goToRecordings();
+                }
+              }}
               className={cn(
                 "flex flex-1 min-w-[180px] md:min-w-0 shrink-0 items-center justify-center gap-3 rounded-2xl px-6 py-4 text-base font-semibold whitespace-nowrap transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                 isActive
@@ -127,35 +133,23 @@ export function QuickActions() {
         )}
 
         {activeTab === "recording" && (
-          <div className="flex flex-col md:flex-row gap-4 items-stretch">
+          <div className="flex flex-col gap-4 md:flex-row md:items-stretch">
             <Button
-              onClick={() => setIsRecording(!isRecording)}
-              className={cn(
-                "h-20 flex-1 rounded-2xl gap-4 text-lg font-bold transition-all duration-200",
-                isRecording
-                  ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  : "bg-[#1a1a1a] border border-white/[0.05] text-white hover:bg-[#252525]",
-              )}
+              onClick={() => goToRecordings("record")}
+              className="h-20 flex-1 rounded-2xl gap-4 bg-[#1a1a1a] text-lg font-bold text-white hover:bg-[#252525] dark:border dark:border-white/[0.05]"
             >
-              <div
-                className={cn(
-                  "size-3 rounded-full bg-red-500",
-                  isRecording && "animate-ping",
-                )}
-              />
-              {isRecording ? "Stop Recording" : "Start instant recording"}
+              <div className="size-3 rounded-full bg-red-500" />
+              Start instant recording
             </Button>
 
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="h-20 flex-[1.5] rounded-2xl border-2 border-dashed border-foreground/10 bg-muted/10 flex items-center justify-center gap-3 cursor-pointer hover:bg-muted/20 transition-all"
+            <Button
+              variant="outline"
+              onClick={() => goToRecordings("upload")}
+              className="h-20 flex-[1.5] rounded-2xl border-2 border-dashed border-foreground/10 bg-muted/10 text-muted-foreground hover:bg-muted/20"
             >
-              <input ref={fileInputRef} type="file" className="hidden" />
-              <UploadCloudIcon className="size-6 text-muted-foreground" />
-              <span className="text-muted-foreground font-medium">
-                Upload recording
-              </span>
-            </div>
+              <UploadCloudIcon className="size-6" />
+              Upload recording
+            </Button>
           </div>
         )}
 

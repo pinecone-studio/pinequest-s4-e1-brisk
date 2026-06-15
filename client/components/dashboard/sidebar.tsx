@@ -1,5 +1,6 @@
 "use client";
 
+import { BriskLogo } from "@/components/brisk-logo";
 import { isNavItemActive, navItems } from "@/lib/nav-items";
 import { cn } from "@/lib/utils";
 import { ChevronDownIcon, SettingsIcon } from "lucide-react";
@@ -50,7 +51,11 @@ export function Sidebar() {
   }, [pathname]);
 
   return (
-    <aside className="hidden min-h-0 w-64 shrink-0 flex-col overflow-hidden bg-transparent lg:col-start-1 lg:row-start-2 lg:flex">
+    <aside className="hidden min-h-0 w-64 shrink-0 flex-col overflow-hidden bg-transparent lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:flex">
+      <div className="flex shrink-0 items-center px-6 pb-2 pt-5">
+        <BriskLogo />
+      </div>
+
       <nav className="flex-1 space-y-1 px-4 pt-2">
         {navItems.map((item) => {
           const active = isNavItemActive(pathname, item.href);

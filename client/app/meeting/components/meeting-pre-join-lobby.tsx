@@ -10,7 +10,7 @@ import {
   useRoomOccupancy,
 } from "@/components/meetings/lobby/use-room-occupancy";
 import { useMediaToggleShortcuts } from "@/hooks/use-media-toggle-shortcuts";
-import { getClerkDisplayName } from "@/lib/meetings/get-clerk-display-name";
+import { getClerkDefaultDisplayName } from "@/lib/meetings/get-clerk-display-name";
 import { useUser } from "@clerk/nextjs";
 import { useEffect, useRef, useState } from "react";
 
@@ -45,7 +45,7 @@ export function MeetingPreJoinLobby({
   useEffect(() => {
     if (hasInitializedNameRef.current) return;
 
-    const clerkName = getClerkDisplayName(user);
+    const clerkName = getClerkDefaultDisplayName(user);
     if (!clerkName) return;
 
     hasInitializedNameRef.current = true;

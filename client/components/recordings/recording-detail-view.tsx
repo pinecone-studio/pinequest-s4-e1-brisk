@@ -16,6 +16,10 @@ import {
   formatRecordingFileSize,
 } from "@/lib/recordings/format-recording";
 import { displayUserError, formatUserError } from "@/lib/errors/format-user-error";
+import {
+  getMockStandupMeetingIdForRecording,
+  isMockStandupRecording,
+} from "@/lib/meetings/mock-standup-story";
 import { cn } from "@/lib/utils";
 import {
   CalendarIcon,
@@ -54,6 +58,13 @@ export function RecordingDetailView({ recordingId }: RecordingDetailViewProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
 
+  useEffect(() => {
+    const meetingId = getMockStandupMeetingIdForRecording(recordingId);
+    if (meetingId) {
+      router.replace(`/meetings/${meetingId}`);
+    }
+  }, [recordingId, router]);
+
   const recordingSuggestions = useMemo(
     () => (recording ? buildRecordingDetailSearchSuggestions(recording) : []),
     [recording],
@@ -77,6 +88,10 @@ export function RecordingDetailView({ recordingId }: RecordingDetailViewProps) {
       setNotFound(true);
     }
   }, [recording, error]);
+
+  if (isMockStandupRecording(recordingId)) {
+    return <RecordingDetailSkeleton />;
+  }
 
   if (isLoading) return <RecordingDetailSkeleton />;
 
