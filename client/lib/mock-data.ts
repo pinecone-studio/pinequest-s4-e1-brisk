@@ -12,6 +12,7 @@ import type {
   NotificationSettings,
   ActivityItem,
 } from "@/types";
+import { getEmailAvatarUrl } from "@/lib/user/email-avatar-url";
 
 // Users
 
@@ -20,25 +21,25 @@ export const users: AppUser[] = [
     id: "u1",
     name: "Данни",
     email: "danny.otgontsetseg@gmail.com",
-    avatarUrl: null,
+    avatarUrl: getEmailAvatarUrl("danny.otgontsetseg@gmail.com"),
     initials: "Д",
     role: "Team Lead",
     team: "Product",
   },
   {
     id: "u2",
-    name: "Батбилэг",
-    email: "batbilgu@pinequest.dev",
-    avatarUrl: null,
-    initials: "Б",
+    name: "Чинбат",
+    email: "batblg247@gmail.com",
+    avatarUrl: getEmailAvatarUrl("batblg247@gmail.com"),
+    initials: "Ч",
     role: "Backend Engineer",
     team: "Engineering",
   },
   {
     id: "u3",
     name: "Сүх-Очир",
-    email: "suh-ochir@pinequest.dev",
-    avatarUrl: null,
+    email: "batjargalsukhochir27@gmail.com",
+    avatarUrl: getEmailAvatarUrl("batjargalsukhochir27@gmail.com"),
     initials: "СО",
     role: "Frontend Engineer",
     team: "Engineering",
@@ -46,8 +47,8 @@ export const users: AppUser[] = [
   {
     id: "u4",
     name: "Цолмонгэрэл",
-    email: "tsolmongerel@pinequest.dev",
-    avatarUrl: null,
+    email: "tsomoobayasaa@gmail.com",
+    avatarUrl: getEmailAvatarUrl("tsomoobayasaa@gmail.com"),
     initials: "Ц",
     role: "Product Designer",
     team: "Design",
@@ -55,8 +56,8 @@ export const users: AppUser[] = [
   {
     id: "u5",
     name: "Амаржаргал",
-    email: "amarjargal@pinequest.dev",
-    avatarUrl: null,
+    email: "maraa96098@gmail.com",
+    avatarUrl: getEmailAvatarUrl("maraa96098@gmail.com"),
     initials: "А",
     role: "AI Engineer",
     team: "Engineering",

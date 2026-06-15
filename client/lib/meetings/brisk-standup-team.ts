@@ -8,6 +8,10 @@ export type BriskStandupTeamMember = {
   email: string;
   initials: string;
   role: string;
+  /** Legacy mock-story names that map to this teammate. */
+  aliases?: string[];
+  /** Optional fixed profile photo when email lookup has no public image. */
+  avatarUrl?: string;
 };
 
 export const BRISK_STANDUP_TEAM: BriskStandupTeamMember[] = [
@@ -19,36 +23,51 @@ export const BRISK_STANDUP_TEAM: BriskStandupTeamMember[] = [
     role: "Team Lead",
   },
   {
-    id: "brisk-batbilgu",
-    name: "Батбилэг",
-    email: "batbilgu@pinequest.dev",
-    initials: "Б",
+    id: "brisk-chinbat",
+    name: "Чинбат",
+    aliases: ["Батбилэг"],
+    email: "batblg247@gmail.com",
+    initials: "Ч",
     role: "Backend Engineer",
   },
   {
     id: "brisk-suh-ochir",
     name: "Сүх-Очир",
-    email: "suh-ochir@pinequest.dev",
+    email: "batjargalsukhochir27@gmail.com",
     initials: "СО",
     role: "Frontend Engineer",
   },
   {
     id: "brisk-tsolmongerel",
     name: "Цолмонгэрэл",
-    email: "tsolmongerel@pinequest.dev",
+    email: "tsomoobayasaa@gmail.com",
     initials: "Ц",
     role: "Product Designer",
   },
   {
     id: "brisk-amarjargal",
     name: "Амаржаргал",
-    email: "amarjargal@pinequest.dev",
+    email: "maraa96098@gmail.com",
     initials: "А",
     role: "AI Engineer",
   },
 ];
 
 export const BRISK_STANDUP_TEAM_NAMES = BRISK_STANDUP_TEAM.map((member) => member.name);
+
+const BRISK_TEAM_NAME_ALIASES: Record<string, string> = {
+  Батбилэг: "Чинбат",
+};
+
+function memberMatchesName(member: BriskStandupTeamMember, name: string) {
+  if (member.name === name || name.includes(member.name)) {
+    return true;
+  }
+
+  return member.aliases?.some(
+    (alias) => alias === name || name.includes(alias) || alias.includes(name),
+  );
+}
 
 function isLoggedInTeamMember(
   profile: NonNullable<ReturnType<typeof getClerkProfile>>,
@@ -60,7 +79,13 @@ function isLoggedInTeamMember(
   if (profileEmail === memberEmail) return true;
   if (member.id === "brisk-danny" && profileEmail.includes("danny")) return true;
 
+  if (memberMatchesName(member, profile.name.trim())) return true;
+
   return profile.name.trim() === member.name;
+}
+
+export function getBriskStandupTeamEmails(): string[] {
+  return BRISK_STANDUP_TEAM.map((member) => member.email.trim().toLowerCase());
 }
 
 export function toStandupParticipant(member: BriskStandupTeamMember): SummaryParticipant {
@@ -68,12 +93,15 @@ export function toStandupParticipant(member: BriskStandupTeamMember): SummaryPar
     id: member.id,
     name: member.name,
     initials: member.initials,
-    avatarUrl: getEmailAvatarUrl(member.email),
+    email: member.email,
+    avatarUrl: member.avatarUrl ?? getEmailAvatarUrl(member.email),
   };
 }
 
-export function getBriskStandupParticipants(): SummaryParticipant[] {
-  const profile = getClerkProfile();
+export function getBriskStandupParticipants(
+  profileOverride?: ReturnType<typeof getClerkProfile>,
+): SummaryParticipant[] {
+  const profile = profileOverride ?? getClerkProfile();
 
   return BRISK_STANDUP_TEAM.map((member) => {
     if (profile && isLoggedInTeamMember(profile, member)) {
@@ -81,7 +109,9 @@ export function getBriskStandupParticipants(): SummaryParticipant[] {
         id: profile.clerkId,
         name: member.name,
         initials: member.initials,
-        avatarUrl: profile.avatarUrl ?? getEmailAvatarUrl(member.email),
+        email: member.email,
+        avatarUrl:
+          profile.avatarUrl ?? member.avatarUrl ?? getEmailAvatarUrl(member.email),
       };
     }
 
@@ -93,7 +123,9 @@ export function findBriskTeamMemberByName(name: string) {
   const trimmed = name.trim();
   if (!trimmed) return undefined;
 
+  const canonical = BRISK_TEAM_NAME_ALIASES[trimmed] ?? trimmed;
+
   return BRISK_STANDUP_TEAM.find(
-    (member) => member.name === trimmed || trimmed.includes(member.name),
+    (member) => memberMatchesName(member, trimmed) || memberMatchesName(member, canonical),
   );
 }

@@ -3,19 +3,49 @@
 import { MeetingSummaryView } from "@/components/summary/meeting-summary-view";
 import { formatMeetingDateLong } from "@/lib/meetings/format-meeting-date";
 import { getMeetingDurationLabel } from "@/lib/meetings/meeting-duration";
+import type { ClerkProfile } from "@/lib/meetings/clerk-profile";
 import {
   buildMockStandupSearchSuggestions,
   getMockStandupMeetingDisplay,
+  getPersonalizedStandupParticipants,
 } from "@/lib/meetings/mock-standup-story";
 import { useRegisterSearchSuggestions } from "@/lib/search/use-register-search-suggestions";
+import { useUser } from "@clerk/nextjs";
 import { useMemo } from "react";
 
 type MockStandupMeetingDetailViewProps = {
   meetingId: string;
 };
 
+function buildClerkProfileFromUser(
+  user: NonNullable<ReturnType<typeof useUser>["user"]>,
+): ClerkProfile | null {
+  const email = user.primaryEmailAddress?.emailAddress?.trim();
+  const name = user.fullName?.trim() || user.firstName?.trim() || email;
+  if (!email || !name) return null;
+
+  return {
+    clerkId: user.id,
+    email,
+    name,
+    avatarUrl: user.imageUrl ?? null,
+    internalUserId: null,
+  };
+}
+
 export function MockStandupMeetingDetailView({ meetingId }: MockStandupMeetingDetailViewProps) {
+  const { user, isLoaded } = useUser();
   const mock = getMockStandupMeetingDisplay(meetingId);
+
+  const clerkProfile = useMemo(() => {
+    if (!isLoaded || !user) return null;
+    return buildClerkProfileFromUser(user);
+  }, [isLoaded, user]);
+
+  const participants = useMemo(
+    () => getPersonalizedStandupParticipants(clerkProfile),
+    [clerkProfile],
+  );
 
   const searchSuggestions = useMemo(() => buildMockStandupSearchSuggestions(), []);
   useRegisterSearchSuggestions(`meeting-detail-${meetingId}`, searchSuggestions);
@@ -24,7 +54,7 @@ export function MockStandupMeetingDetailView({ meetingId }: MockStandupMeetingDe
     return null;
   }
 
-  const { listItem, participants, topics, notes } = mock;
+  const { listItem, topics, notes } = mock;
   const createdDate = formatMeetingDateLong(listItem.createdAt) || null;
   const durationLabel = getMeetingDurationLabel(listItem);
 
