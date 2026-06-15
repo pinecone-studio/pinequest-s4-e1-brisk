@@ -1,6 +1,8 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { filterSearchSuggestions } from "@/lib/search/filter-search-suggestions";
+import type { SearchSuggestion } from "@/lib/search/search-suggestion.types";
+import { usePathname, useRouter } from "next/navigation";
 import {
   createContext,
   useCallback,
@@ -11,19 +13,20 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { SearchSuggestion } from "@/lib/search/search-suggestion.types";
 
 type DashboardSearchContextValue = {
   query: string;
   inputValue: string;
   setInputValue: (value: string) => void;
-  submitSearch: (value?: string) => void;
+  submitSearch: (value?: string, preferredSuggestion?: SearchSuggestion) => void;
   clearSearch: () => void;
   suggestions: SearchSuggestion[];
   registerSuggestions: (sourceId: string, items: SearchSuggestion[]) => void;
   unregisterSuggestions: (sourceId: string) => void;
   inputRef: React.RefObject<HTMLInputElement | null>;
   focusSearch: () => void;
+  activeSuggestionIndex: number;
+  setActiveSuggestionIndex: React.Dispatch<React.SetStateAction<number>>;
 };
 
 const DashboardSearchContext = createContext<DashboardSearchContextValue | null>(
@@ -32,8 +35,10 @@ const DashboardSearchContext = createContext<DashboardSearchContextValue | null>
 
 export function DashboardSearchProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [inputValue, setInputValue] = useState("");
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
   const [suggestionSources, setSuggestionSources] = useState<
     Map<string, SearchSuggestion[]>
   >(() => new Map());
@@ -47,13 +52,41 @@ export function DashboardSearchProvider({ children }: { children: ReactNode }) {
   const clearSearch = useCallback(() => {
     setQuery("");
     setInputValue("");
+    setActiveSuggestionIndex(0);
   }, []);
 
-  const submitSearch = useCallback((value?: string) => {
-    const nextQuery = (value ?? inputRef.current?.value ?? inputValue).trim();
-    setInputValue(nextQuery);
-    setQuery(nextQuery);
-  }, [inputValue]);
+  const suggestions = useMemo(
+    () => [...suggestionSources.values()].flat(),
+    [suggestionSources],
+  );
+
+  const submitSearch = useCallback(
+    (value?: string, preferredSuggestion?: SearchSuggestion) => {
+      const nextQuery = (value ?? inputRef.current?.value ?? inputValue).trim();
+      const match =
+        preferredSuggestion ??
+        filterSearchSuggestions(suggestions, nextQuery, 1)[0];
+
+      if (match) {
+        setInputValue(match.title);
+      } else {
+        setInputValue(nextQuery);
+      }
+
+      if (match?.href?.startsWith("/")) {
+        router.push(match.href);
+        return;
+      }
+
+      if (match?.href?.startsWith("http")) {
+        window.open(match.href, "_blank", "noopener,noreferrer");
+        return;
+      }
+
+      setQuery(nextQuery);
+    },
+    [inputValue, router, suggestions],
+  );
 
   const registerSuggestions = useCallback(
     (sourceId: string, items: SearchSuggestion[]) => {
@@ -101,11 +134,6 @@ export function DashboardSearchProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [clearSearch, focusSearch]);
 
-  const suggestions = useMemo(
-    () => [...suggestionSources.values()].flat(),
-    [suggestionSources],
-  );
-
   const value = useMemo(
     () => ({
       query,
@@ -118,6 +146,8 @@ export function DashboardSearchProvider({ children }: { children: ReactNode }) {
       unregisterSuggestions,
       inputRef,
       focusSearch,
+      activeSuggestionIndex,
+      setActiveSuggestionIndex,
     }),
     [
       query,
@@ -128,6 +158,7 @@ export function DashboardSearchProvider({ children }: { children: ReactNode }) {
       registerSuggestions,
       unregisterSuggestions,
       focusSearch,
+      activeSuggestionIndex,
     ],
   );
 
