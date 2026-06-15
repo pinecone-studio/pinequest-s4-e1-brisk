@@ -1,12 +1,16 @@
 "use client";
 
-import { LobbyCanvas } from "@/components/meetings/lobby/lobby-canvas";
-import { Button } from "@/components/ui/button";
 import { useUser } from "@clerk/nextjs";
 import { Headphones } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
-import { createMeetingRoom, joinMeetingRoom } from "../index";
+import { Button } from "@/components/ui/button";
+import { formatUserError } from "@/lib/errors/format-user-error";
+import { LobbyCanvas } from "@/components/meetings/lobby/lobby-canvas";
+import {
+  createMeetingRoom,
+  joinMeetingRoom,
+} from "../index";
 import type { MeetingRoomListItem } from "../types/meeting-room.types";
 import { slugifyRoomName } from "../utils/slugify-room-name";
 import type { TranscriptLanguage } from "../utils/transcript-language";
@@ -68,8 +72,7 @@ export const MeetingRoomForm = ({
     : "";
   const activeSessionRoomKey = activeSession
     ? `${activeSession.meetingId}:${
-        activeSession.response.displayRoomName ??
-        activeSession.response.roomName
+        activeSession.response.displayRoomName ?? activeSession.response.roomName
       }`
     : "";
 
@@ -133,7 +136,7 @@ export const MeetingRoomForm = ({
             },
           });
         } catch (caughtError) {
-          setError((caughtError as Error).message);
+          setError(formatUserError(caughtError));
         }
       } finally {
         setJoinStatus("idle");
@@ -142,12 +145,9 @@ export const MeetingRoomForm = ({
     [selectedRoom, startMeetingSession, user],
   );
 
-  if (
-    activeSession &&
-    (!selectedRoom || selectedRoomKey === activeSessionRoomKey)
-  ) {
+  if (activeSession && (!selectedRoom || selectedRoomKey === activeSessionRoomKey)) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-6 transition-colors duration-300 dark:bg-zinc-950">
+      <div className="flex min-h-screen items-center justify-center bg-zinc-100 p-6">
         <div className="flex h-[92vh] w-full max-w-7xl flex-col">
           <ConnectedMeetingPanel
             autoRecord={autoRecord}
@@ -211,10 +211,7 @@ export const MeetingRoomForm = ({
       error={error}
       isJoining={joinStatus === "joining"}
       onJoin={({ displayName, isCameraEnabled, isMicrophoneEnabled }) => {
-        void joinSelectedRoom(displayName, {
-          isCameraEnabled,
-          isMicrophoneEnabled,
-        });
+        void joinSelectedRoom(displayName, { isCameraEnabled, isMicrophoneEnabled });
       }}
       roomName={selectedRoom.roomName}
     />
