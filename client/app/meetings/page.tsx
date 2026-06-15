@@ -3,7 +3,6 @@
 import { fetchMeetings, type MeetingListItem, type MeetingTranscriptionStatus } from "@/app/meeting";
 import { parseRoomCodeInput } from "@/app/meeting/utils/parse-room-code";
 import { MeetingActivityCard } from "@/components/meetings/meeting-activity-card";
-import { MeetingScheduleSidebar } from "@/components/meetings/meeting-schedule-sidebar";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -32,6 +31,10 @@ import {
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { filterMeetingsBySearch } from "@/lib/search/filter-meetings";
+import { buildMeetingSearchSuggestions } from "@/lib/search/build-search-suggestions";
+import { useDashboardSearch } from "@/lib/search/dashboard-search-context";
+import { useRegisterSearchSuggestions } from "@/lib/search/use-register-search-suggestions";
 
 type StatusFilter = MeetingTranscriptionStatus | "none" | "all";
 type MeetingScope = "mine" | "all" | "shared";
@@ -63,6 +66,13 @@ export default function MeetingsPage() {
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState(false);
   const [joinDialogOpen, setJoinDialogOpen] = useState(false);
+  const { query } = useDashboardSearch();
+
+  const meetingSuggestions = useMemo(
+    () => buildMeetingSearchSuggestions(meetings),
+    [meetings],
+  );
+  useRegisterSearchSuggestions("meetings-list", meetingSuggestions);
 
   const handleJoinWithCode = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -105,10 +115,12 @@ export default function MeetingsPage() {
   const filteredMeetings = useMemo(() => {
     if (scope === "shared") return [];
 
-    return meetings.filter((meeting) => {
+    const scopedMeetings = meetings.filter((meeting) => {
       return statusFilter === "all" || (meeting.transcriptionStatus ?? "none") === statusFilter;
     });
-  }, [meetings, scope, statusFilter]);
+
+    return filterMeetingsBySearch(scopedMeetings, query);
+  }, [meetings, scope, statusFilter, query]);
 
   return (
     <div className="relative flex h-full min-h-0 w-full flex-1 overflow-hidden">
@@ -229,15 +241,15 @@ export default function MeetingsPage() {
                     ? "Nobody has shared a meeting with you yet."
                     : meetings.length === 0
                       ? "Start a meeting to see it appear here."
-                      : "Try a different filter."}
+                      : query.trim()
+                        ? "No meetings match your search."
+                        : "Try a different filter."}
                 </p>
               </div>
             </div>
           )}
         </div>
       </div>
-
-      <MeetingScheduleSidebar />
     </div>
   );
 }

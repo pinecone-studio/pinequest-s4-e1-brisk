@@ -1,18 +1,37 @@
 "use client";
 
 import { NotificationsMenu } from "@/components/dashboard/notifications-menu";
+import { SearchSuggestions } from "@/components/dashboard/search-suggestions";
 import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useDashboardSearch } from "@/lib/search/dashboard-search-context";
+import { getSearchPlaceholder } from "@/lib/search/get-search-placeholder";
 import { cn } from "@/lib/utils";
 import { UserButton } from "@clerk/nextjs";
 import { MoonIcon, SearchIcon, SunIcon } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const topbarIconButtonClass =
   "size-9 shrink-0 rounded-xl border-0 bg-transparent shadow-none hover:bg-foreground/5 focus-visible:border-0 focus-visible:ring-0";
 
 export function Topbar() {
   const { resolvedTheme, setTheme } = useTheme();
+  const pathname = usePathname();
+  const {
+    inputValue,
+    setInputValue,
+    submitSearch,
+    inputRef,
+    focusSearch,
+  } = useDashboardSearch();
+  const [shortcutLabel, setShortcutLabel] = useState("Ctrl+K");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  useEffect(() => {
+    setShortcutLabel(/Mac|iPhone|iPad/i.test(navigator.platform) ? "⌘K" : "Ctrl+K");
+  }, []);
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-3 bg-transparent px-4 lg:px-6">
@@ -23,12 +42,51 @@ export function Topbar() {
       <div className="relative max-w-md flex-1">
         <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="Search or ask anything across your meetings..."
-          className="h-10 rounded-full border-0 bg-transparent pl-9 pr-16 shadow-none focus-visible:border-0 focus-visible:ring-0"
+          ref={inputRef}
+          value={inputValue}
+          onChange={(event) => {
+            setInputValue(event.target.value);
+            setShowSuggestions(true);
+          }}
+          onFocus={() => setShowSuggestions(true)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !showSuggestions) {
+              event.preventDefault();
+              submitSearch();
+              inputRef.current?.blur();
+            }
+
+            if (event.key === "Escape") {
+              setShowSuggestions(false);
+            }
+          }}
+          placeholder={getSearchPlaceholder(pathname)}
+          aria-label="Search current page"
+          aria-expanded={showSuggestions && Boolean(inputValue.trim())}
+          aria-autocomplete="list"
+          role="combobox"
+          className="h-10 rounded-full border border-border bg-card/70 pl-9 pr-16 shadow-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
         />
-        <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-md px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground sm:inline">
-          Ctrl+K
-        </kbd>
+        <button
+          type="button"
+          onClick={focusSearch}
+          className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-md px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground sm:inline"
+          aria-label="Focus search"
+        >
+          {shortcutLabel}
+        </button>
+
+        {showSuggestions ? (
+          <SearchSuggestions
+            isOpen={showSuggestions}
+            onClose={() => setShowSuggestions(false)}
+            onSubmit={() => {
+              submitSearch();
+              setShowSuggestions(false);
+              inputRef.current?.blur();
+            }}
+          />
+        ) : null}
       </div>
 
       <div className="ml-auto flex items-center gap-1.5">

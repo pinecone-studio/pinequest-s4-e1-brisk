@@ -30,7 +30,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { buildRecordingDetailSearchSuggestions } from "@/lib/search/build-search-suggestions";
+import { useRegisterSearchSuggestions } from "@/lib/search/use-register-search-suggestions";
 
 type RecordingDetailViewProps = {
   recordingId: string;
@@ -52,6 +54,12 @@ export function RecordingDetailView({ recordingId }: RecordingDetailViewProps) {
   const [actionError, setActionError] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+
+  const recordingSuggestions = useMemo(
+    () => (recording ? buildRecordingDetailSearchSuggestions(recording) : []),
+    [recording],
+  );
+  useRegisterSearchSuggestions(`recording-detail-${recordingId}`, recordingSuggestions);
 
   useEffect(() => {
     setIsLoading(true);

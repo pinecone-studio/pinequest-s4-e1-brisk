@@ -16,7 +16,9 @@ import { getSpeakerTalkTimeStats } from "@/lib/meetings/meeting-speaker-stats";
 import { getMeetingTopics } from "@/lib/meetings/meeting-topics";
 import { ArrowLeftIcon } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { buildMeetingDetailSearchSuggestions } from "@/lib/search/build-search-suggestions";
+import { useRegisterSearchSuggestions } from "@/lib/search/use-register-search-suggestions";
 import { MeetingContentTabs } from "./meeting-content-tabs";
 import { MeetingDetailTopbar } from "./meeting-detail-topbar";
 import { MeetingInsightsSidebar } from "./meeting-insights-sidebar";
@@ -91,6 +93,38 @@ export const MeetingDetailView = ({ meetingId }: MeetingDetailViewProps) => {
       .catch(() => {});
   }, [status, details, meetingId]);
 
+  const detailSuggestions = useMemo(() => {
+    if (!details) return [];
+
+    const transcription = liveTranscription ?? details.transcription;
+    const meetingListItem: MeetingListItem = {
+      id: details.meeting.id,
+      title: details.meeting.title,
+      createdAt: details.meeting.createdAt,
+      updatedAt: details.meeting.updatedAt,
+      transcriptionStatus: transcription?.status ?? null,
+      summaryPreview: details.summary?.content ?? null,
+    };
+    const summaryContent = parseMeetingSummary(transcription?.summary);
+    const topics = getMeetingTopics(meetingListItem, summaryContent);
+    const keyPoints =
+      summaryContent?.keyDecisions ?? details.summary?.keyPoints ?? [];
+    const actionItems =
+      summaryContent?.actionItems ?? details.summary?.actionItems ?? [];
+
+    return buildMeetingDetailSearchSuggestions({
+      meetingId: details.meeting.id,
+      title: details.meeting.title,
+      summaryText: details.summary?.content ?? null,
+      keyPoints,
+      actionItems,
+      topics,
+      segments: details.transcriptSegments,
+    });
+  }, [details, liveTranscription]);
+
+  useRegisterSearchSuggestions(`meeting-detail-${meetingId}`, detailSuggestions);
+
   if (isLoading) return <MeetingDetailSkeleton />;
   if (notFound || !details) return <MeetingDetailNotFound />;
 
@@ -119,6 +153,7 @@ export const MeetingDetailView = ({ meetingId }: MeetingDetailViewProps) => {
     summaryContent?.keyDecisions ?? details.summary?.keyPoints ?? [];
   const actionItems =
     summaryContent?.actionItems ?? details.summary?.actionItems ?? [];
+
 
   return (
     <div className="relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">
