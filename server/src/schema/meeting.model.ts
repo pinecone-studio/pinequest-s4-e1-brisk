@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { users } from "./user.model";
 
 export const meetings = sqliteTable("meetings", {
@@ -8,6 +8,10 @@ export const meetings = sqliteTable("meetings", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
+  status: text("status", { enum: ["active", "completed"] })
+    .notNull()
+    .default("active"),
+  googleDocUrl: text("google_doc_url"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),
@@ -16,6 +20,24 @@ export const meetings = sqliteTable("meetings", {
     .$defaultFn(() => new Date())
     .$onUpdateFn(() => new Date()),
 });
+
+export const attendees = sqliteTable(
+  "attendees",
+  {
+    id: text("id").primaryKey(),
+    meetingId: text("meeting_id")
+      .notNull()
+      .references(() => meetings.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    name: text("name").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (table) => [
+    uniqueIndex("attendees_meeting_id_email_unique").on(table.meetingId, table.email),
+  ],
+);
 
 export const meetingTranscriptSegments = sqliteTable("meeting_transcript_segments", {
   id: text("id").primaryKey(),
@@ -58,9 +80,17 @@ export const meetingsRelations = relations(meetings, ({ one, many }) => ({
     references: [users.id],
   }),
   transcriptSegments: many(meetingTranscriptSegments),
+  attendees: many(attendees),
   summary: one(meetingSummaries, {
     fields: [meetings.id],
     references: [meetingSummaries.meetingId],
+  }),
+}));
+
+export const attendeesRelations = relations(attendees, ({ one }) => ({
+  meeting: one(meetings, {
+    fields: [attendees.meetingId],
+    references: [meetings.id],
   }),
 }));
 
@@ -86,3 +116,6 @@ export type NewMeetingTranscriptSegment = typeof meetingTranscriptSegments.$infe
 
 export type MeetingSummary = typeof meetingSummaries.$inferSelect;
 export type NewMeetingSummary = typeof meetingSummaries.$inferInsert;
+
+export type Attendee = typeof attendees.$inferSelect;
+export type NewAttendee = typeof attendees.$inferInsert;
