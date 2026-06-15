@@ -6,6 +6,7 @@ import { BriskLogo } from "@/components/brisk-logo";
 import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { filterSearchSuggestions } from "@/lib/search/filter-search-suggestions";
 import { useDashboardSearch } from "@/lib/search/dashboard-search-context";
 import { getSearchPlaceholder } from "@/lib/search/get-search-placeholder";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,8 @@ export function Topbar() {
     inputValue,
     setInputValue,
     submitSearch,
+    suggestions,
+    activeSuggestionIndex,
     inputRef,
     focusSearch,
   } = useDashboardSearch();
@@ -54,10 +57,13 @@ export function Topbar() {
           }}
           onFocus={() => setShowSuggestions(true)}
           onKeyDown={(event) => {
-            if (event.key === "Enter" && !showSuggestions) {
+            if (event.key === "Enter") {
               event.preventDefault();
-              submitSearch();
+              const filtered = filterSearchSuggestions(suggestions, inputValue);
+              submitSearch(undefined, filtered[activeSuggestionIndex]);
+              setShowSuggestions(false);
               inputRef.current?.blur();
+              return;
             }
 
             if (event.key === "Escape") {
@@ -84,11 +90,6 @@ export function Topbar() {
           <SearchSuggestions
             isOpen={showSuggestions}
             onClose={() => setShowSuggestions(false)}
-            onSubmit={() => {
-              submitSearch();
-              setShowSuggestions(false);
-              inputRef.current?.blur();
-            }}
           />
         ) : null}
         </div>

@@ -4,29 +4,25 @@ import { filterSearchSuggestions } from "@/lib/search/filter-search-suggestions"
 import { useDashboardSearch } from "@/lib/search/dashboard-search-context";
 import type { SearchSuggestion } from "@/lib/search/search-suggestion.types";
 import { cn } from "@/lib/utils";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 type SearchSuggestionsProps = {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: () => void;
 };
 
 export function SearchSuggestions({
   isOpen,
   onClose,
-  onSubmit,
 }: SearchSuggestionsProps) {
-  const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const {
     inputValue,
     suggestions,
     submitSearch,
-    setInputValue,
+    activeSuggestionIndex,
+    setActiveSuggestionIndex,
   } = useDashboardSearch();
-  const [activeIndex, setActiveIndex] = useState(0);
 
   const filteredSuggestions = useMemo(
     () => filterSearchSuggestions(suggestions, inputValue),
@@ -35,20 +31,15 @@ export function SearchSuggestions({
 
   const handleSelect = useCallback(
     (suggestion: SearchSuggestion) => {
-      setInputValue(suggestion.title);
-      submitSearch(suggestion.title);
+      submitSearch(suggestion.title, suggestion);
       onClose();
-
-      if (suggestion.href?.startsWith("/")) {
-        router.push(suggestion.href);
-      }
     },
-    [onClose, router, setInputValue, submitSearch],
+    [onClose, submitSearch],
   );
 
   useEffect(() => {
-    setActiveIndex(0);
-  }, [inputValue, filteredSuggestions.length]);
+    setActiveSuggestionIndex(0);
+  }, [inputValue, filteredSuggestions.length, setActiveSuggestionIndex]);
 
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent) => {
@@ -67,7 +58,7 @@ export function SearchSuggestions({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "ArrowDown") {
         event.preventDefault();
-        setActiveIndex((current) =>
+        setActiveSuggestionIndex((current) =>
           filteredSuggestions.length
             ? (current + 1) % filteredSuggestions.length
             : 0,
@@ -77,36 +68,17 @@ export function SearchSuggestions({
 
       if (event.key === "ArrowUp") {
         event.preventDefault();
-        setActiveIndex((current) =>
+        setActiveSuggestionIndex((current) =>
           filteredSuggestions.length
             ? (current - 1 + filteredSuggestions.length) % filteredSuggestions.length
             : 0,
         );
-        return;
-      }
-
-      if (event.key === "Enter") {
-        event.preventDefault();
-        const activeSuggestion = filteredSuggestions[activeIndex];
-        if (activeSuggestion) {
-          handleSelect(activeSuggestion);
-          return;
-        }
-
-        onSubmit();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [
-    activeIndex,
-    filteredSuggestions,
-    handleSelect,
-    inputValue,
-    isOpen,
-    onSubmit,
-  ]);
+  }, [filteredSuggestions.length, inputValue, isOpen, setActiveSuggestionIndex]);
 
   if (!isOpen || !inputValue.trim()) return null;
 
@@ -123,9 +95,9 @@ export function SearchSuggestions({
                 type="button"
                 className={cn(
                   "flex w-full items-start gap-3 px-3 py-2.5 text-left transition-colors hover:bg-accent",
-                  index === activeIndex && "bg-accent",
+                  index === activeSuggestionIndex && "bg-accent",
                 )}
-                onMouseEnter={() => setActiveIndex(index)}
+                onMouseEnter={() => setActiveSuggestionIndex(index)}
                 onClick={() => handleSelect(suggestion)}
               >
                 <span className="min-w-0 flex-1">
@@ -152,7 +124,7 @@ export function SearchSuggestions({
       )}
 
       <div className="border-t border-border px-3 py-2 text-[11px] text-muted-foreground">
-        Use arrow keys to browse suggestions, Enter to search
+        Use arrow keys to browse suggestions, Enter to open the selected result
       </div>
     </div>
   );
