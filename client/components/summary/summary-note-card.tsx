@@ -19,6 +19,7 @@ import {
 
 type SummaryNoteCardProps = {
   note: SummaryNoteItem;
+  highlighted?: boolean;
   approved: boolean;
   emailSent: boolean;
   isSendingEmail: boolean;
@@ -30,6 +31,7 @@ type SummaryNoteCardProps = {
 
 export function SummaryNoteCard({
   note,
+  highlighted = false,
   approved,
   emailSent,
   isSendingEmail,
@@ -42,9 +44,11 @@ export function SummaryNoteCard({
 
   return (
     <article
+      id={`summary-note-${note.id}`}
       className={cn(
-        "flex flex-col gap-4 rounded-2xl bg-card p-4 shadow-sm ring-1 ring-foreground/10 transition-colors",
+        "flex flex-col gap-4 rounded-2xl bg-card p-4 shadow-sm ring-1 ring-foreground/10 transition-colors scroll-mt-24",
         approved && "bg-sage/20 ring-sage/30 dark:bg-sage/10",
+        highlighted && "ring-2 ring-primary/40",
       )}
     >
       <div className="flex items-start gap-3">

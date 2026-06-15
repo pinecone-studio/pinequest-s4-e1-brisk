@@ -2,7 +2,7 @@ import { AuthShell } from "@/components/auth/auth-shell";
 import { SignUpForm } from "@/components/auth/sign-up-form";
 import {
   DEMO_SIGN_IN_EMAIL_COOKIE,
-  getConfiguredDemoSignInEmail,
+  resolveDemoSignInEmail,
 } from "@/lib/auth/demo-sign-in-email";
 import { resolveAppEntryPath } from "@/lib/server/resolve-app-entry-path";
 import { auth } from "@clerk/nextjs/server";
@@ -16,9 +16,9 @@ export default async function SignUpPage() {
 
   const cookieStore = await cookies();
   const cookieEmail = cookieStore.get(DEMO_SIGN_IN_EMAIL_COOKIE)?.value;
-  const initialEmail = cookieEmail
-    ? decodeURIComponent(cookieEmail)
-    : getConfiguredDemoSignInEmail();
+  const initialEmail = resolveDemoSignInEmail(
+    cookieEmail ? decodeURIComponent(cookieEmail) : null,
+  );
 
   return (
     <AuthShell variant="plain">

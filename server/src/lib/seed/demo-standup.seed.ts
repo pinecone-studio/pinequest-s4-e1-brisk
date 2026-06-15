@@ -6,6 +6,22 @@ import { standaloneRecordings } from "../../schema/recordings.schema";
 
 const DEMO_STANDUP_MARKER_ID = "mock-standup-day-1";
 
+const BRISK_STANDUP_TEAM_NAMES = [
+  "Данни",
+  "Батбилэг",
+  "Сүх-Очир",
+  "Цолмонгэрэл",
+  "Амаржаргал",
+] as const;
+
+const BRISK_STANDUP_TEAM_EMAILS: Record<(typeof BRISK_STANDUP_TEAM_NAMES)[number], string> = {
+  Данни: "danny.otgontsetseg@gmail.com",
+  Батбилэг: "batbilgu@pinequest.dev",
+  "Сүх-Очир": "suh-ochir@pinequest.dev",
+  Цолмонгэрэл: "tsolmongerel@pinequest.dev",
+  Амаржаргал: "amarjargal@pinequest.dev",
+};
+
 type DemoStandupDaySeed = {
   id: string;
   recordingId: string;
@@ -24,12 +40,12 @@ const DEMO_STANDUP_DAYS: DemoStandupDaySeed[] = [
     recordingId: "mock-standup-recording-1",
     title: "Standup — 1-р өдөр: Аудио урсгал ба баазын бүтэц",
     summaryPreview:
-      "LiveKit аудио урсгал, Cloudflare D1 схем, Clerk нэвтрэлт — Brisk даалгавруудыг автоматаар action item болгосон.",
+      "Сүх-Очир хоцорсон, Батбилэг D1 blocker, Амаржаргал Egress 403 — Brisk бүгдийг action item болгосон.",
     meetingContent:
-      "Багийнхан Brisk платформын гол цөм болох LiveKit-ээр дамжуулж аудиог хэрхэн тасралтгүй авах, Cloudflare D1 өгөгдлийн санд уулзалтын мэдээллийг хэрхэн бүтэцжүүлж хадгалах, мөн Clerk ашиглан багуудын нэвтрэх хэсгийг хэлэлцсэн.",
+      "Данни 09:00-д standup нээхэд Сүх-Очир 5 минут хоцорч орсон — «Дараагийн удаа цагтаа орно уу, бид Brisk-ээр бичиж байгаа» гэж сануулав. Батбилэг LiveKit→D1 холболт дээр foreign key алдаа гарч блоклогдсон байгааг тайлбарлаж, шийдэл нь migration-ийг эхлээд Цолмонгэрэл review-д өгөх шаардлагатай болохыг хэлсэн. Амаржаргал Egress webhook 403 буцааж байгаа тул staging бичлэг бүрэн ажиллахгүй байна.",
     briskRole:
-      'Багийн анхны уулзалтын аудиог Brisk өөрөө бичиж авснаар "LiveKit болон D1 холболтыг хэн хариуцах" даалгавруудыг автоматаар ялган тэмдэглэж, note хөтлөх цагийг хэмнэсэн.',
-    topics: ["LiveKit аудио", "Cloudflare D1", "Clerk нэвтрэлт", "Egress бичлэг"],
+      "Brisk багийн анхны standup-ийг бүрэн бичиж, blocker-уудыг action item болгон ялгаж, note хөтлөх 20 минут хэмнэгдсэн.",
+    topics: ["LiveKit аудио", "D1 migration blocker", "Egress 403 алдаа", "Standup цагийн дүрэм"],
     dayOffset: 0,
     durationMinutes: 22,
   },
@@ -38,12 +54,12 @@ const DEMO_STANDUP_DAYS: DemoStandupDaySeed[] = [
     recordingId: "mock-standup-recording-2",
     title: "Standup — 2-р өдөр: Chimege API интеграц",
     summaryPreview:
-      "Chimege live транскрипц, latency шийдэл, Home page UI бүтэц — техникийн шийдвэрүүд Brisk-д хадгалагдсан.",
+      "Chimege 8 сек latency, Safari event stream blocker — баг ичгүүртэй байсан ч Brisk шийдвэрийг тодорхойлсон.",
     meetingContent:
-      "Chimege API-ийг системдээ холбож, уулзалтын явцад ярьж буй Монгол яриаг алдаагүй, шууд (live) бичвэр болгон буулгах логикийг хэлэлцсэн.",
+      "Chimege live demo дээр 8 секундын latency гарч баг ичгүүртэй байсан. Цолмонгэрэл Home feed-ийн mock-ийг Батбилэгийн meeting list API-аас хараахан хүлээж байгааг хэлсэн. Сүх-Очир Safari дээр Chimege event stream огт ирэхгүй blocker-ийг өгсөн.",
     briskRole:
-      "Уулзалтын үеэр гарсан Chimege API-ийн latency болон аудио форматын асуудлыг шийдвэрлэх техникийн яриаг Brisk текст болгон хадгалж, дараагийн алхмуудыг тодорхойлсон.",
-    topics: ["Chimege API", "Live транскрипц", "Home page UI", "Latency"],
+      "Latency-ийн маргаан гарсан ч Brisk transcript-оор blocker-уудыг ялгаж, баг дахин давтахгүйгээр шийдвэрлэх замаа олсон.",
+    topics: ["Chimege latency", "Safari blocker", "Home feed dependency", "Standup дүрэм"],
     dayOffset: 1,
     durationMinutes: 25,
   },
@@ -52,12 +68,12 @@ const DEMO_STANDUP_DAYS: DemoStandupDaySeed[] = [
     recordingId: "mock-standup-recording-3",
     title: "Standup — 3-р өдөр: Gemini AI хураангуй",
     summaryPreview:
-      "Gemini summary, action item ялгалт, speaker diarization — хоцорсон гишүүн transcript архиваар нэгдсэн.",
+      "Батбилэг 12 мин хоцорсон, Gemini буруу assignee, diarization алдаа — Brisk transcript тус болсон.",
     meetingContent:
-      "Бичигдсэн Монгол бичвэрээс Gemini AI ашиглан уулзалтын гол санаа, хураангуй (Summary) болон хэн юу хийх ёстойг (Action Items) автоматаар ялгаж, спикерүүдийг таних промптыг эцэслэн тохирохоор уулзсан.",
+      "Батбилэг 12 минут хоцорч орсон — Данни pitch-ийн өмнө ийм байж болохгүй гэж сануулав. Gemini assignee буруу гарч, diarization Данни/Батбилэгийг нэг speaker болгож байсан. Батбилэг Brisk transcript-аар яриаг гүйцээж ороод blocker-үүдийг давтан тайлбарласан.",
     briskRole:
-      "Энэхүү хүнд сэдвийг хэлэлцэж байх үед уулзалтаас хоцорсон гишүүн Brisk-ийн архивыг нээж, өмнөх минутуудад юу яригдсаныг гүйцэж уншаад багтайгаа шууд нэгдсэн.",
-    topics: ["Gemini AI", "Action items", "Speaker diarization", "Summary UI"],
+      "Хоцорсон ч Brisk архив ашиглан багт нэгдсэн — don't be late, гэхдээ хоцорвол transcript-аар нөхнө.",
+    topics: ["Хоцролт", "Gemini assignee алдаа", "Diarization", "Transcript catch-up"],
     dayOffset: 2,
     durationMinutes: 28,
   },
@@ -66,12 +82,12 @@ const DEMO_STANDUP_DAYS: DemoStandupDaySeed[] = [
     recordingId: "mock-standup-recording-4",
     title: "Standup — 4-р өдөр: Queue ба pitch бэлдэлт",
     summaryPreview:
-      "Cloudflare Queue pipeline, кирилл regex validation, 8 минутын pitch demo script — 30 минут note хөтлөлт хэмнэгдсэн.",
+      "Queue consumer 3 удаа унасан, regex Сүх-Очир нэрийг шүүж байсан — pitch-ийн өмнө Brisk бүх blocker-ийг цуглуулсан.",
     meetingContent:
-      "Бичлэгийг ард талд (background) цarцаахгүйгээр боловсруулах Cloudflare Workers болон Queue (дараалал)-ийн холболтыг шалгах, Монгол хэлний кирилл үсгийн валидацийг Regex-ээр эцэслэн шалгаж, оройны 8 минутын бүтэн илтгэл (Pitch)-дээ бэлдэхээр ярилцсан.",
+      "Pitch маргааш байгаа тул баг напряжен байсан. Батбилэг Queue consumer staging дээр 3 удаа унаж transcription stuck болсон. Сүх-Очир кирилл regex зураастай нэрийг invite list-ээс шүүж хаяж байсныг олсон. Данни blocker-ээ хэлж, pitch-д бэлэн бай гэж standup-ийг төгсгөсөн.",
     briskRole:
-      "Уулзалт дуусмагц тэмдэглэл бичихэд зарцуулдаг байсан 30 минутыг 0 минут болгон хэмнэж, багийн гишүүдэд демо илтгэлдээ бүрэн анхаарлаа хандуулах боломжийг олгосон.",
-    topics: ["Cloudflare Queue", "Background processing", "Кирилл validation", "Pitch demo"],
+      "Pitch-ийн өмнөх сүүлийн standup-д blocker-ууд Brisk summary-д тодорхой харагдаж, note хөтлөхгүйгээр rehearsal руу шилжсэн.",
+    topics: ["Queue failure", "Regex алдаа", "Pitch deadline", "Demo rehearsal"],
     dayOffset: 3,
     durationMinutes: 30,
   },
@@ -134,8 +150,11 @@ export async function ensureDemoStandupForUser(
       roomName: day.id,
       transcript,
       summary: summaryContent,
-      participantNames: [ownerName],
-      participantEmails: [{ name: ownerName, email: ownerEmail }],
+      participantNames: [...BRISK_STANDUP_TEAM_NAMES],
+      participantEmails: BRISK_STANDUP_TEAM_NAMES.map((name) => ({
+        name,
+        email: name === "Данни" ? ownerEmail : BRISK_STANDUP_TEAM_EMAILS[name],
+      })),
       status: "done",
       createdAt: start,
       updatedAt: end,
@@ -148,7 +167,7 @@ export async function ensureDemoStandupForUser(
       title: day.title,
       audioUrl: `demo://${day.recordingId}`,
       status: "done",
-      speakerCount: 4,
+      speakerCount: BRISK_STANDUP_TEAM_NAMES.length,
       transcript,
       keyPoints: [day.summaryPreview, ...day.topics],
       durationSeconds,
