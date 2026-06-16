@@ -64,6 +64,8 @@ export interface Bindings {
   GEMINI_API_KEY?: string;
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
+  GOOGLE_DEMO_SHARED?: string;
+  GOOGLE_DEMO_CALENDAR_EMAIL?: string;
   ENCRYPTION_KEY?: string;
   EMAIL?: SendEmail;
   EMAIL_FROM_ADDRESS?: string;

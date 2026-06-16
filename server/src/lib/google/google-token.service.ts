@@ -150,7 +150,7 @@ export async function syncGoogleTokensFromClerk(
     return null;
   }
 
-  const clerkId = await getUserClerkId(db, userId, env);
+  const clerkId = await getUserClerkId(db, userId);
   if (!clerkId) {
     return null;
   }
