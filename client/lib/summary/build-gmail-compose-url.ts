@@ -2,7 +2,7 @@ export type GmailComposeParams = {
   to: string;
   clientName: string;
   taskDescription: string;
-  websiteLink: string;
+  websiteLink?: string;
 };
 
 export function buildGmailComposeUrl({
@@ -13,7 +13,7 @@ export function buildGmailComposeUrl({
 }: GmailComposeParams): string {
   const subject = "Thank you for attending our meeting! 🚀";
 
-  const body = [
+  const lines = [
     `Hi ${clientName},`,
     "",
     "Thank you so much for taking the time to meet with us — it was a pleasure connecting with you!",
@@ -22,15 +22,21 @@ export function buildGmailComposeUrl({
     "📋 Our Task",
     `   ${taskDescription}`,
     "",
-    "🔗 Useful Links",
-    `   ${websiteLink}`,
-    "",
+  ];
+
+  if (websiteLink) {
+    lines.push("🔗 Useful Links", `   ${websiteLink}`, "");
+  }
+
+  lines.push(
     "Please don't hesitate to reach out if you have any questions or need anything from our side.",
     "Looking forward to working together!",
     "",
     "Warm regards,",
     "The Brisk Team",
-  ].join("\n");
+  );
+
+  const body = lines.join("\n");
 
   return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }

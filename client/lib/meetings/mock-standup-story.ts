@@ -487,15 +487,19 @@ export const MOCK_STANDUP_MEETING_IDS = [
 
 export const MOCK_SUMMARY_MEETING_ID = "mock-standup-day-4";
 
+function baseMockId(meetingId: string): string {
+  return meetingId.split("__")[0] ?? meetingId;
+}
+
 export function isMockStandupMeeting(meetingId: string) {
-  return standupDayById.has(meetingId);
+  return standupDayById.has(meetingId) || standupDayById.has(baseMockId(meetingId));
 }
 
 /** @deprecated Use isMockStandupMeeting */
 export const isMockSummaryMeeting = isMockStandupMeeting;
 
 export function getMockStandupDay(meetingId: string): MockStandupDay | undefined {
-  return standupDayById.get(meetingId);
+  return standupDayById.get(meetingId) ?? standupDayById.get(baseMockId(meetingId));
 }
 
 export function getMockStandupMeetings(): MeetingListItem[] {
@@ -505,7 +509,7 @@ export function getMockStandupMeetings(): MeetingListItem[] {
 export function prependMockStandupMeetings(meetings: MeetingListItem[]): MeetingListItem[] {
   const mockMeetings = getMockStandupMeetings();
   const withoutDupes = meetings.filter(
-    (meeting) => !standupDayById.has(meeting.id) && meeting.id !== LEGACY_MOCK_SUMMARY_MEETING_ID,
+    (meeting) => !isMockStandupMeeting(meeting.id),
   );
   return [...mockMeetings, ...withoutDupes];
 }
@@ -628,16 +632,26 @@ const mockRecordingById = new Map(
   getMockStandupRecordings().map((recording) => [recording.id, recording] as const),
 );
 
+function baseRecordingId(recordingId: string): string {
+  return recordingId.split("__")[0] ?? recordingId;
+}
+
 export function isMockStandupRecording(recordingId: string) {
-  return mockRecordingById.has(recordingId);
+  return (
+    mockRecordingById.has(recordingId) || mockRecordingById.has(baseRecordingId(recordingId))
+  );
 }
 
 export function getMockStandupRecordingById(recordingId: string) {
-  return mockRecordingById.get(recordingId);
+  return mockRecordingById.get(recordingId) ?? mockRecordingById.get(baseRecordingId(recordingId));
 }
 
 export function getMockStandupMeetingIdForRecording(recordingId: string) {
-  return mockRecordingToMeetingId.get(recordingId) ?? null;
+  return (
+    mockRecordingToMeetingId.get(recordingId) ??
+    mockRecordingToMeetingId.get(baseRecordingId(recordingId)) ??
+    null
+  );
 }
 
 export function getMockStandupDetailHref(recordingId: string) {
