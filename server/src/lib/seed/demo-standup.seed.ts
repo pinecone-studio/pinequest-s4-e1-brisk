@@ -110,10 +110,12 @@ export async function ensureDemoStandupForUser(
   ownerEmail: string,
   ownerName: string,
 ) {
+  const scopedMarkerId = `${DEMO_STANDUP_MARKER_ID}__${userId}`;
+
   const [existing] = await db
     .select({ id: meetings.id })
     .from(meetings)
-    .where(and(eq(meetings.userId, userId), eq(meetings.id, DEMO_STANDUP_MARKER_ID)))
+    .where(and(eq(meetings.userId, userId), eq(meetings.id, scopedMarkerId)))
     .limit(1);
 
   if (existing) {
@@ -125,9 +127,11 @@ export async function ensureDemoStandupForUser(
     const summaryContent = `${day.meetingContent}\n\nBrisk-ийн үүрэг: ${day.briskRole}`;
     const transcript = summaryContent;
     const durationSeconds = Math.max(60, Math.round((end.getTime() - start.getTime()) / 1000));
+    const meetingId = `${day.id}__${userId}`;
+    const recordingId = `${day.recordingId}__${userId}`;
 
     await db.insert(meetings).values({
-      id: day.id,
+      id: meetingId,
       userId,
       title: day.title,
       createdAt: start,
@@ -135,8 +139,8 @@ export async function ensureDemoStandupForUser(
     });
 
     await db.insert(meetingSummaries).values({
-      id: `summary_${day.id}`,
-      meetingId: day.id,
+      id: `summary_${meetingId}`,
+      meetingId,
       content: summaryContent,
       keyPoints: [day.summaryPreview, ...day.topics],
       actionItems: [],
@@ -145,9 +149,9 @@ export async function ensureDemoStandupForUser(
     });
 
     await db.insert(meetingTranscriptions).values({
-      id: `transcription_${day.id}`,
-      meetingId: day.id,
-      roomName: day.id,
+      id: `transcription_${meetingId}`,
+      meetingId,
+      roomName: meetingId,
       transcript,
       summary: summaryContent,
       participantNames: [...BRISK_STANDUP_TEAM_NAMES],
@@ -162,10 +166,10 @@ export async function ensureDemoStandupForUser(
     });
 
     await db.insert(standaloneRecordings).values({
-      id: day.recordingId,
+      id: recordingId,
       userId,
       title: day.title,
-      audioUrl: `demo://${day.recordingId}`,
+      audioUrl: `demo://${recordingId}`,
       status: "done",
       speakerCount: BRISK_STANDUP_TEAM_NAMES.length,
       transcript,
