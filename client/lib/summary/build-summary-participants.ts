@@ -9,6 +9,7 @@ export function mapSpeakerStatsToSummaryParticipants(
     id: stat.user.id,
     name: stat.user.name,
     initials: stat.user.initials,
+    email: stat.user.email,
     avatarUrl: stat.user.avatarUrl ?? getEmailAvatarUrl(stat.user.email),
   }));
 }
