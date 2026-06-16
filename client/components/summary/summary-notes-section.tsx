@@ -5,9 +5,7 @@ import { SummaryNoteCard } from "@/components/summary/summary-note-card";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/toast";
-import { sendActionItemEmail } from "@/lib/api/summary-actions";
-import { formatUserError } from "@/lib/errors/format-user-error";
-import { formatSummaryNoteDateTime } from "@/lib/summary/format-summary-note-date";
+import { buildGmailComposeUrl } from "@/lib/summary/build-gmail-compose-url";
 import { noteMatchesTopic } from "@/lib/summary/match-note-to-topic";
 import { resolveAssigneeEmail } from "@/lib/summary/resolve-assignee-email";
 import type { SummaryNoteItem } from "@/lib/summary/summary-note.types";
@@ -58,7 +56,7 @@ export function SummaryNotesSection({
   const toast = useToast();
   const [approvedIds, setApprovedIds] = useState<Set<string>>(() => new Set());
   const [sentEmailIds, setSentEmailIds] = useState<Set<string>>(() => new Set());
-  const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
+  const sendingEmailId = null;
   const [editingNote, setEditingNote] = useState<SummaryNoteItem | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
@@ -71,7 +69,7 @@ export function SummaryNotesSection({
   }, []);
 
   const sendNoteEmail = useCallback(
-    async (note: SummaryNoteItem) => {
+    (note: SummaryNoteItem) => {
       const assigneeEmail = resolveAssigneeEmail(note.assignee);
       if (!assigneeEmail) {
         toast.add({
@@ -82,39 +80,19 @@ export function SummaryNotesSection({
         return;
       }
 
-      setSendingEmailId(note.id);
+      const url = buildGmailComposeUrl({
+        to: assigneeEmail,
+        clientName: note.assignee,
+        taskDescription: note.title,
+      });
 
-      try {
-        await sendActionItemEmail({
-          meetingId: note.meetingId,
-          meetingTitle: note.meetingTitle,
-          noteTitle: note.title,
-          assignee: note.assignee,
-          assigneeEmail,
-          dateTimeLabel: formatSummaryNoteDateTime(note.dateTime),
-          source: note.source,
-        });
+      window.open(url, "_blank", "noopener,noreferrer");
 
-        setSentEmailIds((current) => {
-          const next = new Set(current);
-          next.add(note.id);
-          return next;
-        });
-
-        toast.add({
-          title: "Email sent",
-          description: `Action item emailed to ${assigneeEmail}.`,
-          type: "success",
-        });
-      } catch (caughtError) {
-        toast.add({
-          title: "Could not send email",
-          description: formatUserError(caughtError),
-          type: "error",
-        });
-      } finally {
-        setSendingEmailId(null);
-      }
+      setSentEmailIds((current) => {
+        const next = new Set(current);
+        next.add(note.id);
+        return next;
+      });
     },
     [toast],
   );
