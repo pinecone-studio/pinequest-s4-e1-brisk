@@ -16,16 +16,21 @@ export async function GET(request: Request) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
+  const userId = process.env.DEMO_TARGET_USER_ID;
+  if (!userId) {
+    return new NextResponse('Demo user ID not configured', { status: 500 });
+  }
+
   const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 
   try {
     const signInToken = await clerkClient.signInTokens.createSignInToken({
-      userId: process.env.DEMO_TARGET_USER_ID,
+      userId,
       expiresInSeconds: 60,
     });
 
     return NextResponse.redirect(signInToken.url);
-  } catch (error) {
+  } catch (_error) {
     return new NextResponse('Authentication Failed', { status: 500 });
   }
 }
