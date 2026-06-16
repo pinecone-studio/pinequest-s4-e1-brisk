@@ -16,6 +16,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { createGoogleCalendarEvent } from "@/lib/api/google-workspace";
+import { saveLocalCalendarEvent } from "@/lib/home/local-calendar-events";
 import { createTasksBatch } from "@/lib/api/tasks";
 import {
   buildDefaultFollowUpDate,
@@ -198,13 +199,19 @@ export function PostMeetingActionCard({
           (teammate) => teammate.id === form.assignedTeammateId,
         );
 
-        await createGoogleCalendarEvent({
+        const calendarInput = {
           summary: `${recordingName} – Follow-up`,
           startDateTime: toCalendarDateTime(followUpStart),
           endDateTime: toCalendarDateTime(followUpEnd),
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           attendeeEmails: assignedTeammate?.email ? [assignedTeammate.email] : undefined,
-        });
+        };
+
+        try {
+          await createGoogleCalendarEvent(calendarInput);
+        } catch {
+          saveLocalCalendarEvent(calendarInput);
+        }
       }
 
       const enabledTasks = form.tasks.filter(

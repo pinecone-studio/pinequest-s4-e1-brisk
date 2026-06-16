@@ -8,6 +8,10 @@ import {
 import { isGoogleDemoShared } from "@/lib/google/demo-google";
 import { useClientApiAuth } from "@/lib/api/auth-interceptor";
 import { buildStandupAgendaEvents } from "@/lib/meetings/mock-standup-story";
+import {
+  getLocalCalendarEventsInRange,
+  saveLocalCalendarEvent,
+} from "@/lib/home/local-calendar-events";
 import type {
   AgendaEvent,
   CreateCalendarEventInput,
@@ -71,6 +75,7 @@ export function GoogleAgendaProvider({ children }: { children: ReactNode }) {
     try {
       const bounds = getMonthGridBounds(year, month);
       const standupEvents = buildStandupAgendaEvents();
+      const localEvents = getLocalCalendarEventsInRange(bounds.timeMin, bounds.timeMax);
       let response = await getGoogleCalendarAgenda(bounds);
 
       if (!response.connected && !isGoogleDemoShared()) {
@@ -87,13 +92,15 @@ export function GoogleAgendaProvider({ children }: { children: ReactNode }) {
         response.events.map((event) => enrichAgendaEvent(event)),
       );
 
-      setConnected(response.connected || standupEvents.length > 0);
-      setEvents([...standupEvents, ...googleEvents]);
+      setConnected(response.connected || standupEvents.length > 0 || localEvents.length > 0);
+      setEvents([...standupEvents, ...googleEvents, ...localEvents]);
     } catch (caughtError) {
       const standupEvents = buildStandupAgendaEvents();
+      const bounds = getMonthGridBounds(year, month);
+      const localEvents = getLocalCalendarEventsInRange(bounds.timeMin, bounds.timeMax);
       setError(formatGoogleWorkspaceError(caughtError));
-      setConnected(standupEvents.length > 0);
-      setEvents(standupEvents);
+      setConnected(standupEvents.length > 0 || localEvents.length > 0);
+      setEvents([...standupEvents, ...localEvents]);
     } finally {
       setIsLoading(false);
     }
@@ -113,15 +120,20 @@ export function GoogleAgendaProvider({ children }: { children: ReactNode }) {
 
   const createEvent = useCallback(
     async (input: CreateCalendarEventInput) => {
-      try {
-        await createGoogleCalendarEvent(input);
-      } catch (caughtError) {
-        throw new Error(formatGoogleWorkspaceError(caughtError));
+      if (connected) {
+        try {
+          await createGoogleCalendarEvent(input);
+          await loadAgendaForMonth(visibleMonth.year, visibleMonth.month);
+          return;
+        } catch (caughtError) {
+          throw new Error(formatGoogleWorkspaceError(caughtError));
+        }
       }
 
+      saveLocalCalendarEvent(input);
       await loadAgendaForMonth(visibleMonth.year, visibleMonth.month);
     },
-    [loadAgendaForMonth, visibleMonth.month, visibleMonth.year],
+    [connected, loadAgendaForMonth, visibleMonth.month, visibleMonth.year],
   );
 
   const getEventsForDay = useCallback(
