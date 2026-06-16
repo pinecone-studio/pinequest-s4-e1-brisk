@@ -37,10 +37,12 @@ export const RecordingControls = ({
   const participantNamesRef = useRef(participantNames);
   const participantsRef = useRef(participants);
 
-  recordingRef.current = recording;
-  hasStoppedRef.current = hasStopped;
-  participantNamesRef.current = participantNames;
-  participantsRef.current = participants;
+  useEffect(() => {
+    recordingRef.current = recording;
+    hasStoppedRef.current = hasStopped;
+    participantNamesRef.current = participantNames;
+    participantsRef.current = participants;
+  }, [recording, hasStopped, participantNames, participants]);
 
   const recordingStatus: RecordingStatus =
     recording?.egressId && !hasStopped
