@@ -9,6 +9,7 @@ import {
   getMockStandupMeetingDisplay,
   getPersonalizedStandupParticipants,
 } from "@/lib/meetings/mock-standup-story";
+import { buildStandupDocTabs } from "@/lib/summary/build-full-mock-standup-google-docs-content";
 import { useRegisterSearchSuggestions } from "@/lib/search/use-register-search-suggestions";
 import { useUser } from "@clerk/nextjs";
 import { useMemo } from "react";
@@ -28,7 +29,7 @@ function buildClerkProfileFromUser(
     clerkId: user.id,
     email,
     name,
-    avatarUrl: user.imageUrl ?? null,
+    avatarUrl: null,
     internalUserId: null,
   };
 }
@@ -47,6 +48,11 @@ export function MockStandupMeetingDetailView({ meetingId }: MockStandupMeetingDe
     [clerkProfile],
   );
 
+  const standupDocTabs = useMemo(
+    () => buildStandupDocTabs(participants),
+    [participants],
+  );
+
   const searchSuggestions = useMemo(() => buildMockStandupSearchSuggestions(), []);
   useRegisterSearchSuggestions(`meeting-detail-${meetingId}`, searchSuggestions);
 
@@ -54,7 +60,7 @@ export function MockStandupMeetingDetailView({ meetingId }: MockStandupMeetingDe
     return null;
   }
 
-  const { listItem, topics, notes } = mock;
+  const { listItem, topics, notes, googleDocUrl } = mock;
   const createdDate = formatMeetingDateLong(listItem.createdAt) || null;
   const durationLabel = getMeetingDurationLabel(listItem);
 
@@ -67,6 +73,8 @@ export function MockStandupMeetingDetailView({ meetingId }: MockStandupMeetingDe
       participants={participants}
       initialTopics={topics}
       initialNotes={notes}
+      standupDocTabs={standupDocTabs}
+      googleDocUrl={googleDocUrl}
     />
   );
 }

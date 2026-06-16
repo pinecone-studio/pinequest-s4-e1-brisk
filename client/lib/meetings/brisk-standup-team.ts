@@ -1,6 +1,6 @@
 import { getClerkProfile } from "@/lib/meetings/clerk-profile";
 import type { SummaryParticipant } from "@/lib/summary/summary-participant.types";
-import { getEmailAvatarUrl } from "@/lib/user/email-avatar-url";
+import { getGmailAvatarUrl } from "@/lib/user/email-avatar-url";
 
 export type BriskStandupTeamMember = {
   id: string;
@@ -10,24 +10,23 @@ export type BriskStandupTeamMember = {
   role: string;
   /** Legacy mock-story names that map to this teammate. */
   aliases?: string[];
-  /** Optional fixed profile photo when email lookup has no public image. */
-  avatarUrl?: string;
 };
 
 export const BRISK_STANDUP_TEAM: BriskStandupTeamMember[] = [
   {
     id: "brisk-danny",
-    name: "Данни",
+    name: "Дэнни",
+    aliases: ["Данни"],
     email: "danny.otgontsetseg@gmail.com",
     initials: "Д",
     role: "Team Lead",
   },
   {
     id: "brisk-chinbat",
-    name: "Чинбат",
-    aliases: ["Батбилэг"],
+    name: "Бат-Оргил",
+    aliases: ["Чинбат", "Батбилэг"],
     email: "batblg247@gmail.com",
-    initials: "Ч",
+    initials: "БО",
     role: "Backend Engineer",
   },
   {
@@ -56,7 +55,9 @@ export const BRISK_STANDUP_TEAM: BriskStandupTeamMember[] = [
 export const BRISK_STANDUP_TEAM_NAMES = BRISK_STANDUP_TEAM.map((member) => member.name);
 
 const BRISK_TEAM_NAME_ALIASES: Record<string, string> = {
-  Батбилэг: "Чинбат",
+  Данни: "Дэнни",
+  Чинбат: "Бат-Оргил",
+  Батбилэг: "Бат-Оргил",
 };
 
 function memberMatchesName(member: BriskStandupTeamMember, name: string) {
@@ -94,7 +95,7 @@ export function toStandupParticipant(member: BriskStandupTeamMember): SummaryPar
     name: member.name,
     initials: member.initials,
     email: member.email,
-    avatarUrl: member.avatarUrl ?? getEmailAvatarUrl(member.email),
+    avatarUrl: getGmailAvatarUrl(member.email),
   };
 }
 
@@ -110,8 +111,7 @@ export function getBriskStandupParticipants(
         name: member.name,
         initials: member.initials,
         email: member.email,
-        avatarUrl:
-          profile.avatarUrl ?? member.avatarUrl ?? getEmailAvatarUrl(member.email),
+        avatarUrl: profile.avatarUrl ?? getGmailAvatarUrl(member.email),
       };
     }
 

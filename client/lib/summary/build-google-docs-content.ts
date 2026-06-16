@@ -9,6 +9,8 @@ type BuildGoogleDocsContentInput = {
   participants: SummaryParticipant[];
   topics: string[];
   notes: SummaryNoteItem[];
+  meetingBrief?: string | null;
+  briskRole?: string | null;
 };
 
 export function buildGoogleDocsContent({
@@ -18,12 +20,26 @@ export function buildGoogleDocsContent({
   participants,
   topics,
   notes,
+  meetingBrief,
+  briskRole,
 }: BuildGoogleDocsContentInput): string {
   const lines: string[] = [title, ""];
 
   if (createdDate) lines.push(`Date: ${createdDate}`);
   if (durationLabel) lines.push(`Duration: ${durationLabel}`);
   if (createdDate || durationLabel) lines.push("");
+
+  if (meetingBrief?.trim()) {
+    lines.push("Meeting brief");
+    lines.push(meetingBrief.trim());
+    lines.push("");
+  }
+
+  if (briskRole?.trim()) {
+    lines.push("Brisk role");
+    lines.push(briskRole.trim());
+    lines.push("");
+  }
 
   lines.push("Participants");
   for (const participant of participants) {

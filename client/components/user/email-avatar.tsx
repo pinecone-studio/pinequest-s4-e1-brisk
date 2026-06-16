@@ -5,8 +5,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/avatar";
-import { getEmailAvatarSources } from "@/lib/user/email-avatar-sources";
-import { useMemo, useState } from "react";
+import { getGmailAvatarUrl } from "@/lib/user/email-avatar-url";
 
 type EmailAvatarProps = {
   email: string;
@@ -25,25 +24,15 @@ export function EmailAvatar({
   size = "default",
   className,
 }: EmailAvatarProps) {
-  const sources = useMemo(
-    () => getEmailAvatarSources(email, 150, avatarUrl),
-    [avatarUrl, email],
-  );
-  const [sourceIndex, setSourceIndex] = useState(0);
-  const src = sources[sourceIndex];
+  const resolvedEmail = email.trim();
+  const src =
+    avatarUrl?.trim() ||
+    (resolvedEmail ? getGmailAvatarUrl(resolvedEmail, 150) : null);
 
   return (
     <Avatar className={className} size={size}>
       {src ? (
-        <AvatarImage
-          alt={name}
-          src={src}
-          onError={() => {
-            setSourceIndex((current) =>
-              current + 1 < sources.length ? current + 1 : current,
-            );
-          }}
-        />
+        <AvatarImage alt={name} src={src} referrerPolicy="no-referrer" />
       ) : null}
       <AvatarFallback>{initials}</AvatarFallback>
     </Avatar>
