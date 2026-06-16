@@ -2,9 +2,10 @@ import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 /**
- * Root auth + redirect logic runs in proxy.ts (Next.js 16 convention).
- * OpenNext Cloudflare still reads `.next/server/middleware-manifest.json`;
- * patch-handler-middleware.mjs inlines that manifest at deploy time.
+ * Root auth + redirect logic. Must stay in middleware.ts (Edge Runtime).
+ * proxy.ts is a Next.js 16 Node.js-runtime alternative — not supported by
+ * OpenNext/Cloudflare Workers, which require Edge middleware.
+ * patch-handler-middleware.mjs inlines the manifest at deploy time.
  */
 export default clerkMiddleware(async (auth, req) => {
   // Resolve the root redirect here instead of in app/page.tsx. A server
