@@ -11,6 +11,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import {
+  getMockStandupGoogleDocUrl,
+  isMockStandupMeeting,
+} from "@/lib/meetings/mock-standup-story";
+import {
   CalendarIcon,
   ClockIcon,
   CopyIcon,
@@ -40,6 +44,7 @@ type MeetingDetailTopbarProps = {
   onStartEditTitle?: () => void;
   onFinishEditTitle?: () => void;
   onOpenGoogleDocs?: () => void;
+  googleDocUrl?: string | null;
 };
 
 export const MeetingDetailTopbar = ({
@@ -56,10 +61,14 @@ export const MeetingDetailTopbar = ({
   onStartEditTitle,
   onFinishEditTitle,
   onOpenGoogleDocs,
+  googleDocUrl,
 }: MeetingDetailTopbarProps) => {
   const toast = useToast();
   const titleInputRef = useRef<HTMLInputElement>(null);
   const isRecording = title === "Instant Meeting";
+  const wiredGoogleDocUrl =
+    googleDocUrl?.trim() ||
+    (isMockStandupMeeting(meetingId) ? getMockStandupGoogleDocUrl(meetingId) : null);
 
   useEffect(() => {
     if (isEditingTitle) {
@@ -154,14 +163,27 @@ export const MeetingDetailTopbar = ({
 
       <div className="flex items-center gap-2">
         {summaryView ? (
-          <Button
-            size="sm"
-            className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/80"
-            onClick={onOpenGoogleDocs}
-          >
-            <FileTextIcon />
-            Open in Google Docs
-          </Button>
+          wiredGoogleDocUrl ? (
+            <Button
+              size="sm"
+              className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/80"
+              render={
+                <a href={wiredGoogleDocUrl} target="_blank" rel="noreferrer" />
+              }
+            >
+              <FileTextIcon />
+              Open in Google Docs
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/80"
+              onClick={onOpenGoogleDocs}
+            >
+              <FileTextIcon />
+              Open in Google Docs
+            </Button>
+          )
         ) : (
           <>
             <Button
@@ -215,14 +237,33 @@ export const MeetingDetailTopbar = ({
               <PencilIcon />
             </Button>
 
-            <Button
-              size="sm"
-              className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/80"
-              render={<a href="https://docs.google.com/document/create" target="_blank" rel="noreferrer" />}
-            >
-              <FileTextIcon />
-              Open in Google Docs
-            </Button>
+            {wiredGoogleDocUrl ? (
+              <Button
+                size="sm"
+                className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/80"
+                render={
+                  <a href={wiredGoogleDocUrl} target="_blank" rel="noreferrer" />
+                }
+              >
+                <FileTextIcon />
+                Open in Google Docs
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/80"
+                render={
+                  <a
+                    href="https://docs.google.com/document/create"
+                    target="_blank"
+                    rel="noreferrer"
+                  />
+                }
+              >
+                <FileTextIcon />
+                Open in Google Docs
+              </Button>
+            )}
           </>
         )}
       </div>

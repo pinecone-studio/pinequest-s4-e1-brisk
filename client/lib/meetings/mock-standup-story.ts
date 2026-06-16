@@ -54,7 +54,7 @@ export function buildStandupAgendaEvents(): AgendaEvent[] {
       startAt: start.toISOString(),
       endAt: end.toISOString(),
       dateKey: getDateKey(start),
-      organizer: "Данни",
+      organizer: "Дэнни",
       isOwner: true,
       meetingUrl: `/meetings/${day.id}`,
       isNow: false,
@@ -70,6 +70,7 @@ export type MockStandupDay = {
   title: string;
   meetingContent: string;
   briskRole: string;
+  googleDocUrl?: string;
   listItem: MeetingListItem;
   topics: string[];
   notes: SummaryNoteItem[];
@@ -519,7 +520,24 @@ export type MockStandupMeetingDisplay = {
   topics: string[];
   notes: SummaryNoteItem[];
   listItem: MeetingListItem;
+  googleDocUrl: string | null;
 };
+
+/** Shared Google Doc for the full 4-day Brisk standup story. */
+export const MOCK_STANDUP_STORY_GOOGLE_DOC_URL =
+  "https://docs.google.com/document/d/1mZ2_x9SjUy2Z5OE4pO5URQZKxsn2LsX5F3VP8hZ5JAw/edit?usp=sharing";
+
+/** Optional per-day Google Doc overrides. */
+const MOCK_STANDUP_GOOGLE_DOC_URLS: Record<string, string> = {};
+
+export function getMockStandupGoogleDocUrl(meetingId: string): string | null {
+  const day = getMockStandupDay(meetingId);
+  return (
+    day?.googleDocUrl?.trim() ||
+    MOCK_STANDUP_GOOGLE_DOC_URLS[meetingId]?.trim() ||
+    MOCK_STANDUP_STORY_GOOGLE_DOC_URL
+  );
+}
 
 export function getMockStandupMeetingDisplay(meetingId: string): MockStandupMeetingDisplay | null {
   const day = getMockStandupDay(meetingId);
@@ -531,6 +549,7 @@ export function getMockStandupMeetingDisplay(meetingId: string): MockStandupMeet
     participants: getPersonalizedStandupParticipants(),
     topics: day.topics,
     notes: day.notes,
+    googleDocUrl: getMockStandupGoogleDocUrl(meetingId),
   };
 }
 

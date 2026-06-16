@@ -7,16 +7,16 @@ import { standaloneRecordings } from "../../schema/recordings.schema";
 const DEMO_STANDUP_MARKER_ID = "mock-standup-day-1";
 
 const BRISK_STANDUP_TEAM_NAMES = [
-  "Данни",
-  "Чинбат",
+  "Дэнни",
+  "Бат-Оргил",
   "Сүх-Очир",
   "Цолмонгэрэл",
   "Амаржаргал",
 ] as const;
 
 const BRISK_STANDUP_TEAM_EMAILS: Record<(typeof BRISK_STANDUP_TEAM_NAMES)[number], string> = {
-  Данни: "danny.otgontsetseg@gmail.com",
-  Чинбат: "batblg247@gmail.com",
+  Дэнни: "danny.otgontsetseg@gmail.com",
+  "Бат-Оргил": "batblg247@gmail.com",
   "Сүх-Очир": "batjargalsukhochir27@gmail.com",
   Цолмонгэрэл: "tsomoobayasaa@gmail.com",
   Амаржаргал: "maraa96098@gmail.com",
@@ -153,7 +153,7 @@ export async function ensureDemoStandupForUser(
       participantNames: [...BRISK_STANDUP_TEAM_NAMES],
       participantEmails: BRISK_STANDUP_TEAM_NAMES.map((name) => ({
         name,
-        email: name === "Данни" ? ownerEmail : BRISK_STANDUP_TEAM_EMAILS[name],
+        email: name === "Дэнни" ? ownerEmail : BRISK_STANDUP_TEAM_EMAILS[name],
       })),
       status: "done",
       createdAt: start,

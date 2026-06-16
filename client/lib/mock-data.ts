@@ -19,7 +19,7 @@ import { getEmailAvatarUrl } from "@/lib/user/email-avatar-url";
 export const users: AppUser[] = [
   {
     id: "u1",
-    name: "Данни",
+    name: "Дэнни",
     email: "danny.otgontsetseg@gmail.com",
     avatarUrl: getEmailAvatarUrl("danny.otgontsetseg@gmail.com"),
     initials: "Д",
@@ -28,10 +28,10 @@ export const users: AppUser[] = [
   },
   {
     id: "u2",
-    name: "Чинбат",
+    name: "Бат-Оргил",
     email: "batblg247@gmail.com",
     avatarUrl: getEmailAvatarUrl("batblg247@gmail.com"),
-    initials: "Ч",
+    initials: "БО",
     role: "Backend Engineer",
     team: "Engineering",
   },
