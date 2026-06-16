@@ -1,6 +1,6 @@
 "use client";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { EmailAvatar } from "@/components/user/email-avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { SummaryParticipant } from "@/lib/summary/summary-participant.types";
 import { UsersIcon } from "lucide-react";
@@ -26,12 +26,13 @@ export function SummaryParticipantsSection({ participants }: SummaryParticipants
         ) : (
           participants.map((participant) => (
             <div key={participant.id} className="flex items-center gap-3">
-              <Avatar size="sm">
-                {participant.avatarUrl ? (
-                  <AvatarImage src={participant.avatarUrl} alt={participant.name} />
-                ) : null}
-                <AvatarFallback>{participant.initials}</AvatarFallback>
-              </Avatar>
+              <EmailAvatar
+                email={participant.email ?? `${participant.id}@placeholder.local`}
+                avatarUrl={participant.avatarUrl}
+                name={participant.name}
+                initials={participant.initials}
+                size="sm"
+              />
               <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
                 {participant.name}
               </p>

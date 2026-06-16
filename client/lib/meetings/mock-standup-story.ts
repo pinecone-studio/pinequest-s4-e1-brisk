@@ -8,6 +8,7 @@ import {
   getBriskStandupParticipants,
   toStandupParticipant,
 } from "@/lib/meetings/brisk-standup-team";
+import type { ClerkProfile } from "@/lib/meetings/clerk-profile";
 import { getClerkProfile } from "@/lib/meetings/clerk-profile";
 import type { SummaryNoteItem } from "@/lib/summary/summary-note.types";
 import type { SummaryParticipant } from "@/lib/summary/summary-participant.types";
@@ -26,8 +27,10 @@ export const MOCK_STANDUP_STORY_INTRO = {
 export const MOCK_STANDUP_PARTICIPANTS: SummaryParticipant[] =
   BRISK_STANDUP_TEAM.map(toStandupParticipant);
 
-export function getPersonalizedStandupParticipants(): SummaryParticipant[] {
-  return getBriskStandupParticipants();
+export function getPersonalizedStandupParticipants(
+  profileOverride?: ClerkProfile | null,
+): SummaryParticipant[] {
+  return getBriskStandupParticipants(profileOverride ?? getClerkProfile());
 }
 
 export { BRISK_STANDUP_TEAM, BRISK_STANDUP_TEAM_NAMES };
@@ -86,8 +89,8 @@ const buildStandupTimes = (dayIndex: number, durationMinutes: number) => {
 
 function buildStandupNoteDateTime(dayIndex: number, noteId: string, noteIndex: number) {
   const date = new Date(standupBaseDate);
-  date.setUTCDate(date.getUTCDate() + dayIndex);
-  date.setUTCHours(0, 0, 0, 0);
+  date.setDate(date.getDate() + dayIndex);
+  date.setHours(0, 0, 0, 0);
 
   let hash = (2166136261 ^ dayIndex) >>> 0;
   for (const char of noteId) {
@@ -96,12 +99,11 @@ function buildStandupNoteDateTime(dayIndex: number, noteId: string, noteIndex: n
   }
   hash = (hash ^ noteIndex * 2654435761) >>> 0;
 
-  const minuteOfDay = hash % (16 * 60);
-  const hour = Math.floor(minuteOfDay / 60);
-  const minute = minuteOfDay % 60;
+  // Standup notes land between 10:00 and 10:30 AM local time.
+  const minuteOffset = hash % 31;
   const second = (hash >>> 16) % 60;
 
-  date.setUTCHours(hour, minute, second, 0);
+  date.setHours(10, minuteOffset, second, 0);
   return date.toISOString();
 }
 

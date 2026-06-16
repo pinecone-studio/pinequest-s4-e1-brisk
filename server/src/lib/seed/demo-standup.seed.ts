@@ -8,7 +8,7 @@ const DEMO_STANDUP_MARKER_ID = "mock-standup-day-1";
 
 const BRISK_STANDUP_TEAM_NAMES = [
   "Данни",
-  "Батбилэг",
+  "Чинбат",
   "Сүх-Очир",
   "Цолмонгэрэл",
   "Амаржаргал",
@@ -16,10 +16,10 @@ const BRISK_STANDUP_TEAM_NAMES = [
 
 const BRISK_STANDUP_TEAM_EMAILS: Record<(typeof BRISK_STANDUP_TEAM_NAMES)[number], string> = {
   Данни: "danny.otgontsetseg@gmail.com",
-  Батбилэг: "batbilgu@pinequest.dev",
-  "Сүх-Очир": "suh-ochir@pinequest.dev",
-  Цолмонгэрэл: "tsolmongerel@pinequest.dev",
-  Амаржаргал: "amarjargal@pinequest.dev",
+  Чинбат: "batblg247@gmail.com",
+  "Сүх-Очир": "batjargalsukhochir27@gmail.com",
+  Цолмонгэрэл: "tsomoobayasaa@gmail.com",
+  Амаржаргал: "maraa96098@gmail.com",
 };
 
 type DemoStandupDaySeed = {
