@@ -87,7 +87,7 @@ export function InviteEmailList({
             variant="secondary"
             className={cn(
               "max-w-full shrink-0 gap-1 rounded-full py-1 pl-2.5 pr-1 text-xs font-medium",
-              isInline && "max-w-[11rem]",
+              isInline && "max-w-[8rem]",
             )}
             title={email}
           >
@@ -115,7 +115,7 @@ export function InviteEmailList({
           title={isInline ? helperText : undefined}
           className={cn(
             "min-w-0 flex-1 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0",
-            isInline ? "h-9 text-base" : "h-8 min-w-[10rem] text-base",
+            isInline ? "h-9 min-w-[9rem] text-base" : "h-8 min-w-[10rem] text-base",
           )}
         />
       </div>
